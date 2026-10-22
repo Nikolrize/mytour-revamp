@@ -130,7 +130,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
             View client site ↗
           </Link>
         </header>
-        <main className="mx-auto flex w-full max-w-[1480px] flex-col gap-6 p-4 sm:gap-8 sm:p-8">
+        <main className="mx-auto flex w-full max-w-[1480px] flex-col gap-6 px-[4vw] py-[3vh] sm:gap-8 sm:px-[3vw] sm:py-[4vh]">
           <div className="flex items-start gap-3 rounded-xl border border-brand-yellow/40 bg-brand-yellow-soft/60 px-4 py-3 text-sm text-foreground">
             <span className="mt-0.5 size-2 shrink-0 rounded-full bg-brand-yellow" />
             <p>

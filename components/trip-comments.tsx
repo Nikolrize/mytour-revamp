@@ -8,6 +8,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { tripComments } from "@/lib/data";
+import { getInitials } from "@/lib/utils";
 import type { TripComment } from "@/lib/type";
 
 type TripCommentsProps = { tripSlug: string };
@@ -134,11 +135,7 @@ export function TripComments({ tripSlug }: TripCommentsProps) {
             <CardContent className="flex gap-3 p-4 sm:p-5">
               <Avatar className="size-10 shrink-0">
                 <AvatarFallback className="bg-brand-blue-soft text-xs font-semibold text-brand-blue">
-                  {comment.author
-                    .split(" ")
-                    .map((part) => part[0])
-                    .join("")
-                    .replace(".", "")}
+                  {getInitials(comment.author)}
                 </AvatarFallback>
               </Avatar>
               <div className="flex min-w-0 flex-1 flex-col gap-2">

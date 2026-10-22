@@ -144,7 +144,7 @@ export function PlanBuilder() {
         </Badge>
         <h1 className="text-4xl font-medium tracking-[-0.06em] sm:text-6xl">
           Let's make a{" "}
-          <span className="font-serif italic text-brand-red">plan.</span>
+          <span className="text-brand-red">plan.</span>
         </h1>
         <p className="max-w-xl text-sm leading-6 text-muted-foreground sm:text-base">
           Name your trip, pick one or more states, and set the times that work

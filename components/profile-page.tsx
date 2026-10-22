@@ -22,6 +22,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { currentProfile, myTrips } from "@/lib/data";
 import type { TravelerProfile } from "@/lib/type";
+import { getInitials } from "@/lib/utils";
 
 const interestOptions = [
   "Local food",
@@ -66,12 +67,7 @@ export function ProfilePage() {
     setEditing(false);
   }
 
-  const initials = profile.name
-    .split(" ")
-    .map((part) => part[0])
-    .slice(0, 2)
-    .join("")
-    .toUpperCase();
+  const initials = getInitials(profile.name);
 
   return (
     <div className="flex w-full flex-col gap-8 py-10 sm:gap-10 sm:py-14">
@@ -85,8 +81,7 @@ export function ProfilePage() {
             Your MYTOUR space
           </Badge>
           <h1 className="text-4xl font-medium tracking-[-0.06em] sm:text-5xl">
-            Your{" "}
-            <span className="font-serif italic text-brand-red">profile.</span>
+            Your <span className="text-brand-red">profile.</span>
           </h1>
           <p className="text-sm text-muted-foreground">
             Keep your travel story and favourite trips in one place.
@@ -284,7 +279,7 @@ export function ProfilePage() {
           </CardContent>
         </Card>
       ) : (
-        <div className="grid items-start gap-6 lg:grid-cols-[1fr_340px]">
+        <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(17rem,1fr)]">
           {/* About and travel interests */}
           <div className="flex flex-col gap-6">
             <Card className="rounded-[24px] border-brand-line bg-white shadow-sm">
@@ -297,7 +292,7 @@ export function ProfilePage() {
                     </p>
                   </div>
                   <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-brand-blue-soft text-brand-blue">
-                    <UserRoundIcon />
+                    <UserRoundIcon initials={initials} />
                   </span>
                 </div>
                 <div className="flex flex-col gap-2 border-t border-brand-line pt-4">
@@ -416,13 +411,6 @@ export function ProfilePage() {
   );
 }
 
-function UserRoundIcon() {
-  return (
-    <span className="text-sm font-semibold">
-      {currentProfile.name
-        .split(" ")
-        .map((part) => part[0])
-        .join("")}
-    </span>
-  );
+function UserRoundIcon({ initials }: { initials: string }) {
+  return <span className="text-sm font-semibold">{initials}</span>;
 }

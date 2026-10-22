@@ -22,7 +22,7 @@ export default function CommunityPage() {
           <div className="flex max-w-2xl flex-col gap-3">
             <h1 className="text-4xl font-medium tracking-[-0.06em] sm:text-6xl">
               Good trips{" "}
-              <span className="font-serif italic text-brand-red">travel.</span>
+              <span className="text-brand-red">travel.</span>
             </h1>
             <p className="max-w-xl text-sm leading-6 text-muted-foreground sm:text-base">
               Borrow an idea, follow a local tip, then make the route your own.
@@ -40,14 +40,13 @@ export default function CommunityPage() {
 
       {/* Community trip collection */}
       <section
-        className="grid gap-5 md:grid-cols-2"
+        className="grid gap-5 md:grid-cols-2 lg:grid-cols-3"
         aria-label="Community itineraries"
       >
-        {communityTrips.map((trip, index) => (
+        {communityTrips.map((trip) => (
           <ItineraryCard
             key={trip.slug}
             itinerary={trip}
-            featured={index === 0}
           />
         ))}
       </section>

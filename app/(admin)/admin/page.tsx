@@ -2,8 +2,8 @@ import Link from "next/link";
 import { ArrowRight, Flag, Map, MessageSquareText, Users } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { AdminManagementTable } from "@/components/admin-management-table";
+import { MetricCard } from "@/components/metric-card";
 import { adminPosts, adminTrips, adminUsers } from "@/lib/admin-data";
 
 const metrics = [
@@ -66,30 +66,15 @@ export default function AdminDashboardPage() {
         className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4"
         aria-label="Platform metrics"
       >
-        {metrics.map(({ label, value, change, icon: Icon, tone }) => (
-          <Card
+        {metrics.map(({ label, value, change, icon, tone }) => (
+          <MetricCard
             key={label}
-            className="rounded-2xl border-brand-line bg-white shadow-none"
-          >
-            <CardContent className="flex flex-col gap-5 p-5">
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">{label}</span>
-                <span
-                  className={`grid size-9 place-items-center rounded-xl ${tone}`}
-                >
-                  <Icon className="size-4" />
-                </span>
-              </div>
-              <div className="flex items-end justify-between gap-2">
-                <span className="text-3xl font-semibold tracking-tight">
-                  {value}
-                </span>
-                <span className="text-[11px] text-muted-foreground">
-                  {change}
-                </span>
-              </div>
-            </CardContent>
-          </Card>
+            label={label}
+            value={value}
+            detail={change}
+            icon={icon}
+            iconTone={tone}
+          />
         ))}
       </section>
 

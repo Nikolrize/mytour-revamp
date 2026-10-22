@@ -16,6 +16,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { EmptyState } from "@/components/empty-state";
 import { categories, destinations } from "@/lib/data";
 
 export default function Home() {
@@ -50,7 +51,7 @@ export default function Home() {
   return (
     <div className="flex w-full flex-col bg-background text-foreground">
       <section id="top" className="relative w-full">
-        <div className="relative min-h-[570px] overflow-hidden rounded-[30px] bg-brand-blue-deep sm:min-h-[620px] lg:min-h-[650px]">
+        <div className="relative min-h-[48svh] overflow-hidden rounded-[30px] bg-brand-blue-deep sm:min-h-[52svh] lg:min-h-[56svh]">
           <div
             className="absolute inset-0 bg-cover bg-center opacity-75"
             style={{
@@ -68,18 +69,16 @@ export default function Home() {
             aria-hidden="true"
           />
 
-          <div className="relative flex min-h-[570px] flex-col justify-center gap-8 px-6 py-14 text-white sm:min-h-[620px] sm:px-12 lg:min-h-[650px] lg:px-[7.5%]">
+          <div className="relative flex min-h-[48svh] flex-col justify-center gap-5 px-6 py-8 text-white sm:min-h-[52svh] sm:px-12 lg:min-h-[56svh] lg:px-[7.5%]">
             <Badge className="w-fit rounded-full border border-white/20 bg-white/10 px-3 py-1.5 text-[11px] font-medium tracking-[0.12em] text-white backdrop-blur-sm hover:bg-white/10">
               <span className="size-1.5 rounded-full bg-brand-yellow" /> MADE
               FOR YOUR KIND OF MALAYSIA
             </Badge>
-            <h1 className="max-w-[720px] text-[clamp(3.1rem,8vw,6.7rem)] leading-[0.94] font-medium tracking-[-0.075em]">
+            <h1 className="max-w-[720px] text-4xl sm:text-5xl lg:text-6xl xl:text-7xl leading-[0.94] font-medium tracking-[-0.075em]">
               Find your own
               <br />
               way through{" "}
-              <span className="font-serif italic font-normal text-brand-yellow">
-                Malaysia.
-              </span>
+              <span className="font-normal text-brand-yellow">Malaysia.</span>
             </h1>
             <p className="max-w-[430px] text-[15px] leading-7 text-white/75 sm:text-base">
               Big adventures, tiny food spots, and everything in between. Build
@@ -242,7 +241,7 @@ export default function Home() {
             {visibleDestinations.map((destination) => (
               <Card
                 key={destination.name}
-                className="group relative min-h-[330px] rounded-[24px] border-0 bg-brand-blue-soft p-0 shadow-none transition duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-brand-blue/10"
+                className="group relative min-h-[32svh] rounded-[24px] border-0 bg-brand-blue-soft p-0 shadow-none transition duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-brand-blue/10"
               >
                 <div
                   className="absolute inset-0 rounded-[24px] bg-cover bg-center"
@@ -253,7 +252,7 @@ export default function Home() {
                   className="absolute inset-0 rounded-[24px] bg-gradient-to-t from-brand-blue-deep/80 via-brand-blue-deep/5 to-brand-blue-deep/10"
                   aria-hidden="true"
                 />
-                <CardContent className="relative flex min-h-[330px] flex-col justify-between p-5 text-white">
+                <CardContent className="relative flex min-h-[32svh] flex-col justify-between p-5 text-white">
                   <div className="flex items-start justify-between">
                     <Badge className="rounded-full border border-white/25 bg-white/15 px-3 py-1 text-[10px] text-white backdrop-blur-md hover:bg-white/15">
                       {destination.category}
@@ -301,23 +300,24 @@ export default function Home() {
             ))}
           </div>
         ) : (
-          <div className="flex flex-col items-center gap-3 rounded-3xl border border-dashed border-brand-line bg-white/60 px-6 py-14 text-center">
-            <Search className="size-6 text-muted-foreground" />
-            <p className="font-medium">No places found</p>
-            <p className="text-sm text-muted-foreground">
-              Try another destination or choose a different category.
-            </p>
-            <Button
-              onClick={() => {
-                setQuery("");
-                setActiveCategory("All places");
-              }}
-              variant="outline"
-              className="rounded-full"
-            >
-              Clear filters
-            </Button>
-          </div>
+          <EmptyState
+            icon={Search}
+            title="No places found"
+            description="Try another destination or choose a different category."
+            className="px-6 py-14"
+            action={
+              <Button
+                onClick={() => {
+                  setQuery("");
+                  setActiveCategory("All places");
+                }}
+                variant="outline"
+                className="rounded-full"
+              >
+                Clear filters
+              </Button>
+            }
+          />
         )}
       </section>
 
@@ -330,10 +330,7 @@ export default function Home() {
             <h2 className="text-3xl leading-tight font-medium tracking-[-0.055em] sm:text-4xl">
               Less planning tabs.
               <br />
-              More{" "}
-              <span className="font-serif italic text-brand-red">
-                “we're here.”
-              </span>
+              More <span className="text-brand-red">“we're here.”</span>
             </h2>
             <p className="text-sm leading-6 text-muted-foreground">
               Start with a rough idea. Shape it into a day-by-day trip, move

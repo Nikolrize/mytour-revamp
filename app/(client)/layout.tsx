@@ -5,7 +5,7 @@ export default function ClientLayout({ children }: LayoutProps<"/">) {
   return (
     <>
       <SiteHeader />
-      <main className="mx-auto flex w-full max-w-[1440px] flex-1 flex-col px-4 sm:px-7 lg:px-12">
+      <main className="mx-auto flex w-full max-w-[1440px] flex-1 flex-col px-[4vw] sm:px-[3.5vw] lg:px-[3.3vw]">
         {children}
       </main>
       <SiteFooter />

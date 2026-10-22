@@ -46,7 +46,7 @@ export function AuthPage({ mode }: AuthPageProps) {
 
   return (
     <div className="flex w-full items-center justify-center py-8 sm:py-12">
-      <div className="grid w-full max-w-[1040px] overflow-hidden rounded-[30px] border border-brand-line bg-white shadow-[0_24px_80px_-45px_rgba(35,72,153,0.28)] lg:min-h-[680px] lg:grid-cols-[0.95fr_1.05fr]">
+      <div className="grid w-full max-w-[1040px] overflow-hidden rounded-[30px] border border-brand-line bg-white shadow-[0_24px_80px_-45px_rgba(35,72,153,0.28)] lg:min-h-[78svh] lg:grid-cols-[0.95fr_1.05fr]">
         {/* Travel brand panel */}
         <section className="relative hidden flex-col justify-between overflow-hidden bg-brand-blue-deep p-9 text-white lg:flex xl:p-12">
           <div
@@ -82,7 +82,7 @@ export function AuthPage({ mode }: AuthPageProps) {
           <div className="relative flex flex-col gap-5">
             <h1 className="max-w-md text-4xl font-medium leading-[1.08] tracking-[-0.06em] xl:text-5xl">
               The best stories start with{" "}
-              <span className="font-serif italic text-brand-yellow">
+              <span className="text-brand-yellow">
                 a place.
               </span>
             </h1>

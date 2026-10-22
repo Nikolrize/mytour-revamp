@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { EmptyState } from "@/components/empty-state";
 import { categories, destinations } from "@/lib/data";
 
 export function ExploreDestinations() {
@@ -38,7 +39,7 @@ export function ExploreDestinations() {
           <div className="flex max-w-2xl flex-col gap-3">
             <h1 className="text-4xl font-medium tracking-[-0.06em] sm:text-6xl">
               Find your kind of{" "}
-              <span className="font-serif italic text-brand-red">
+              <span className="text-brand-red">
                 Malaysia.
               </span>
             </h1>
@@ -95,7 +96,7 @@ export function ExploreDestinations() {
             {places.map((place) => (
               <Card
                 key={place.name}
-                className="group relative min-h-[330px] overflow-hidden rounded-[24px] border-0 bg-brand-blue-soft p-0 shadow-none"
+                className="group relative min-h-[32svh] sm:min-h-[36svh] overflow-hidden rounded-[24px] border-0 bg-brand-blue-soft p-0 shadow-none"
               >
                 <div
                   className="absolute inset-0 bg-cover bg-center transition-transform duration-500 group-hover:scale-[1.03]"
@@ -106,7 +107,7 @@ export function ExploreDestinations() {
                   className="absolute inset-0 bg-gradient-to-t from-brand-blue-deep/85 via-brand-blue-deep/10 to-brand-blue-deep/10"
                   aria-hidden="true"
                 />
-                <CardContent className="relative flex min-h-[330px] flex-col justify-between p-5 text-white">
+                <CardContent className="relative flex min-h-[32svh] sm:min-h-[36svh] flex-col justify-between p-5 text-white">
                   <Badge className="w-fit rounded-full border border-white/25 bg-white/15 px-3 py-1 text-[10px] text-white backdrop-blur-md hover:bg-white/15">
                     {place.category}
                   </Badge>
@@ -131,23 +132,24 @@ export function ExploreDestinations() {
             ))}
           </div>
         ) : (
-          <div className="flex flex-col items-center gap-3 rounded-3xl border border-dashed border-brand-line bg-white/60 px-6 py-14 text-center">
-            <Search className="size-6 text-muted-foreground" />
-            <p className="font-medium">No places found</p>
-            <p className="text-sm text-muted-foreground">
-              Try a different search or category.
-            </p>
-            <Button
-              variant="outline"
-              className="rounded-full"
-              onClick={() => {
-                setQuery("");
-                setCategory("All places");
-              }}
-            >
-              Clear filters
-            </Button>
-          </div>
+          <EmptyState
+            icon={Search}
+            title="No places found"
+            description="Try a different search or category."
+            className="px-6 py-14"
+            action={
+              <Button
+                variant="outline"
+                className="rounded-full"
+                onClick={() => {
+                  setQuery("");
+                  setCategory("All places");
+                }}
+              >
+                Clear filters
+              </Button>
+            }
+          />
         )}
       </section>
     </div>

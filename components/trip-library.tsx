@@ -6,7 +6,8 @@ import { ArrowRight, Compass, Plus, Route, Share2 } from "lucide-react";
 import { ItineraryCard } from "@/components/itinerary-card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { MetricCard } from "@/components/metric-card";
+import { EmptyState } from "@/components/empty-state";
 import { myTrips } from "@/lib/data";
 
 const filters = ["All trips", "Planning", "Ready to go", "Completed"];
@@ -38,7 +39,7 @@ export function TripLibrary() {
             </Badge>
             <h1 className="text-4xl font-medium tracking-[-0.06em] sm:text-6xl">
               My{" "}
-              <span className="font-serif italic text-brand-red">trips.</span>
+              <span className="text-brand-red">trips.</span>
             </h1>
             <p className="max-w-xl text-sm leading-6 text-muted-foreground sm:text-base">
               Keep your ideas, plans, and favourite routes together.
@@ -56,47 +57,27 @@ export function TripLibrary() {
 
       {/* Trip library summary */}
       <section className="grid gap-3 sm:grid-cols-3" aria-label="Trip summary">
-        <Card className="rounded-2xl border-brand-line bg-white shadow-none">
-          <CardContent className="flex items-center gap-4 p-5">
-            <span className="grid size-10 place-items-center rounded-xl bg-brand-blue-soft text-brand-blue">
-              <Route className="size-5" />
-            </span>
-            <span className="flex flex-col gap-1">
-              <span className="text-2xl font-semibold tracking-tight">
-                {myTrips.length}
-              </span>
-              <span className="text-xs text-muted-foreground">Trips saved</span>
-            </span>
-          </CardContent>
-        </Card>
-        <Card className="rounded-2xl border-brand-line bg-white shadow-none">
-          <CardContent className="flex items-center gap-4 p-5">
-            <span className="grid size-10 place-items-center rounded-xl bg-brand-yellow-soft text-brand-red">
-              <Compass className="size-5" />
-            </span>
-            <span className="flex flex-col gap-1">
-              <span className="text-2xl font-semibold tracking-tight">
-                {planningCount}
-              </span>
-              <span className="text-xs text-muted-foreground">
-                Still planning
-              </span>
-            </span>
-          </CardContent>
-        </Card>
-        <Card className="rounded-2xl border-brand-line bg-white shadow-none">
-          <CardContent className="flex items-center gap-4 p-5">
-            <span className="grid size-10 place-items-center rounded-xl bg-brand-red-soft text-brand-red">
-              <Share2 className="size-5" />
-            </span>
-            <span className="flex flex-col gap-1">
-              <span className="text-2xl font-semibold tracking-tight">
-                {readyCount}
-              </span>
-              <span className="text-xs text-muted-foreground">Ready to go</span>
-            </span>
-          </CardContent>
-        </Card>
+        <MetricCard
+          label="Trips saved"
+          value={myTrips.length}
+          icon={Route}
+          iconTone="bg-brand-blue-soft text-brand-blue"
+          variant="compact"
+        />
+        <MetricCard
+          label="Still planning"
+          value={planningCount}
+          icon={Compass}
+          iconTone="bg-brand-yellow-soft text-brand-red"
+          variant="compact"
+        />
+        <MetricCard
+          label="Ready to go"
+          value={readyCount}
+          icon={Share2}
+          iconTone="bg-brand-red-soft text-brand-red"
+          variant="compact"
+        />
       </section>
 
       {/* Saved itinerary collection */}
@@ -123,7 +104,7 @@ export function TripLibrary() {
           </span>
         </div>
         {trips.length ? (
-          <div className="grid gap-5 md:grid-cols-2">
+          <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
             {trips.map((trip) => (
               <ItineraryCard
                 key={trip.slug}
@@ -133,13 +114,12 @@ export function TripLibrary() {
             ))}
           </div>
         ) : (
-          <Card className="rounded-3xl border-dashed border-brand-line bg-white/60 shadow-none">
-            <CardContent className="flex flex-col items-center gap-3 p-10 text-center">
-              <Compass className="size-7 text-muted-foreground" />
-              <h2 className="font-medium">Nothing in this list yet</h2>
-              <p className="text-sm text-muted-foreground">
-                Start planning a trip and it will show up here.
-              </p>
+          <EmptyState
+            icon={Compass}
+            title="Nothing in this list yet"
+            description="Start planning a trip and it will show up here."
+            className="p-10"
+            action={
               <Button
                 nativeButton={false}
                 render={<Link href="/plan" />}
@@ -148,8 +128,8 @@ export function TripLibrary() {
               >
                 Start a trip <ArrowRight className="size-4" />
               </Button>
-            </CardContent>
-          </Card>
+            }
+          />
         )}
       </section>
       <p className="flex items-center gap-2 text-xs text-muted-foreground">

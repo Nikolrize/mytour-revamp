@@ -10,11 +10,13 @@ import {
   Sparkles,
   Star,
 } from "lucide-react";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { itineraries, myTrips } from "@/lib/data";
 import { TripComments } from "@/components/trip-comments";
+import { getInitials } from "@/lib/utils";
 
 export function generateStaticParams() {
   return [...itineraries, ...myTrips].map((trip) => ({ slug: trip.slug }));
@@ -49,7 +51,7 @@ export default async function TripDetailPage({
           <ArrowLeft className="size-4" /> Back to{" "}
           {trip.isPublic ? "community" : "my trips"}
         </Link>
-        <div className="relative flex min-h-[300px] flex-col justify-end overflow-hidden rounded-[28px] bg-brand-blue-deep p-6 text-white sm:min-h-[360px] sm:p-10">
+        <div className="relative flex min-h-[40svh] flex-col justify-end overflow-hidden rounded-[28px] bg-brand-blue-deep p-6 text-white sm:min-h-[46svh] sm:p-10">
           <div
             className="absolute inset-0 bg-cover bg-center opacity-80"
             style={{ backgroundImage: `url('${trip.image}')` }}
@@ -96,7 +98,7 @@ export default async function TripDetailPage({
       </div>
 
       {/* Trip overview and day-by-day itinerary */}
-      <div className="grid items-start gap-6 lg:grid-cols-[1fr_340px]">
+      <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(18rem,24vw)]">
         <section className="flex flex-col gap-6" aria-label="Daily itinerary">
           <div className="flex items-center justify-between gap-4">
             <div className="flex flex-col gap-1">
@@ -197,13 +199,11 @@ export default async function TripDetailPage({
                 </div>
               </div>
               <div className="flex items-center gap-3 border-t border-brand-line pt-4">
-                <span className="grid size-9 place-items-center rounded-full bg-brand-yellow-soft text-sm font-semibold text-brand-red-deep">
-                  {trip.author
-                    .split(" ")
-                    .map((part) => part[0])
-                    .join("")
-                    .replace(".", "")}
-                </span>
+                <Avatar className="size-9 shrink-0">
+                  <AvatarFallback className="bg-brand-yellow-soft text-sm font-semibold text-brand-red-deep">
+                    {getInitials(trip.author)}
+                  </AvatarFallback>
+                </Avatar>
                 <div>
                   <p className="text-sm font-semibold">{trip.author}</p>
                   <p className="text-xs text-muted-foreground">Trip creator</p>
