@@ -7,11 +7,13 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { EmptyState } from "@/components/empty-state";
-import { categories, destinations } from "@/lib/data";
+import { categories } from "@/lib/data";
+import { useDestinations } from "@/hooks/use-destinations";
 
 export function ExploreDestinations() {
   const [category, setCategory] = useState("All places");
   const [query, setQuery] = useState("");
+  const { destinations, loading, error } = useDestinations();
   const places = useMemo(
     () =>
       destinations.filter((place) => {
@@ -22,7 +24,7 @@ export function ExploreDestinations() {
           .includes(query.trim().toLowerCase());
         return matchesCategory && matchesQuery;
       }),
-    [category, query],
+    [category, query, destinations],
   );
 
   return (
@@ -39,9 +41,7 @@ export function ExploreDestinations() {
           <div className="flex max-w-2xl flex-col gap-3">
             <h1 className="text-4xl font-medium tracking-[-0.06em] sm:text-6xl">
               Find your kind of{" "}
-              <span className="text-brand-red">
-                Malaysia.
-              </span>
+              <span className="text-brand-red">Malaysia.</span>
             </h1>
             <p className="max-w-xl text-sm leading-6 text-muted-foreground sm:text-base">
               From slow island mornings to late-night city food runs, start with
@@ -91,16 +91,26 @@ export function ExploreDestinations() {
             places
           </p>
         </div>
-        {places.length ? (
+        {loading ? (
+          <p className="text-sm text-muted-foreground">Loading destinations…</p>
+        ) : error ? (
+          <p role="alert" className="text-sm text-destructive">
+            {error}
+          </p>
+        ) : places.length ? (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {places.map((place) => (
               <Card
-                key={place.name}
+                key={place.id ?? place.name}
                 className="group relative min-h-[32svh] sm:min-h-[36svh] overflow-hidden rounded-[24px] border-0 bg-brand-blue-soft p-0 shadow-none"
               >
                 <div
                   className="absolute inset-0 bg-cover bg-center transition-transform duration-500 group-hover:scale-[1.03]"
-                  style={{ backgroundImage: `url('${place.image}')` }}
+                  style={
+                    place.image
+                      ? { backgroundImage: `url('${place.image}')` }
+                      : undefined
+                  }
                   aria-hidden="true"
                 />
                 <div

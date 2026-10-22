@@ -1,8 +1,12 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useState } from "react";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { Controller, useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import type { z } from "zod";
 import {
   ArrowRight,
   Eye,
@@ -14,35 +18,38 @@ import {
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { createAuthFormSchema } from "@/lib/schemas";
+import { useAuth } from "@/hooks/use-auth";
+
+type AuthValues = z.infer<ReturnType<typeof createAuthFormSchema>>;
 
 type AuthPageProps = { mode: "login" | "signup" };
 
 export function AuthPage({ mode }: AuthPageProps) {
+  const router = useRouter();
   const isSignup = mode === "signup";
   const [showPassword, setShowPassword] = useState(false);
   const [remember, setRemember] = useState(true);
-  const [agreed, setAgreed] = useState(false);
-  const [notice, setNotice] = useState("");
-
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const form = new FormData(event.currentTarget);
-    if (isSignup && form.get("password") !== form.get("confirm-password")) {
-      setNotice("Those passwords don't match yet. Please check and try again.");
-      return;
-    }
-    if (isSignup && !agreed) {
-      setNotice("Please agree to the terms to continue.");
-      return;
-    }
-    setNotice(
-      "The sign-in service will be connected when authentication is added.",
-    );
-  }
+  const form = useForm<AuthValues>({
+    resolver: zodResolver(createAuthFormSchema(isSignup)),
+    defaultValues: {
+      name: "",
+      email: "",
+      password: "",
+      confirmPassword: "",
+      agreed: false,
+    },
+  });
+  const authMutation = useAuth(mode, () => {
+    router.replace("/trips");
+    router.refresh();
+  });
+  const handleSubmit = form.handleSubmit((values) =>
+    authMutation.mutate(values),
+  );
 
   return (
     <div className="flex w-full items-center justify-center py-8 sm:py-12">
@@ -82,13 +89,11 @@ export function AuthPage({ mode }: AuthPageProps) {
           <div className="relative flex flex-col gap-5">
             <h1 className="max-w-md text-4xl font-medium leading-[1.08] tracking-[-0.06em] xl:text-5xl">
               The best stories start with{" "}
-              <span className="text-brand-yellow">
-                a place.
-              </span>
+              <span className="text-brand-yellow">a place.</span>
             </h1>
             <p className="max-w-sm text-sm leading-6 text-white/75">
               Collect the little discoveries, local favourites, and routes
-              you'll remember long after the trip.
+              you&apos;ll remember long after the trip.
             </p>
             <div className="flex items-center gap-3 border-t border-white/20 pt-5">
               <div className="flex -space-x-2">
@@ -163,13 +168,18 @@ export function AuthPage({ mode }: AuthPageProps) {
                     <UserRound className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
                     <Input
                       id="full-name"
-                      name="name"
+                      {...form.register("name")}
                       autoComplete="name"
                       required
                       placeholder="Your name"
                       className="h-11 rounded-xl border-brand-line pl-10"
                     />
                   </span>
+                  {form.formState.errors.name && (
+                    <p className="text-xs text-destructive">
+                      {form.formState.errors.name.message}
+                    </p>
+                  )}
                 </div>
               )}
               <div className="flex flex-col gap-2">
@@ -178,7 +188,7 @@ export function AuthPage({ mode }: AuthPageProps) {
                   <Mail className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
                   <Input
                     id="email"
-                    name="email"
+                    {...form.register("email")}
                     type="email"
                     autoComplete="email"
                     required
@@ -186,6 +196,11 @@ export function AuthPage({ mode }: AuthPageProps) {
                     className="h-11 rounded-xl border-brand-line pl-10"
                   />
                 </span>
+                {form.formState.errors.email && (
+                  <p className="text-xs text-destructive">
+                    {form.formState.errors.email.message}
+                  </p>
+                )}
               </div>
               <div className="flex flex-col gap-2">
                 <Label htmlFor="password">Password</Label>
@@ -193,7 +208,7 @@ export function AuthPage({ mode }: AuthPageProps) {
                   <LockKeyhole className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
                   <Input
                     id="password"
-                    name="password"
+                    {...form.register("password")}
                     type={showPassword ? "text" : "password"}
                     autoComplete={
                       isSignup ? "new-password" : "current-password"
@@ -222,6 +237,11 @@ export function AuthPage({ mode }: AuthPageProps) {
                     )}
                   </Button>
                 </span>
+                {form.formState.errors.password && (
+                  <p className="text-xs text-destructive">
+                    {form.formState.errors.password.message}
+                  </p>
+                )}
               </div>
               {isSignup && (
                 <div className="flex flex-col gap-2">
@@ -230,7 +250,7 @@ export function AuthPage({ mode }: AuthPageProps) {
                     <LockKeyhole className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
                     <Input
                       id="confirm-password"
-                      name="confirm-password"
+                      {...form.register("confirmPassword")}
                       type={showPassword ? "text" : "password"}
                       autoComplete="new-password"
                       minLength={8}
@@ -239,22 +259,41 @@ export function AuthPage({ mode }: AuthPageProps) {
                       className="h-11 rounded-xl border-brand-line pl-10"
                     />
                   </span>
+                  {form.formState.errors.confirmPassword && (
+                    <p className="text-xs text-destructive">
+                      {form.formState.errors.confirmPassword.message}
+                    </p>
+                  )}
                 </div>
               )}
 
               {isSignup ? (
-                <label className="flex items-start gap-2.5 text-xs leading-5 text-muted-foreground">
-                  <Checkbox
-                    checked={agreed}
-                    onCheckedChange={(checked) => setAgreed(checked === true)}
-                    className="mt-0.5"
-                  />
-                  <span>
-                    I agree to use MYTOUR respectfully and understand that
-                    account features will be available once sign-up is
-                    connected.
-                  </span>
-                </label>
+                <div className="flex flex-col gap-1">
+                  <label className="flex items-start gap-2.5 text-xs leading-5 text-muted-foreground">
+                    <Controller
+                      control={form.control}
+                      name="agreed"
+                      render={({ field }) => (
+                        <Checkbox
+                          checked={field.value}
+                          onCheckedChange={(checked) =>
+                            field.onChange(checked === true)
+                          }
+                          className="mt-0.5"
+                        />
+                      )}
+                    />
+                    <span>
+                      I agree to use MYTOUR respectfully and understand that my
+                      account information will be used to provide the service.
+                    </span>
+                  </label>
+                  {form.formState.errors.agreed && (
+                    <p className="text-xs text-destructive">
+                      {form.formState.errors.agreed.message}
+                    </p>
+                  )}
+                </div>
               ) : (
                 <div className="flex items-center justify-between gap-3">
                   <label className="flex items-center gap-2.5 text-xs text-muted-foreground">
@@ -272,25 +311,33 @@ export function AuthPage({ mode }: AuthPageProps) {
                 </div>
               )}
 
-              {notice && (
+              {authMutation.error && (
                 <p
                   role="status"
+                  aria-live="polite"
                   className="rounded-xl border border-brand-blue-soft bg-brand-blue-soft px-3 py-2.5 text-sm text-brand-blue"
                 >
-                  {notice}
+                  {authMutation.error.message}
                 </p>
               )}
               <Button
                 type="submit"
+                disabled={authMutation.isPending}
                 className="h-11 w-full rounded-xl bg-brand-blue text-white hover:bg-brand-blue-hover"
               >
-                {isSignup ? "Create account" : "Sign in"}{" "}
-                <ArrowRight className="size-4" />
+                {authMutation.isPending
+                  ? isSignup
+                    ? "Creating account..."
+                    : "Signing in..."
+                  : isSignup
+                    ? "Create account"
+                    : "Sign in"}{" "}
+                {!authMutation.isPending && <ArrowRight className="size-4" />}
               </Button>
               <p className="text-center text-xs leading-5 text-muted-foreground">
                 {isSignup
-                  ? "This creates the account interface only; sign-up will work once authentication is connected."
-                  : "Sign-in is a visual preview until authentication is connected."}
+                  ? "Your account will let you save itineraries and share routes."
+                  : "Your saved trips and routes are waiting for you."}
               </p>
             </form>
 

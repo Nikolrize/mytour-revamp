@@ -1,13 +1,10 @@
 import Link from "next/link";
 import { ArrowRight, Users } from "lucide-react";
-import { ItineraryCard } from "@/components/itinerary-card";
+import { CommunityTripList } from "@/components/community-trip-list";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { itineraries } from "@/lib/data";
 
 export default function CommunityPage() {
-  const communityTrips = itineraries.filter((trip) => trip.isPublic);
-
   return (
     <div className="flex w-full flex-col gap-10 py-10 sm:gap-12 sm:py-14">
       {/* Community page introduction */}
@@ -39,16 +36,8 @@ export default function CommunityPage() {
       </header>
 
       {/* Community trip collection */}
-      <section
-        className="grid gap-5 md:grid-cols-2 lg:grid-cols-3"
-        aria-label="Community itineraries"
-      >
-        {communityTrips.map((trip) => (
-          <ItineraryCard
-            key={trip.slug}
-            itinerary={trip}
-          />
-        ))}
+      <section aria-label="Community itineraries">
+        <CommunityTripList />
       </section>
 
       {/* Community invitation */}

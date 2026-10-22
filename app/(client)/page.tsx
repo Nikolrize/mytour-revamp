@@ -17,13 +17,15 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { EmptyState } from "@/components/empty-state";
-import { categories, destinations } from "@/lib/data";
+import { categories } from "@/lib/data";
+import { useDestinations } from "@/hooks/use-destinations";
 
 export default function Home() {
   const [activeCategory, setActiveCategory] = useState("All places");
   const [query, setQuery] = useState("");
   const [saved, setSaved] = useState<string[]>([]);
   const [plannerOpen, setPlannerOpen] = useState(false);
+  const { destinations } = useDestinations();
 
   const visibleDestinations = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
@@ -38,7 +40,7 @@ export default function Home() {
           .includes(normalizedQuery);
       return matchesCategory && matchesQuery;
     });
-  }, [activeCategory, query]);
+  }, [activeCategory, query, destinations]);
 
   function toggleSaved(name: string) {
     setSaved((current) =>
@@ -196,7 +198,7 @@ export default function Home() {
             </h2>
             <p className="max-w-md text-sm leading-6 text-muted-foreground">
               Find a feeling, follow a craving, or pick a pin on the map.
-              There's no wrong way in.
+               There&apos;s no wrong way in.
             </p>
           </div>
           <div className="flex w-full items-center gap-2 rounded-full border border-brand-line bg-white p-1.5 pl-4 shadow-sm lg:max-w-[390px]">
@@ -240,12 +242,12 @@ export default function Home() {
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {visibleDestinations.map((destination) => (
               <Card
-                key={destination.name}
+                    key={destination.id ?? destination.name}
                 className="group relative min-h-[32svh] rounded-[24px] border-0 bg-brand-blue-soft p-0 shadow-none transition duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-brand-blue/10"
               >
                 <div
                   className="absolute inset-0 rounded-[24px] bg-cover bg-center"
-                  style={{ backgroundImage: `url('${destination.image}')` }}
+                      style={destination.image ? { backgroundImage: `url('${destination.image}')` } : undefined}
                   aria-hidden="true"
                 />
                 <div
@@ -330,7 +332,7 @@ export default function Home() {
             <h2 className="text-3xl leading-tight font-medium tracking-[-0.055em] sm:text-4xl">
               Less planning tabs.
               <br />
-              More <span className="text-brand-red">“we're here.”</span>
+               More <span className="text-brand-red">“we&apos;re here.”</span>
             </h2>
             <p className="text-sm leading-6 text-muted-foreground">
               Start with a rough idea. Shape it into a day-by-day trip, move
@@ -490,7 +492,7 @@ export default function Home() {
                 Old streets, good coffee, and nowhere to rush.
               </h3>
               <p className="max-w-md text-sm leading-6 text-muted-foreground">
-                A relaxed two-day route through Melaka's heritage lanes,
+                 A relaxed two-day route through Melaka&apos;s heritage lanes,
                 riverside cafés, and the small spots worth finding.
               </p>
               <div className="flex flex-wrap gap-2">

@@ -1,8 +1,7 @@
 import { UserPlus } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { AdminManagementTable } from "@/components/admin-management-table";
-import { adminUsers } from "@/lib/admin-data";
+import { AdminDatabaseTable } from "@/components/admin-database-table";
 
 export default function ManageUsersPage() {
   return (
@@ -27,11 +26,7 @@ export default function ManageUsersPage() {
           <UserPlus className="size-4" /> Invite admin
         </Button>
       </header>
-      <AdminManagementTable
-        rows={adminUsers}
-        entityLabel="users"
-        searchPlaceholder="Search by name, email or ID"
-      />
+      <AdminDatabaseTable kind="users" searchPlaceholder="Search by name or ID" />
     </div>
   );
 }

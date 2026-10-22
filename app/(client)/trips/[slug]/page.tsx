@@ -1,5 +1,8 @@
+"use client";
+
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { Suspense } from "react";
+import { useParams } from "next/navigation";
 import {
   ArrowLeft,
   ArrowRight,
@@ -14,22 +17,29 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { itineraries, myTrips } from "@/lib/data";
 import { TripComments } from "@/components/trip-comments";
 import { getInitials } from "@/lib/utils";
+import { useTripDetails } from "@/hooks/use-trip-details";
 
-export function generateStaticParams() {
-  return [...itineraries, ...myTrips].map((trip) => ({ slug: trip.slug }));
+export default function TripDetailPage() {
+  return (
+    <Suspense fallback={<div className="flex min-h-[50svh] w-full items-center justify-center text-sm text-muted-foreground">Loading trip…</div>}>
+      <TripDetailContent />
+    </Suspense>
+  );
 }
 
-export default async function TripDetailPage({
-  params,
-}: {
-  params: Promise<{ slug: string }>;
-}) {
-  const { slug } = await params;
-  const trip = [...itineraries, ...myTrips].find((item) => item.slug === slug);
-  if (!trip) notFound();
+function TripDetailContent() {
+  const { slug } = useParams<{ slug: string }>();
+  const tripQuery = useTripDetails(slug);
+  const trip = tripQuery.data?.trip;
+
+  if (tripQuery.isPending) {
+    return <div className="flex min-h-[50svh] w-full items-center justify-center text-sm text-muted-foreground">Loading trip…</div>;
+  }
+  if (tripQuery.error || !trip) {
+    return <div className="flex min-h-[50svh] w-full flex-col items-center justify-center gap-3 text-center"><h1 className="text-2xl font-semibold">Trip not found</h1><p className="text-sm text-muted-foreground">{tripQuery.error?.message ?? "This trip may have been removed or is private."}</p><Link href="/community" className="text-sm font-medium text-brand-blue hover:underline">Back to community</Link></div>;
+  }
 
   const groupedStops = trip.stops.reduce<Record<number, typeof trip.stops>>(
     (groups, stop) => {
@@ -266,7 +276,7 @@ export default async function TripDetailPage({
         </aside>
       </div>
       {/* Reviews and community discussion */}
-      <TripComments tripSlug={trip.slug} />
+      {trip.isPublic && <TripComments tripSlug={trip.slug} />}
     </div>
   );
 }

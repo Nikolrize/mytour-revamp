@@ -20,6 +20,7 @@ type AdminTableProps = {
   rows: AdminRow[];
   entityLabel: string;
   searchPlaceholder: string;
+  onAction?: (row: AdminRow) => void;
 };
 
 function statusClass(status: string) {
@@ -36,6 +37,7 @@ export function AdminManagementTable({
   rows,
   entityLabel,
   searchPlaceholder,
+  onAction,
 }: AdminTableProps) {
   const [query, setQuery] = useState("");
   const filteredRows = useMemo(() => {
@@ -111,6 +113,8 @@ export function AdminManagementTable({
                   <Button
                     variant="outline"
                     size="sm"
+                    onClick={() => onAction?.(row)}
+                    disabled={!onAction}
                     className="rounded-full border-brand-line bg-white text-brand-blue"
                   >
                     {row.action}

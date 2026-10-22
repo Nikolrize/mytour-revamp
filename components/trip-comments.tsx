@@ -1,37 +1,42 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useEffect } from "react";
+import { useForm, useWatch } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import type { z } from "zod";
+import { formatDistanceToNow } from "date-fns";
 import { MessageCircle, Send, Star } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { tripComments } from "@/lib/data";
 import { getInitials } from "@/lib/utils";
-import type { TripComment } from "@/lib/type";
+import { commentSchema } from "@/lib/schemas";
+import { useTripComments } from "@/hooks/use-comments";
+
+type CommentValues = z.infer<typeof commentSchema>;
 
 type TripCommentsProps = { tripSlug: string };
 
 export function TripComments({ tripSlug }: TripCommentsProps) {
-  const [comments, setComments] = useState(tripComments[tripSlug] ?? []);
-  const [message, setMessage] = useState("");
-  const [rating, setRating] = useState(5);
-  const [notice, setNotice] = useState("");
-
-  function addComment(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const newComment: TripComment = {
-      id: `${tripSlug}-${Date.now()}`,
-      author: "You",
-      date: "Just now",
-      rating,
-      message: message.trim(),
-    };
-    setComments((current) => [newComment, ...current]);
-    setMessage("");
-    setNotice("Your comment has been added to this preview.");
-  }
+  const { commentsQuery, postComment } = useTripComments(tripSlug);
+  const form = useForm<CommentValues>({
+    resolver: zodResolver(commentSchema),
+    defaultValues: { rating: 5, message: "" },
+  });
+  const rating = useWatch({ control: form.control, name: "rating" }) ?? 5;
+  const message = useWatch({ control: form.control, name: "message" }) ?? "";
+  // Reset the editor after a successful post.
+  useEffect(() => {
+    if (postComment.isSuccess) form.reset({ rating: 5, message: "" });
+  }, [postComment.isSuccess, form]);
+  const comments = commentsQuery.data?.comments ?? [];
+  const notice =
+    postComment.error?.message ||
+    (postComment.isSuccess
+      ? "Your comment has been posted."
+      : commentsQuery.error?.message || "");
 
   return (
     <section
@@ -57,7 +62,10 @@ export function TripComments({ tripSlug }: TripCommentsProps) {
       {/* Comment form */}
       <Card className="rounded-[22px] border-brand-line bg-white shadow-none">
         <CardContent className="p-5 sm:p-6">
-          <form onSubmit={addComment} className="flex flex-col gap-4">
+          <form
+            onSubmit={form.handleSubmit((values) => postComment.mutate(values))}
+            className="flex flex-col gap-4"
+          >
             <div className="flex flex-col gap-2">
               <Label>Your rating</Label>
               <div
@@ -76,7 +84,12 @@ export function TripComments({ tripSlug }: TripCommentsProps) {
                       role="radio"
                       aria-checked={rating === value}
                       aria-label={`${value} ${value === 1 ? "star" : "stars"}`}
-                      onClick={() => setRating(value)}
+                      onClick={() =>
+                        form.setValue("rating", value, {
+                          shouldValidate: true,
+                          shouldDirty: true,
+                        })
+                      }
                       className="size-9 rounded-full text-brand-yellow hover:bg-brand-yellow-soft hover:text-brand-yellow"
                     >
                       <Star
@@ -89,16 +102,17 @@ export function TripComments({ tripSlug }: TripCommentsProps) {
                   {rating} out of 5
                 </span>
               </div>
+              {form.formState.errors.rating && (
+                <p className="text-xs text-destructive">
+                  {form.formState.errors.rating.message}
+                </p>
+              )}
             </div>
             <div className="flex flex-col gap-2">
               <Label htmlFor="trip-comment">Your comment</Label>
               <Textarea
                 id="trip-comment"
-                value={message}
-                onChange={(event) => {
-                  setMessage(event.target.value);
-                  setNotice("");
-                }}
+                {...form.register("message")}
                 placeholder="What should other travellers know about this route?"
                 maxLength={500}
                 required
@@ -108,6 +122,11 @@ export function TripComments({ tripSlug }: TripCommentsProps) {
               <span className="text-right text-xs text-muted-foreground">
                 {message.length}/500
               </span>
+              {form.formState.errors.message && (
+                <p className="text-xs text-destructive">
+                  {form.formState.errors.message.message}
+                </p>
+              )}
             </div>
             <div className="flex items-center justify-between gap-3">
               <p className="text-xs text-muted-foreground" role="status">
@@ -115,10 +134,11 @@ export function TripComments({ tripSlug }: TripCommentsProps) {
               </p>
               <Button
                 type="submit"
-                disabled={!message.trim()}
+                disabled={postComment.isPending}
                 className="h-10 shrink-0 rounded-full bg-brand-blue px-4 text-white hover:bg-brand-blue-hover"
               >
-                <Send className="size-4" /> Post comment
+                <Send className="size-4" />{" "}
+                {postComment.isPending ? "Posting…" : "Post comment"}
               </Button>
             </div>
           </form>
@@ -127,44 +147,62 @@ export function TripComments({ tripSlug }: TripCommentsProps) {
 
       {/* Existing community comments */}
       <div className="flex flex-col gap-3">
-        {comments.map((comment) => (
-          <Card
-            key={comment.id}
-            className="rounded-[20px] border-brand-line bg-white shadow-none"
-          >
-            <CardContent className="flex gap-3 p-4 sm:p-5">
-              <Avatar className="size-10 shrink-0">
-                <AvatarFallback className="bg-brand-blue-soft text-xs font-semibold text-brand-blue">
-                  {getInitials(comment.author)}
-                </AvatarFallback>
-              </Avatar>
-              <div className="flex min-w-0 flex-1 flex-col gap-2">
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm font-semibold">
-                      {comment.author}
-                    </span>
-                    <span className="text-xs text-muted-foreground">
-                      · {comment.date}
-                    </span>
-                  </div>
-                  <span className="flex items-center gap-1 text-xs font-medium text-brand-red">
-                    <Star className="size-3.5 fill-current" /> {comment.rating}
-                    .0
-                  </span>
-                </div>
-                <p className="text-sm leading-6 text-muted-foreground">
-                  {comment.message}
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-        {!comments.length && (
-          <p className="rounded-xl border border-dashed border-brand-line p-6 text-center text-sm text-muted-foreground">
-            No comments yet. Be the first to share your experience.
+        {commentsQuery.isPending && (
+          <p className="text-sm text-muted-foreground">Loading comments…</p>
+        )}
+        {commentsQuery.error && (
+          <p role="alert" className="text-sm text-destructive">
+            {commentsQuery.error.message}
           </p>
         )}
+        {!commentsQuery.isPending &&
+          comments.map((comment) => (
+            <Card
+              key={comment.id}
+              className="rounded-[20px] border-brand-line bg-white shadow-none"
+            >
+              <CardContent className="flex gap-3 p-4 sm:p-5">
+                <Avatar className="size-10 shrink-0">
+                  <AvatarFallback className="bg-brand-blue-soft text-xs font-semibold text-brand-blue">
+                    {getInitials(comment.author)}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="flex min-w-0 flex-1 flex-col gap-2">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-semibold">
+                        {comment.author}
+                      </span>
+                      <span className="text-xs text-muted-foreground">
+                        ·{" "}
+                        {Number.isNaN(Date.parse(comment.date))
+                          ? comment.date
+                          : formatDistanceToNow(new Date(comment.date), {
+                              addSuffix: true,
+                            })}
+                      </span>
+                    </div>
+                    {comment.rating > 0 && (
+                      <span className="flex items-center gap-1 text-xs font-medium text-brand-red">
+                        <Star className="size-3.5 fill-current" />{" "}
+                        {comment.rating}.0
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-sm leading-6 text-muted-foreground">
+                    {comment.message}
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        {!commentsQuery.isPending &&
+          !commentsQuery.error &&
+          !comments.length && (
+            <p className="rounded-xl border border-dashed border-brand-line p-6 text-center text-sm text-muted-foreground">
+              No comments yet. Be the first to share your experience.
+            </p>
+          )}
       </div>
     </section>
   );

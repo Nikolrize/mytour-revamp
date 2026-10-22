@@ -1,7 +1,6 @@
 import { MessageSquareText } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { AdminManagementTable } from "@/components/admin-management-table";
-import { adminPosts } from "@/lib/admin-data";
+import { AdminDatabaseTable } from "@/components/admin-database-table";
 
 export default function ManagePostsPage() {
   return (
@@ -24,20 +23,10 @@ export default function ManagePostsPage() {
         </div>
         <div className="flex items-center gap-2 rounded-xl bg-white px-3 py-2 text-sm text-muted-foreground">
           <MessageSquareText className="size-4 text-brand-blue" />
-          {
-            adminPosts.filter(
-              (post) =>
-                post.status === "Flagged" || post.status === "Pending review",
-            ).length
-          }{" "}
-          items to review
+          Review open trip reports
         </div>
       </header>
-      <AdminManagementTable
-        rows={adminPosts}
-        entityLabel="posts"
-        searchPlaceholder="Search posts, authors or status"
-      />
+      <AdminDatabaseTable kind="reports" searchPlaceholder="Search trip, reporter or reason" />
     </div>
   );
 }

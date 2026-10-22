@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
 import { ArrowRight, Compass, Plus, Route, Share2 } from "lucide-react";
 import { ItineraryCard } from "@/components/itinerary-card";
@@ -8,16 +8,24 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { MetricCard } from "@/components/metric-card";
 import { EmptyState } from "@/components/empty-state";
-import { myTrips } from "@/lib/data";
+import { useMyTrips } from "@/hooks/use-trips";
+import type { Itinerary } from "@/lib/type";
 
 const filters = ["All trips", "Planning", "Ready to go", "Completed"];
+const emptyTrips: Itinerary[] = [];
 
 export function TripLibrary() {
   const [activeFilter, setActiveFilter] = useState("All trips");
-  const trips =
-    activeFilter === "All trips"
-      ? myTrips
-      : myTrips.filter((trip) => trip.status === activeFilter);
+  const { data, isPending: loading, error } = useMyTrips();
+  const myTrips = data?.trips ?? emptyTrips;
+
+  const trips = useMemo(
+    () =>
+      activeFilter === "All trips"
+        ? myTrips
+        : myTrips.filter((trip) => trip.status === activeFilter),
+    [activeFilter, myTrips],
+  );
   const planningCount = myTrips.filter(
     (trip) => trip.status === "Planning",
   ).length;
@@ -38,8 +46,7 @@ export function TripLibrary() {
               Your travel notebook
             </Badge>
             <h1 className="text-4xl font-medium tracking-[-0.06em] sm:text-6xl">
-              My{" "}
-              <span className="text-brand-red">trips.</span>
+              My <span className="text-brand-red">trips.</span>
             </h1>
             <p className="max-w-xl text-sm leading-6 text-muted-foreground sm:text-base">
               Keep your ideas, plans, and favourite routes together.
@@ -103,7 +110,16 @@ export function TripLibrary() {
             {trips.length} {trips.length === 1 ? "trip" : "trips"}
           </span>
         </div>
-        {trips.length ? (
+        {loading ? (
+          <p className="text-sm text-muted-foreground">Loading your trips…</p>
+        ) : error ? (
+          <p
+            role="alert"
+            className="rounded-xl border border-destructive/30 p-5 text-sm text-destructive"
+          >
+            {error.message}
+          </p>
+        ) : trips.length ? (
           <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
             {trips.map((trip) => (
               <ItineraryCard
@@ -132,16 +148,6 @@ export function TripLibrary() {
           />
         )}
       </section>
-      <p className="flex items-center gap-2 text-xs text-muted-foreground">
-        <Badge
-          variant="secondary"
-          className="rounded-full bg-brand-surface-muted text-muted-foreground"
-        >
-          Preview
-        </Badge>{" "}
-        These trips are sample content while your account and trip storage are
-        being set up.
-      </p>
     </div>
   );
 }

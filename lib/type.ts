@@ -1,9 +1,12 @@
 export type Destination = {
+  id?: string;
   name: string;
   state: string;
   category: string;
   image: string;
   note: string;
+  latitude?: number | null;
+  longitude?: number | null;
 };
 
 export type ItineraryStop = {

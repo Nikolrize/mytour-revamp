@@ -1,6 +1,10 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { Controller, useForm, useWatch } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import type { z } from "zod";
 import {
   differenceInCalendarDays,
   format,
@@ -30,7 +34,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { DateTimePicker } from "@/components/date-time-picker";
-import { destinations } from "@/lib/data";
+import { destinations as sampleDestinations } from "@/lib/data";
+import { tripPlanSchema } from "@/lib/schemas";
+import { useDestinations } from "@/hooks/use-destinations";
+import { usePlan } from "@/hooks/use-plan";
+
+type TripPlanValues = z.infer<typeof tripPlanSchema>;
 
 const interests = [
   "Local food",
@@ -48,24 +57,45 @@ function formatTime(time: string) {
 }
 
 export function PlanBuilder() {
-  const [tripName, setTripName] = useState("");
-  const [selectedStates, setSelectedStates] = useState(["Penang"]);
-  const [startDate, setStartDate] = useState<Date>();
-  const [endDate, setEndDate] = useState<Date>();
-  const [startTime, setStartTime] = useState("");
-  const [endTime, setEndTime] = useState("");
-  const [travellers, setTravellers] = useState("Just me");
-  const [style, setStyle] = useState("A little of everything");
-  const [selectedInterests, setSelectedInterests] = useState([
-    "Local food",
-    "Culture",
-  ]);
+  const router = useRouter();
+  const form = useForm<TripPlanValues>({
+    resolver: zodResolver(tripPlanSchema),
+    defaultValues: {
+      title: "",
+      states: ["Penang"],
+      startTime: "",
+      endTime: "",
+      travellers: "Just me",
+      style: "A little of everything",
+      interests: ["Local food", "Culture"],
+    },
+  });
+  const {
+    register,
+    setValue,
+    handleSubmit: submitForm,
+    formState: { errors },
+  } = form;
+  const { statesQuery, createTrip } = usePlan((id) =>
+    router.push(`/trips/${id}`),
+  );
+  const { destinations } = useDestinations();
+  const tripName = useWatch({ control: form.control, name: "title" });
+  const selectedStates = useWatch({ control: form.control, name: "states" }) ?? [];
+  const startDate = useWatch({ control: form.control, name: "startDate" });
+  const endDate = useWatch({ control: form.control, name: "endDate" });
+  const startTime = useWatch({ control: form.control, name: "startTime" });
+  const endTime = useWatch({ control: form.control, name: "endTime" });
+  const travellers = useWatch({ control: form.control, name: "travellers" });
+  const style = useWatch({ control: form.control, name: "style" });
+  const selectedInterests = useWatch({ control: form.control, name: "interests" }) ?? [];
   const [generated, setGenerated] = useState(false);
 
-  const states = [...new Set(destinations.map((place) => place.state))];
+  const states = statesQuery.data?.states.map((state) => state.name) ?? [];
   const chosenPlace =
     destinations.find((place) => selectedStates.includes(place.state)) ??
-    destinations[0];
+    destinations[0] ??
+    sampleDestinations[0];
   const tripDays =
     startDate && endDate
       ? Math.max(1, differenceInCalendarDays(endDate, startDate) + 1)
@@ -76,10 +106,10 @@ export function PlanBuilder() {
       : "Flexible dates";
 
   function handleStartDateChange(date: Date | undefined) {
-    setStartDate(date);
+    setValue("startDate", date, { shouldValidate: true });
     if (date && endDate && isBefore(startOfDay(endDate), startOfDay(date))) {
-      setEndDate(undefined);
-      setEndTime("");
+      setValue("endDate", undefined, { shouldValidate: true });
+      setValue("endTime", "", { shouldValidate: true });
     } else if (
       date &&
       endDate &&
@@ -88,13 +118,13 @@ export function PlanBuilder() {
       endTime &&
       endTime < startTime
     ) {
-      setEndTime("");
+      setValue("endTime", "", { shouldValidate: true });
     }
     setGenerated(false);
   }
 
   function handleStartTimeChange(time: string) {
-    setStartTime(time);
+    setValue("startTime", time, { shouldValidate: true });
     if (
       startDate &&
       endDate &&
@@ -103,33 +133,33 @@ export function PlanBuilder() {
       time &&
       endTime < time
     )
-      setEndTime("");
+      setValue("endTime", "", { shouldValidate: true });
     setGenerated(false);
   }
 
   function toggleState(state: string) {
-    setSelectedStates((current) => {
-      if (current.includes(state))
-        return current.length > 1
-          ? current.filter((item) => item !== state)
-          : current;
-      return [...current, state];
-    });
+    const next = selectedStates.includes(state)
+      ? selectedStates.length > 1
+        ? selectedStates.filter((item) => item !== state)
+        : selectedStates
+      : [...selectedStates, state];
+    setValue("states", next, { shouldValidate: true, shouldDirty: true });
     setGenerated(false);
   }
 
   function toggleInterest(interest: string) {
-    setSelectedInterests((current) =>
-      current.includes(interest)
-        ? current.filter((item) => item !== interest)
-        : [...current, interest],
+    setValue(
+      "interests",
+      selectedInterests.includes(interest)
+        ? selectedInterests.filter((item) => item !== interest)
+        : [...selectedInterests, interest],
+      { shouldDirty: true },
     );
     setGenerated(false);
   }
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setGenerated(true);
+  function handleSubmit(values: TripPlanValues) {
+    createTrip.mutate(values);
   }
 
   return (
@@ -143,8 +173,7 @@ export function PlanBuilder() {
           <Sparkles className="size-3.5" /> Your next Malaysia story
         </Badge>
         <h1 className="text-4xl font-medium tracking-[-0.06em] sm:text-6xl">
-          Let's make a{" "}
-          <span className="text-brand-red">plan.</span>
+           Let&apos;s make a <span className="text-brand-red">plan.</span>
         </h1>
         <p className="max-w-xl text-sm leading-6 text-muted-foreground sm:text-base">
           Name your trip, pick one or more states, and set the times that work
@@ -154,7 +183,10 @@ export function PlanBuilder() {
 
       {/* Trip preferences and live itinerary preview */}
       <div className="grid items-start gap-6 lg:grid-cols-[1.1fr_0.9fr]">
-        <form onSubmit={handleSubmit} className="flex flex-col gap-6">
+        <form
+          onSubmit={submitForm(handleSubmit)}
+          className="flex flex-col gap-6"
+        >
           <Card className="rounded-[24px] border-brand-line bg-white shadow-sm">
             <CardContent className="flex flex-col gap-6 p-5 sm:p-7">
               <div className="flex flex-col gap-2">
@@ -163,15 +195,23 @@ export function PlanBuilder() {
                 </Label>
                 <Input
                   id="trip-name"
-                  value={tripName}
+                  {...register("title")}
                   maxLength={80}
                   onChange={(event) => {
-                    setTripName(event.target.value);
+                    setValue("title", event.target.value, {
+                      shouldDirty: true,
+                      shouldValidate: true,
+                    });
                     setGenerated(false);
                   }}
                   className="h-11 rounded-xl border-brand-line bg-background px-3"
                   placeholder="e.g. Island days with the family"
                 />
+                {errors.title && (
+                  <p className="text-xs text-destructive">
+                    {errors.title.message}
+                  </p>
+                )}
               </div>
               <fieldset className="flex flex-col gap-3">
                 <legend className="text-sm font-medium">
@@ -182,9 +222,10 @@ export function PlanBuilder() {
                 </p>
                 <div className="grid gap-3 sm:grid-cols-2">
                   {states.map((state) => {
-                    const place = destinations.find(
-                      (item) => item.state === state,
-                    )!;
+                    const place =
+                      destinations.find((item) => item.state === state) ??
+                      sampleDestinations.find((item) => item.state === state) ??
+                      sampleDestinations[0];
                     const selected = selectedStates.includes(state);
                     return (
                       <Button
@@ -197,7 +238,11 @@ export function PlanBuilder() {
                       >
                         <span
                           className="absolute inset-0 bg-cover bg-center transition-transform duration-300 group-hover:scale-105"
-                          style={{ backgroundImage: `url('${place.image}')` }}
+                          style={
+                            place?.image
+                              ? { backgroundImage: `url('${place.image}')` }
+                              : undefined
+                          }
                           aria-hidden="true"
                         />
                         <span
@@ -236,69 +281,93 @@ export function PlanBuilder() {
                 <div className="flex flex-col gap-1">
                   <h2 className="font-semibold">A few trip details</h2>
                   <p className="text-sm text-muted-foreground">
-                    We'll use these to keep your itinerary at the right pace.
+                     We&apos;ll use these to keep your itinerary at the right pace.
                   </p>
                 </div>
               </div>
               <div className="grid gap-4 sm:grid-cols-2">
-                <DateTimePicker
-                  id="trip-start"
-                  label="Trip starts"
-                  date={startDate}
-                  time={startTime}
-                  onDateChange={handleStartDateChange}
-                  onTimeChange={handleStartTimeChange}
+                <Controller
+                  control={form.control}
+                  name="startDate"
+                  render={({ field }) => (
+                    <DateTimePicker
+                      id="trip-start"
+                      label="Trip starts"
+                      date={field.value}
+                      time={startTime}
+                      onDateChange={handleStartDateChange}
+                      onTimeChange={handleStartTimeChange}
+                    />
+                  )}
                 />
-                <DateTimePicker
-                  id="trip-end"
-                  label="Trip ends"
-                  date={endDate}
-                  time={endTime}
-                  minDate={startDate}
-                  minTime={
-                    startDate && endDate && isSameDay(startDate, endDate)
-                      ? startTime
-                      : undefined
-                  }
-                  onDateChange={(date) => {
-                    setEndDate(date);
-                    if (!date) setEndTime("");
-                    setGenerated(false);
-                  }}
-                  onTimeChange={(time) => {
-                    setEndTime(time);
-                    setGenerated(false);
-                  }}
+                <Controller
+                  control={form.control}
+                  name="endDate"
+                  render={({ field }) => (
+                    <DateTimePicker
+                      id="trip-end"
+                      label="Trip ends"
+                      date={field.value}
+                      time={endTime}
+                      minDate={startDate}
+                      minTime={
+                        startDate && endDate && isSameDay(startDate, endDate)
+                          ? startTime
+                          : undefined
+                      }
+                      onDateChange={(date) => {
+                        field.onChange(date);
+                        if (!date)
+                          setValue("endTime", "", { shouldValidate: true });
+                        setGenerated(false);
+                      }}
+                      onTimeChange={(time) => {
+                        setValue("endTime", time, { shouldValidate: true });
+                        setGenerated(false);
+                      }}
+                    />
+                  )}
                 />
+                {(errors.startDate || errors.endDate) && (
+                  <p className="text-xs text-destructive sm:col-span-2">
+                    {errors.startDate?.message || errors.endDate?.message}
+                  </p>
+                )}
               </div>
               <div className="flex flex-col gap-4">
                 <Label
                   htmlFor="trip-travellers"
                   className="text-sm font-medium"
                 >
-                  Who's going?
+                   Who&apos;s going?
                 </Label>
-                <Select
-                  value={travellers}
-                  onValueChange={(value) => {
-                    setTravellers(String(value ?? "Just me"));
-                    setGenerated(false);
-                  }}
-                >
-                  <SelectTrigger
-                    id="trip-travellers"
-                    className="h-11 w-full rounded-xl border-brand-line px-3"
-                  >
-                    <Users className="size-4 text-muted-foreground" />
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Just me">Just me</SelectItem>
-                    <SelectItem value="Two of us">Two of us</SelectItem>
-                    <SelectItem value="Friends">Friends</SelectItem>
-                    <SelectItem value="Family">Family</SelectItem>
-                  </SelectContent>
-                </Select>
+                <Controller
+                  control={form.control}
+                  name="travellers"
+                  render={({ field }) => (
+                    <Select
+                      value={field.value}
+                      onValueChange={(value) => {
+                        field.onChange(String(value ?? "Just me"));
+                        setGenerated(false);
+                      }}
+                    >
+                      <SelectTrigger
+                        id="trip-travellers"
+                        className="h-11 w-full rounded-xl border-brand-line px-3"
+                      >
+                        <Users className="size-4 text-muted-foreground" />
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Just me">Just me</SelectItem>
+                        <SelectItem value="Two of us">Two of us</SelectItem>
+                        <SelectItem value="Friends">Friends</SelectItem>
+                        <SelectItem value="Family">Family</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  )}
+                />
               </div>
               <fieldset className="flex flex-col gap-3">
                 <legend className="text-sm font-medium">
@@ -311,7 +380,7 @@ export function PlanBuilder() {
                         key={item}
                         type="button"
                         onClick={() => {
-                          setStyle(item);
+                          setValue("style", item);
                           setGenerated(false);
                         }}
                         variant={style === item ? "default" : "outline"}
@@ -350,20 +419,31 @@ export function PlanBuilder() {
           <div className="flex flex-col gap-3 sm:flex-row">
             <Button
               type="submit"
+              disabled={createTrip.isPending}
               className="h-12 flex-1 rounded-full bg-brand-blue text-white hover:bg-brand-blue-hover"
             >
-              <Sparkles className="size-4" /> Build my itinerary{" "}
+              <Sparkles className="size-4" />{" "}
+              {createTrip.isPending ? "Saving trip…" : "Build my itinerary"}{" "}
               <ArrowRight className="size-4" />
             </Button>
             <Button
-              type="button"
+              type="submit"
               variant="outline"
               className="h-12 rounded-full border-brand-line bg-white px-6"
-              onClick={() => setGenerated(true)}
             >
               Start with a blank trip
             </Button>
           </div>
+          {(errors.states || errors.endTime) && (
+            <p role="alert" className="text-sm text-destructive">
+              {errors.states?.message || errors.endTime?.message}
+            </p>
+          )}
+          {createTrip.error && (
+            <p role="alert" className="text-sm text-destructive">
+              {createTrip.error.message}
+            </p>
+          )}
         </form>
 
         <Card className="overflow-hidden rounded-[24px] border-brand-line bg-white shadow-sm lg:sticky lg:top-6">

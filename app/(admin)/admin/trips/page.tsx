@@ -1,7 +1,6 @@
 import { Map } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { AdminManagementTable } from "@/components/admin-management-table";
-import { adminTrips } from "@/lib/admin-data";
+import { AdminDatabaseTable } from "@/components/admin-database-table";
 
 export default function ManageTripsPage() {
   return (
@@ -24,14 +23,10 @@ export default function ManageTripsPage() {
         </div>
         <div className="flex items-center gap-2 rounded-xl bg-white px-3 py-2 text-sm text-muted-foreground">
           <Map className="size-4 text-brand-blue" />
-          {adminTrips.length} sample itineraries
+          Live Supabase itineraries
         </div>
       </header>
-      <AdminManagementTable
-        rows={adminTrips}
-        entityLabel="trips"
-        searchPlaceholder="Search itineraries, authors or locations"
-      />
+      <AdminDatabaseTable kind="trips" searchPlaceholder="Search itineraries, authors or locations" />
     </div>
   );
 }

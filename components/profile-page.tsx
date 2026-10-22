@@ -1,12 +1,14 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
+import { useForm, useWatch } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import type { z } from "zod";
 import {
   ArrowRight,
   CalendarDays,
   Check,
-  MapPin,
   Pencil,
   Route,
   Share2,
@@ -20,54 +22,67 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { currentProfile, myTrips } from "@/lib/data";
 import type { TravelerProfile } from "@/lib/type";
 import { getInitials } from "@/lib/utils";
+import { profileSchema } from "@/lib/schemas";
+import { useMyTrips } from "@/hooks/use-trips";
+import { useProfile } from "@/hooks/use-profile";
 
-const interestOptions = [
-  "Local food",
-  "Culture",
-  "Nature",
-  "Beaches",
-  "Slow travel",
-  "City breaks",
-  "Hidden gems",
-];
+type ProfileFormValues = z.infer<typeof profileSchema>;
+
+const emptyProfile: TravelerProfile = {
+  name: "Traveller",
+  username: "",
+  location: "Malaysia",
+  bio: "",
+  avatar: "",
+  coverImage: "",
+  joined: "",
+  interests: [],
+  tripsPlanned: 0,
+  tripsShared: 0,
+  placesExplored: 0,
+};
 
 export function ProfilePage() {
-  const [profile, setProfile] = useState(currentProfile);
-  const [draft, setDraft] = useState(currentProfile);
   const [editing, setEditing] = useState(false);
-  const [saved, setSaved] = useState(false);
-
-  function updateDraft<Key extends keyof TravelerProfile>(
-    key: Key,
-    value: TravelerProfile[Key],
-  ) {
-    setDraft((current) => ({ ...current, [key]: value }));
-    setSaved(false);
-  }
-
-  function toggleInterest(interest: string) {
-    const interests = draft.interests.includes(interest)
-      ? draft.interests.filter((item) => item !== interest)
-      : [...draft.interests, interest];
-    updateDraft("interests", interests);
-  }
-
-  function handleSave(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setProfile(draft);
-    setEditing(false);
-    setSaved(true);
-  }
-
+  const { profileQuery, updateProfile } = useProfile(() => setEditing(false));
+  const tripsQuery = useMyTrips();
+  const profile = useMemo(() => {
+    const record = profileQuery.data?.profile;
+    return record
+      ? {
+          ...emptyProfile,
+          name: record.display_name || "Traveller",
+          avatar: record.avatar_url || "",
+          bio: record.bio || "",
+          joined: record.created_at
+            ? new Date(record.created_at).getFullYear().toString()
+            : "",
+        }
+      : emptyProfile;
+  }, [profileQuery.data]);
+  const myTrips = tripsQuery.data?.trips ?? [];
+  const form = useForm<ProfileFormValues>({
+    resolver: zodResolver(profileSchema),
+    defaultValues: { displayName: "", avatarUrl: "", bio: "" },
+  });
+  const bio = useWatch({ control: form.control, name: "bio" });
   function cancelEdit() {
-    setDraft(profile);
+    form.reset({
+      displayName: profile.name,
+      avatarUrl: profile.avatar,
+      bio: profile.bio,
+    });
     setEditing(false);
   }
 
   const initials = getInitials(profile.name);
+  const loading = profileQuery.isPending || tripsQuery.isPending;
+  const error =
+    profileQuery.error?.message ||
+    tripsQuery.error?.message ||
+    updateProfile.error?.message;
 
   return (
     <div className="flex w-full flex-col gap-8 py-10 sm:gap-10 sm:py-14">
@@ -93,9 +108,13 @@ export function ProfilePage() {
               variant="outline"
               className="h-10 rounded-full border-brand-line bg-white px-4"
               onClick={() => {
-                setDraft(profile);
+                form.reset({
+                  displayName: profile.name,
+                  avatarUrl: profile.avatar,
+                  bio: profile.bio,
+                });
+                updateProfile.reset();
                 setEditing(true);
-                setSaved(false);
               }}
             >
               <Pencil className="size-4" /> Edit profile
@@ -142,12 +161,7 @@ export function ProfilePage() {
               <h2 className="text-2xl font-semibold tracking-tight">
                 {profile.name}
               </h2>
-              <p className="text-sm text-muted-foreground">
-                @{profile.username}
-              </p>
-              <p className="flex items-center gap-1 text-xs text-muted-foreground">
-                <MapPin className="size-3.5" /> {profile.location}
-              </p>
+              <p className="text-sm text-muted-foreground">MYTOUR traveller</p>
             </div>
           </div>
           <p className="flex items-center gap-2 text-xs text-muted-foreground">
@@ -156,12 +170,20 @@ export function ProfilePage() {
         </CardContent>
       </Card>
 
-      {saved && (
+      {updateProfile.isSuccess && (
         <p
           role="status"
           className="flex items-center gap-2 rounded-xl border border-brand-blue-soft bg-brand-blue-soft px-4 py-3 text-sm text-brand-blue"
         >
-          <Check className="size-4" /> Profile changes saved for this preview.
+          <Check className="size-4" /> Profile changes saved.
+        </p>
+      )}
+      {error && (
+        <p
+          role="alert"
+          className="rounded-xl border border-destructive/30 px-4 py-3 text-sm text-destructive"
+        >
+          {error}
         </p>
       )}
 
@@ -169,7 +191,12 @@ export function ProfilePage() {
       {editing ? (
         <Card className="rounded-[24px] border-brand-line bg-white shadow-sm">
           <CardContent className="p-5 sm:p-7">
-            <form onSubmit={handleSave} className="flex flex-col gap-6">
+            <form
+              onSubmit={form.handleSubmit((values) =>
+                updateProfile.mutate(values),
+              )}
+              className="flex flex-col gap-6"
+            >
               <div className="flex flex-col gap-1">
                 <h2 className="text-xl font-semibold tracking-tight">
                   Edit your profile
@@ -183,82 +210,52 @@ export function ProfilePage() {
                   <Label htmlFor="profile-name">Name</Label>
                   <Input
                     id="profile-name"
-                    value={draft.name}
-                    onChange={(event) =>
-                      updateDraft("name", event.target.value)
-                    }
+                    {...form.register("displayName")}
                     maxLength={60}
                     required
                     className="h-11 rounded-xl border-brand-line px-3"
                   />
-                </div>
-                <div className="flex flex-col gap-2">
-                  <Label htmlFor="profile-username">Username</Label>
-                  <Input
-                    id="profile-username"
-                    value={draft.username}
-                    onChange={(event) =>
-                      updateDraft(
-                        "username",
-                        event.target.value.replace(/[^a-zA-Z0-9_]/g, ""),
-                      )
-                    }
-                    maxLength={24}
-                    required
-                    className="h-11 rounded-xl border-brand-line px-3"
-                  />
+                  {form.formState.errors.displayName && (
+                    <p className="text-xs text-destructive">
+                      {form.formState.errors.displayName.message}
+                    </p>
+                  )}
                 </div>
                 <div className="flex flex-col gap-2 sm:col-span-2">
-                  <Label htmlFor="profile-location">Location</Label>
+                  <Label htmlFor="profile-avatar">Avatar image URL</Label>
                   <Input
-                    id="profile-location"
-                    value={draft.location}
-                    onChange={(event) =>
-                      updateDraft("location", event.target.value)
-                    }
-                    maxLength={80}
+                    id="profile-avatar"
+                    type="url"
+                    {...form.register("avatarUrl")}
                     className="h-11 rounded-xl border-brand-line px-3"
-                    placeholder="City, country"
+                    placeholder="https://..."
                   />
+                  {form.formState.errors.avatarUrl && (
+                    <p className="text-xs text-destructive">
+                      {form.formState.errors.avatarUrl.message}
+                    </p>
+                  )}
                 </div>
                 <div className="flex flex-col gap-2 sm:col-span-2">
                   <Label htmlFor="profile-bio">A little about you</Label>
                   <Textarea
                     id="profile-bio"
-                    value={draft.bio}
-                    onChange={(event) => updateDraft("bio", event.target.value)}
+                    {...form.register("bio")}
                     maxLength={240}
                     rows={3}
                     className="rounded-xl border-brand-line px-3"
                     placeholder="What do you love about travelling?"
                   />
                   <p className="text-right text-xs text-muted-foreground">
-                    {draft.bio.length}/240
+                    {(bio ?? "").length}/240
                   </p>
+                  {form.formState.errors.bio && (
+                    <p className="text-xs text-destructive">
+                      {form.formState.errors.bio.message}
+                    </p>
+                  )}
                 </div>
               </div>
-              <fieldset className="flex flex-col gap-3">
-                <legend className="text-sm font-medium">
-                  Travel interests
-                </legend>
-                <div className="flex flex-wrap gap-2">
-                  {interestOptions.map((interest) => {
-                    const selected = draft.interests.includes(interest);
-                    return (
-                      <Button
-                        key={interest}
-                        type="button"
-                        variant={selected ? "secondary" : "outline"}
-                        aria-pressed={selected}
-                        onClick={() => toggleInterest(interest)}
-                        className={`h-9 rounded-full px-4 text-xs ${selected ? "bg-brand-blue-soft text-brand-blue hover:bg-brand-blue-soft" : "border-brand-line text-muted-foreground"}`}
-                      >
-                        {interest}
-                      </Button>
-                    );
-                  })}
-                </div>
-              </fieldset>
               <div className="flex flex-col-reverse gap-2 border-t border-brand-line pt-5 sm:flex-row sm:justify-end">
                 <Button
                   type="button"
@@ -270,9 +267,11 @@ export function ProfilePage() {
                 </Button>
                 <Button
                   type="submit"
+                  disabled={updateProfile.isPending}
                   className="h-10 rounded-full bg-brand-blue px-5 text-white hover:bg-brand-blue-hover"
                 >
-                  <Check className="size-4" /> Save profile
+                  <Check className="size-4" />{" "}
+                  {updateProfile.isPending ? "Saving…" : "Save profile"}
                 </Button>
               </div>
             </form>
@@ -299,17 +298,9 @@ export function ProfilePage() {
                   <p className="text-xs font-medium text-muted-foreground">
                     Travel interests
                   </p>
-                  <div className="flex flex-wrap gap-2">
-                    {profile.interests.map((interest) => (
-                      <Badge
-                        key={interest}
-                        variant="secondary"
-                        className="rounded-full bg-brand-blue-soft px-3 py-1 text-brand-blue"
-                      >
-                        {interest}
-                      </Badge>
-                    ))}
-                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    Tell the community about your travel style in your bio.
+                  </p>
                 </div>
               </CardContent>
             </Card>
@@ -339,6 +330,16 @@ export function ProfilePage() {
                   />
                 ))}
               </div>
+              {loading && (
+                <p className="text-sm text-muted-foreground">
+                  Loading your trips…
+                </p>
+              )}
+              {!loading && !myTrips.length && (
+                <p className="rounded-xl border border-dashed border-brand-line p-6 text-sm text-muted-foreground">
+                  You have not planned a trip yet.
+                </p>
+              )}
             </section>
           </div>
 
@@ -353,7 +354,7 @@ export function ProfilePage() {
                 <div className="grid grid-cols-3 gap-2 text-center">
                   <div className="flex flex-col gap-1 rounded-xl bg-brand-surface-muted p-3">
                     <span className="text-xl font-semibold">
-                      {profile.tripsPlanned}
+                      {myTrips.length}
                     </span>
                     <span className="text-[10px] text-muted-foreground">
                       trips
@@ -361,7 +362,7 @@ export function ProfilePage() {
                   </div>
                   <div className="flex flex-col gap-1 rounded-xl bg-brand-surface-muted p-3">
                     <span className="text-xl font-semibold">
-                      {profile.tripsShared}
+                      {myTrips.filter((trip) => trip.isPublic).length}
                     </span>
                     <span className="text-[10px] text-muted-foreground">
                       shared
@@ -369,7 +370,13 @@ export function ProfilePage() {
                   </div>
                   <div className="flex flex-col gap-1 rounded-xl bg-brand-surface-muted p-3">
                     <span className="text-xl font-semibold">
-                      {profile.placesExplored}
+                      {
+                        new Set(
+                          myTrips.flatMap((trip) =>
+                            trip.stops.map((stop) => stop.place),
+                          ),
+                        ).size
+                      }
                     </span>
                     <span className="text-[10px] text-muted-foreground">
                       places
