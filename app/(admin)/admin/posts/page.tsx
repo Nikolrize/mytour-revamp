@@ -1,0 +1,43 @@
+import { MessageSquareText } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { AdminManagementTable } from "@/components/admin-management-table";
+import { adminPosts } from "@/lib/admin-data";
+
+export default function ManagePostsPage() {
+  return (
+    <div className="flex flex-col gap-6">
+      {/* Community moderation heading */}
+      <header className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
+        <div className="flex flex-col gap-2">
+          <Badge
+            variant="outline"
+            className="w-fit rounded-full border-brand-line bg-white text-brand-blue"
+          >
+            Community
+          </Badge>
+          <h1 className="text-3xl font-semibold tracking-[-0.04em] sm:text-4xl">
+            Community posts
+          </h1>
+          <p className="text-sm text-muted-foreground">
+            Review shared itineraries, reports, and community discussions.
+          </p>
+        </div>
+        <div className="flex items-center gap-2 rounded-xl bg-white px-3 py-2 text-sm text-muted-foreground">
+          <MessageSquareText className="size-4 text-brand-blue" />
+          {
+            adminPosts.filter(
+              (post) =>
+                post.status === "Flagged" || post.status === "Pending review",
+            ).length
+          }{" "}
+          items to review
+        </div>
+      </header>
+      <AdminManagementTable
+        rows={adminPosts}
+        entityLabel="posts"
+        searchPlaceholder="Search posts, authors or status"
+      />
+    </div>
+  );
+}
