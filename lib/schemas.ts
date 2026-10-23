@@ -7,6 +7,11 @@ export const tripPlanSchema = z
       .trim()
       .min(1, "Give your trip a name.")
       .max(80, "Trip names can be up to 80 characters."),
+    description: z
+      .string()
+      .trim()
+      .max(2000, "Descriptions can be up to 2,000 characters.")
+      .optional(),
     states: z.array(z.string().min(1)).min(1, "Choose at least one state."),
     startDate: z.date().optional(),
     endDate: z.date().optional(),
@@ -62,6 +67,51 @@ export const commentSchema = z.object({
     .max(500, "Comment must be 500 characters or fewer."),
 });
 
+export const tripStopSchema = z
+  .object({
+    title: z.string().trim().min(1, "Enter a stop name.").max(160),
+    description: z.string().max(1000),
+    day: z.coerce.number().int().min(1).max(31),
+    startTime: z.string(),
+    endTime: z.string(),
+    mapsUrl: z
+      .string()
+      .trim()
+      .url("Paste a valid Google Maps share link.")
+      .max(2048),
+  })
+  .superRefine((value, context) => {
+    let host = "";
+    try {
+      host = new URL(value.mapsUrl).hostname.toLowerCase();
+    } catch {
+      /* The URL schema reports invalid links. */
+    }
+    if (
+      !(
+        host === "maps.app.goo.gl" ||
+        host === "goo.gl" ||
+        host === "google.com" ||
+        host.endsWith(".google.com") ||
+        /^google\.[a-z.]+$/.test(host) ||
+        /^.+\.google\.[a-z.]+$/.test(host)
+      )
+    ) {
+      context.addIssue({
+        code: "custom",
+        path: ["mapsUrl"],
+        message: "Use a Google Maps share link.",
+      });
+    }
+    if (value.startTime && value.endTime && value.endTime <= value.startTime) {
+      context.addIssue({
+        code: "custom",
+        path: ["endTime"],
+        message: "End time must be later than start time.",
+      });
+    }
+  });
+
 export const createAuthFormSchema = (isSignup: boolean) =>
   z
     .object({
@@ -103,3 +153,44 @@ export const createAuthFormSchema = (isSignup: boolean) =>
         });
       }
     });
+
+export const tripDetailsSchema = z.object({
+  title: z.string().trim().min(1, "Enter a trip name.").max(80),
+  description: z.string().trim().max(2000),
+});
+
+export const tripReportSchema = z.object({
+  reason: z.string().trim().min(1, "Enter a reason.").max(120),
+  details: z.string().trim().max(1000),
+});
+
+export const editStopSchema = z
+  .object({
+    title: z.string().trim().min(1, "Enter a stop name.").max(160),
+    description: z.string().max(1000),
+    day: z.number().int().min(1).max(31),
+    startTime: z.union([
+      z.literal(""),
+      z.string().regex(/^(?:[01]\d|2[0-3]):[0-5]\d$/),
+    ]),
+    endTime: z.union([
+      z.literal(""),
+      z.string().regex(/^(?:[01]\d|2[0-3]):[0-5]\d$/),
+    ]),
+  })
+  .refine(
+    (value) =>
+      !value.startTime || !value.endTime || value.endTime > value.startTime,
+    { path: ["endTime"], message: "End time must be later than start time." },
+  );
+
+export const communityPostSchema = z.object({
+  content: z
+    .string()
+    .trim()
+    .max(5000, "Posts can contain up to 5,000 characters."),
+  tripId: z.union([z.literal(""), z.string().uuid()]).default(""),
+});
+export const communityCommentSchema = z.object({
+  content: z.string().trim().min(1, "Write a comment.").max(1000),
+});
