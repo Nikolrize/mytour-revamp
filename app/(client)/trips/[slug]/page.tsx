@@ -2,6 +2,8 @@
 
 import { ConfirmAction } from "@/components/confirm-action";
 import { TripStatusBadge } from "@/components/trip-status-badge";
+import { TripStateCover } from "@/components/trip-state-cover";
+import { TripDistance } from "@/components/trip-distance";
 import { TripTags } from "@/components/trip-tags";
 import Link from "next/link";
 import { Suspense, useState } from "react";
@@ -11,10 +13,11 @@ import {
   CalendarDays,
   Clock3,
   MapPin,
+  Route,
   Star,
   Trash2,
 } from "lucide-react";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -104,11 +107,7 @@ function TripDetailContent() {
           {trip.isPublic ? "Explore" : "my trips"}
         </Link>
         <div className="relative flex min-h-[40svh] flex-col justify-end overflow-hidden rounded-[28px] bg-brand-blue-deep p-6 text-white sm:min-h-[46svh] sm:p-10">
-          <div
-            className="absolute inset-0 bg-cover bg-center"
-            style={{ backgroundImage: `url('${trip.image}')` }}
-            aria-hidden="true"
-          />
+          <TripStateCover trip={trip} />
           <div className="absolute inset-0 bg-black/50" aria-hidden="true" />
           <div className="relative flex flex-col gap-4">
             <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
@@ -233,7 +232,7 @@ function TripDetailContent() {
                     </div>
                   </div>
                   <span className="text-xs text-muted-foreground">
-                    {stops.length} stops
+                    {stops.length} stops · <TripDistance stops={stops} />
                   </span>
                 </div>
                 <div className="relative flex flex-col gap-5">
@@ -300,10 +299,17 @@ function TripDetailContent() {
           <Card className="rounded-[22px] border-brand-line bg-white shadow-none">
             <CardContent className="flex flex-col gap-5 p-5">
               <div className="flex flex-wrap items-center justify-between gap-3">
-                <h2 className="font-semibold">Trip at a glance</h2>
+                <h2 className="font-semibold">Trip overview</h2>
                 <TripStatusBadge status={trip.status} />
               </div>
               <div className="flex flex-col gap-4 text-sm">
+                <div className="flex items-center justify-between gap-3">
+                  <span className="flex items-center gap-2 text-muted-foreground">
+                    <Route className="size-4 shrink-0" aria-hidden="true" />
+                    Total driving distance
+                  </span>
+                  <TripDistance stops={trip.stops} />
+                </div>
                 <div className="flex items-center justify-between">
                   <span className="flex items-center gap-2 text-muted-foreground">
                     <CalendarDays className="size-4" /> Duration
@@ -325,6 +331,9 @@ function TripDetailContent() {
               </div>
               <div className="flex items-center gap-3 border-t border-brand-line pt-4">
                 <Avatar className="size-9 shrink-0">
+                  {trip.authorAvatar && (
+                    <AvatarImage src={trip.authorAvatar} alt={trip.author} />
+                  )}
                   <AvatarFallback className="bg-brand-yellow-soft text-sm font-semibold text-brand-red-deep">
                     {getInitials(trip.author)}
                   </AvatarFallback>
