@@ -19,6 +19,7 @@ export function useProfile(onUpdated?: () => void) {
   const queryClient = useQueryClient();
   const profileQuery = useQuery({
     queryKey: ["profile"],
+    retry: false,
     queryFn: () => apiRequest<{ profile: ProfileRecord }>("/api/profile"),
   });
   const updateProfile = useMutation({
@@ -33,9 +34,29 @@ export function useProfile(onUpdated?: () => void) {
       }),
     onSuccess: async (result) => {
       queryClient.setQueryData(["profile"], result);
-      await queryClient.invalidateQueries({ queryKey: ["trips"] });
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["trips"] }),
+        queryClient.invalidateQueries({ queryKey: ["community-posts"] }),
+        queryClient.invalidateQueries({ queryKey: ["community-comments"] }),
+      ]);
       onUpdated?.();
     },
   });
-  return { profileQuery, updateProfile };
+  const uploadAvatar = useMutation({
+    mutationFn: async (photo: File) => {
+      if (
+        !photo.size ||
+        photo.size > 2097152 ||
+        !["image/jpeg", "image/png", "image/webp"].includes(photo.type)
+      )
+        throw new Error("Choose a JPG, PNG, or WebP photo up to 2 MB.");
+      const body = new FormData();
+      body.set("photo", photo);
+      return apiRequest<{ avatarUrl: string }>("/api/profile/avatar", {
+        method: "POST",
+        body,
+      });
+    },
+  });
+  return { profileQuery, updateProfile, uploadAvatar };
 }

@@ -1,3 +1,4 @@
+import { userIsAdmin } from "@/app/api/_shared";
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import { createClient } from "@/utils/supabase/server";
@@ -7,11 +8,17 @@ export async function POST(request: Request) {
   try {
     body = await request.json();
   } catch {
-    return NextResponse.json({ message: "Invalid request body." }, { status: 400 });
+    return NextResponse.json(
+      { message: "Invalid request body." },
+      { status: 400 },
+    );
   }
 
   if (!body || typeof body !== "object") {
-    return NextResponse.json({ message: "Invalid request body." }, { status: 400 });
+    return NextResponse.json(
+      { message: "Invalid request body." },
+      { status: 400 },
+    );
   }
 
   const input = body as Record<string, unknown>;
@@ -26,11 +33,18 @@ export async function POST(request: Request) {
   }
 
   const supabase = createClient(await cookies());
-  const { error } = await supabase.auth.signInWithPassword({ email, password });
+  const { data, error } = await supabase.auth.signInWithPassword({
+    email,
+    password,
+  });
 
   if (error) {
     return NextResponse.json({ message: error.message }, { status: 401 });
   }
 
-  return NextResponse.json({ message: "Signed in successfully." });
+  const isAdmin = data.user ? await userIsAdmin(supabase, data.user.id) : false;
+  return NextResponse.json({
+    message: "Signed in successfully.",
+    redirectTo: isAdmin ? "/admin" : "/trips",
+  });
 }

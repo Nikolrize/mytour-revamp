@@ -93,6 +93,10 @@ export async function POST(request: Request, context: Context) {
     .from("itinerary_stops")
     .insert({
       trip_id: tripId,
+      day_number:
+        Number.isInteger(body.day) && Number(body.day) > 0
+          ? Number(body.day)
+          : null,
       destination_id:
         typeof body.destinationId === "string" ? body.destinationId : null,
       title,

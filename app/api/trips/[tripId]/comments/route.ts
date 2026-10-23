@@ -9,7 +9,7 @@ export async function GET(
   const { tripId } = await context.params;
   const { data: trip, error: tripError } = await supabase
     .from("trips")
-    .select("id, is_public")
+    .select("id, is_public, user_id")
     .eq("id", tripId)
     .maybeSingle();
   if (tripError)
@@ -20,6 +20,7 @@ export async function GET(
     .from("trip_comments")
     .select("id, user_id, trip_id, content, created_at, updated_at")
     .eq("trip_id", tripId)
+    .neq("user_id", trip.user_id)
     .order("created_at", { ascending: false })
     .limit(100);
   if (error)
@@ -99,7 +100,7 @@ export async function POST(
     );
   const { data: trip, error: tripError } = await supabase
     .from("trips")
-    .select("id, is_public")
+    .select("id, is_public, user_id")
     .eq("id", tripId)
     .maybeSingle();
   if (tripError)
@@ -109,17 +110,20 @@ export async function POST(
       { message: "Trip not found or not shared." },
       { status: 404 },
     );
-  const { error: ratingError } = await supabase
-    .from("trip_ratings")
-    .upsert(
-      {
-        user_id: user.id,
-        trip_id: tripId,
-        rating,
-        updated_at: new Date().toISOString(),
-      },
-      { onConflict: "user_id,trip_id" },
+  if (trip.user_id === user.id)
+    return NextResponse.json(
+      { message: "You cannot rate or review your own trip." },
+      { status: 403 },
     );
+  const { error: ratingError } = await supabase.from("trip_ratings").upsert(
+    {
+      user_id: user.id,
+      trip_id: tripId,
+      rating,
+      updated_at: new Date().toISOString(),
+    },
+    { onConflict: "user_id,trip_id" },
+  );
   if (ratingError)
     return NextResponse.json({ message: ratingError.message }, { status: 400 });
   const { data: row, error } = await supabase

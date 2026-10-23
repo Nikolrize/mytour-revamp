@@ -29,7 +29,10 @@ export function useTripComments(tripSlug: string) {
         queryKey,
         (current) => ({ comments: [comment, ...(current?.comments ?? [])] }),
       );
-      await queryClient.invalidateQueries({ queryKey: ["trips"] });
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["trips"] }),
+        queryClient.invalidateQueries({ queryKey: ["trip", tripSlug] }),
+      ]);
     },
   });
   return { commentsQuery, postComment };

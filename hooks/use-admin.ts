@@ -26,6 +26,15 @@ export function useAdminRecords(kind: AdminKind) {
   const action = useMutation({
     mutationFn: async ({ item }: { item?: Record<string, unknown> }) => {
       if (!item) throw new Error("Could not find the selected record.");
+      if (kind === "users")
+        return apiRequest(`/api/admin/users/${String(item.id)}`, {
+          method: "PATCH",
+          body: JSON.stringify({
+            isAdmin: !(
+              Array.isArray(item.roles) && item.roles.includes("admin")
+            ),
+          }),
+        });
       if (kind === "trips")
         return apiRequest(`/api/admin/trips/${String(item.slug)}`, {
           method: "PATCH",
@@ -43,6 +52,8 @@ export function useAdminRecords(kind: AdminKind) {
         queryClient.invalidateQueries({ queryKey: ["admin", kind] }),
         queryClient.invalidateQueries({ queryKey: ["admin", "overview"] }),
         queryClient.invalidateQueries({ queryKey: ["trips"] }),
+        queryClient.invalidateQueries({ queryKey: ["community-posts"] }),
+        queryClient.invalidateQueries({ queryKey: ["profile"] }),
       ]),
   });
   return { query, action };

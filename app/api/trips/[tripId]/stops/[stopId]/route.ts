@@ -82,6 +82,13 @@ export async function PATCH(request: Request, context: Context) {
   )
     updates.position = body.position;
   if (
+    typeof body.day === "number" &&
+    Number.isInteger(body.day) &&
+    body.day > 0 &&
+    body.day <= 31
+  )
+    updates.day_number = body.day;
+  if (
     typeof body.latitude === "number" &&
     Number.isFinite(body.latitude) &&
     body.latitude >= -90 &&

@@ -3,15 +3,34 @@ import { getApiContext, userIsAdmin } from "@/app/api/_shared";
 
 export async function GET() {
   const { supabase, user } = await getApiContext();
-  if (!user) return NextResponse.json({ message: "Sign in required." }, { status: 401 });
-  if (!(await userIsAdmin(supabase, user.id))) return NextResponse.json({ message: "Admin access required." }, { status: 403 });
-  const [users, trips, comments, reports] = await Promise.all([
+  if (!user)
+    return NextResponse.json({ message: "Sign in required." }, { status: 401 });
+  if (!(await userIsAdmin(supabase, user.id)))
+    return NextResponse.json(
+      { message: "Admin access required." },
+      { status: 403 },
+    );
+  const [users, trips, posts, reports] = await Promise.all([
     supabase.from("profiles").select("id", { count: "exact", head: true }),
-    supabase.from("trips").select("id", { count: "exact", head: true }).eq("is_public", true),
-    supabase.from("trip_comments").select("id", { count: "exact", head: true }),
-    supabase.from("trip_reports").select("id", { count: "exact", head: true }).eq("status", "open"),
+    supabase
+      .from("trips")
+      .select("id", { count: "exact", head: true })
+      .eq("is_public", true),
+    supabase
+      .from("community_posts")
+      .select("id", { count: "exact", head: true }),
+    supabase
+      .from("trip_reports")
+      .select("id", { count: "exact", head: true })
+      .eq("status", "open"),
   ]);
-  const issue = users.error || trips.error || comments.error || reports.error;
-  if (issue) return NextResponse.json({ message: issue.message }, { status: 500 });
-  return NextResponse.json({ users: users.count ?? 0, publicTrips: trips.count ?? 0, comments: comments.count ?? 0, openReports: reports.count ?? 0 });
+  const issue = users.error || trips.error || posts.error || reports.error;
+  if (issue)
+    return NextResponse.json({ message: issue.message }, { status: 500 });
+  return NextResponse.json({
+    users: users.count ?? 0,
+    publicTrips: trips.count ?? 0,
+    posts: posts.count ?? 0,
+    openReports: reports.count ?? 0,
+  });
 }
