@@ -25,7 +25,10 @@ function toRows(kind: Kind, data: Record<string, unknown>[]): AdminRow[] {
             ? "Admin"
             : "Active",
         meta: String(item.tripCount || 0) + " trips · joined " + joined,
-        action: "View",
+        action:
+          Array.isArray(item.roles) && item.roles.includes("admin")
+            ? "Remove admin"
+            : "Make admin",
       };
     }
     if (kind === "trips") {
@@ -82,11 +85,7 @@ export function AdminDatabaseTable({ kind, searchPlaceholder }: Props) {
           rows={rows}
           entityLabel={kind}
           searchPlaceholder={searchPlaceholder}
-          onAction={
-            kind === "users"
-              ? undefined
-              : (row) => action.mutate({ item: lookup.get(row.id) })
-          }
+          onAction={(row) => action.mutate({ item: lookup.get(row.id) })}
         />
       )}
       {action.isPending && (

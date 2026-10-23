@@ -2,8 +2,19 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { useProfile } from "@/hooks/use-profile";
+import { getInitials } from "@/lib/utils";
+import { useSignOut } from "@/hooks/use-auth";
+import { Button } from "@/components/ui/button";
+import { useRouter } from "next/navigation";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Map, MessageSquareText, Users } from "lucide-react";
+import {
+  LayoutDashboard,
+  Map,
+  MessageSquareText,
+  Users,
+  Flag,
+} from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import {
   Sidebar,
@@ -25,11 +36,19 @@ const links = [
   { label: "Dashboard", href: "/admin", icon: LayoutDashboard },
   { label: "Manage users", href: "/admin/users", icon: Users },
   { label: "Community posts", href: "/admin/posts", icon: MessageSquareText },
+  { label: "Trip reports", href: "/admin/reports", icon: Flag },
   { label: "Manage trips", href: "/admin/trips", icon: Map },
 ];
 
 export function AdminShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const { profileQuery } = useProfile();
+  const profile = profileQuery.data?.profile;
+  const router = useRouter();
+  const signOut = useSignOut(() => {
+    router.replace("/login");
+    router.refresh();
+  });
 
   return (
     <SidebarProvider defaultOpen>
@@ -97,17 +116,30 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
             className={`flex items-center gap-3 rounded-xl p-2.5 transition-colors hover:bg-sidebar-accent ${pathname === "/admin/profile" ? "bg-sidebar-accent" : "bg-brand-surface-muted"}`}
           >
             <span className="grid size-9 shrink-0 place-items-center rounded-full bg-brand-blue text-xs font-semibold text-white">
-              AM
+              {getInitials(profile?.display_name || "Admin")}
             </span>
             <span className="min-w-0 group-data-[collapsible=icon]:hidden">
               <span className="block truncate text-sm font-semibold">
-                Alex Morgan
+                {profile?.display_name || "Admin"}
               </span>
               <span className="block text-xs text-muted-foreground">
                 Administrator
               </span>
             </span>
           </Link>
+          <Button
+            variant="ghost"
+            disabled={signOut.isPending}
+            onClick={() => signOut.mutate()}
+            className="justify-start"
+          >
+            {signOut.isPending ? "Signing out…" : "Sign out"}
+          </Button>
+          {signOut.error && (
+            <p role="alert" className="text-xs text-destructive">
+              {signOut.error.message}
+            </p>
+          )}
         </SidebarFooter>
       </Sidebar>
 
@@ -131,14 +163,6 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
           </Link>
         </header>
         <main className="mx-auto flex w-full max-w-[1480px] flex-col gap-6 px-[4vw] py-[3vh] sm:gap-8 sm:px-[3vw] sm:py-[4vh]">
-          <div className="flex items-start gap-3 rounded-xl border border-brand-yellow/40 bg-brand-yellow-soft/60 px-4 py-3 text-sm text-foreground">
-            <span className="mt-0.5 size-2 shrink-0 rounded-full bg-brand-yellow" />
-            <p>
-              <span className="font-semibold">Preview data.</span> These admin
-              screens are UI only. Connect authentication, role checks, and a
-              database before using them for real moderation.
-            </p>
-          </div>
           {children}
         </main>
       </SidebarInset>

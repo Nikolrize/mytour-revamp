@@ -13,13 +13,13 @@ const definitions = [
   },
   {
     key: "publicTrips",
-    label: "Community itineraries",
+    label: "Published itineraries",
     icon: Map,
     tone: "bg-brand-yellow-soft text-brand-red-deep",
   },
   {
-    key: "comments",
-    label: "Trip comments",
+    key: "posts",
+    label: "Community posts",
     icon: MessageSquareText,
     tone: "bg-brand-red-soft text-brand-red",
   },
