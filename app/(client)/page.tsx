@@ -1,13 +1,12 @@
 "use client";
 
+import { HomeItineraryPreview } from "@/components/home-itinerary-preview";
 import { NewPlanMenu } from "@/components/new-plan-menu";
 
 import Link from "next/link";
 import { ExploreTrips } from "@/components/explore-trips";
-import { ArrowDownRight, ArrowRight, MapPin, Sparkles } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
+import { ArrowDownRight, ArrowRight, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 
 export default function Home() {
   return (
@@ -99,86 +98,7 @@ export default function Home() {
               className="h-11 rounded-full bg-brand-blue px-5 hover:bg-brand-blue-hover"
             />
           </div>
-          <Card className="overflow-hidden rounded-[22px] border-brand-line bg-white p-0 shadow-sm">
-            <CardContent className="flex flex-col gap-5 p-5 sm:p-6">
-              <div className="flex items-center justify-between border-b border-brand-line pb-4">
-                <div className="flex flex-col gap-1">
-                  <p className="text-xs text-muted-foreground">
-                    A three-day escape
-                  </p>
-                  <h3 className="text-lg font-semibold tracking-tight">
-                    Penang, at your pace
-                  </h3>
-                </div>
-                <Badge
-                  variant="secondary"
-                  className="rounded-full bg-brand-blue-soft text-brand-blue"
-                >
-                  3 days
-                </Badge>
-              </div>
-              <div className="relative grid grid-cols-[34px_1fr] gap-x-3">
-                <div
-                  className="absolute top-3 bottom-7 left-[16px] border-l border-dashed border-brand-line"
-                  aria-hidden="true"
-                />
-                <span className="relative z-10 grid size-[34px] place-items-center rounded-full bg-brand-blue-soft text-brand-blue">
-                  <MapPin className="size-4" />
-                </span>
-                <div className="flex flex-col gap-1 pb-5">
-                  <p className="text-[10px] font-semibold tracking-[0.12em] text-muted-foreground uppercase">
-                    Day 1 · George Town
-                  </p>
-                  <p className="text-sm font-medium">
-                    Coffee, murals & a long lunch
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    Armenian Street <span className="px-1">·</span> Hin Bus
-                    Depot <span className="px-1">·</span> New Lane
-                  </p>
-                </div>
-                <span className="relative z-10 grid size-[34px] place-items-center rounded-full bg-brand-red-soft text-brand-red">
-                  <MapPin className="size-4" />
-                </span>
-                <div className="flex flex-col gap-1 pb-5">
-                  <p className="text-[10px] font-semibold tracking-[0.12em] text-muted-foreground uppercase">
-                    Day 2 · Balik Pulau
-                  </p>
-                  <p className="text-sm font-medium">
-                    A slower side of the island
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    Local farm <span className="px-1">·</span> Laksa stop{" "}
-                    <span className="px-1">·</span> Sunset coast
-                  </p>
-                </div>
-                <span className="relative z-10 grid size-[34px] place-items-center rounded-full bg-brand-blue-soft text-brand-blue">
-                  <MapPin className="size-4" />
-                </span>
-                <div className="flex flex-col gap-1">
-                  <p className="text-[10px] font-semibold tracking-[0.12em] text-muted-foreground uppercase">
-                    Day 3 · Tanjung Bungah
-                  </p>
-                  <p className="text-sm font-medium">
-                    Sea air before heading home
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    Breakfast by the water <span className="px-1">·</span>{" "}
-                    Last-minute kuih
-                  </p>
-                </div>
-              </div>
-              <div className="flex items-center justify-between rounded-xl bg-brand-surface-muted px-4 py-3 text-xs text-muted-foreground">
-                <span className="flex items-center gap-2">
-                  <span className="size-2 rounded-full bg-brand-yellow" /> Route
-                  preview
-                </span>
-                <span>
-                  6 stops <span className="px-1">·</span> about 42 km
-                </span>
-              </div>
-            </CardContent>
-          </Card>
+          <HomeItineraryPreview />
         </div>
       </section>
 

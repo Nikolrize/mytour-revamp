@@ -324,3 +324,32 @@ export const stateImages: Record<string, string> = {
   Selangor: "/images/states/selangor.jpg",
   Terengganu: "/images/states/terengganu.jpg",
 };
+
+// Illustrative homepage preview; distances are example values, not live routing.
+export const homeItineraryPreview = {
+  title: "Penang, at your pace",
+  days: "3 days",
+  day: 1,
+  distanceLabel: "about 12 km",
+  totalDistanceLabel: "about 42 km",
+  stops: [
+    {
+      time: "9:00 AM",
+      area: "George Town",
+      place: "Breakfast on Campbell Street",
+      note: "Start the morning with kopi and a local breakfast.",
+    },
+    {
+      time: "11:00 AM",
+      area: "George Town",
+      place: "Armenian Street",
+      note: "Explore the murals and heritage shophouses at your own pace.",
+    },
+    {
+      time: "2:00 PM",
+      area: "George Town",
+      place: "Hin Bus Depot",
+      note: "Browse the creative spaces and pause for an afternoon coffee.",
+    },
+  ],
+};
