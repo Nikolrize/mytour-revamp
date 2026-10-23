@@ -17,9 +17,12 @@ import { useTripComments } from "@/hooks/use-comments";
 
 type CommentValues = z.infer<typeof commentSchema>;
 
-type TripCommentsProps = { tripSlug: string };
+type TripCommentsProps = { tripSlug: string; canReview?: boolean };
 
-export function TripComments({ tripSlug }: TripCommentsProps) {
+export function TripComments({
+  tripSlug,
+  canReview = true,
+}: TripCommentsProps) {
   const { commentsQuery, postComment } = useTripComments(tripSlug);
   const form = useForm<CommentValues>({
     resolver: zodResolver(commentSchema),
@@ -47,103 +50,106 @@ export function TripComments({ tripSlug }: TripCommentsProps) {
       <div className="flex flex-col gap-1">
         <div className="flex items-center gap-2">
           <MessageCircle className="size-5 text-brand-blue" />
-          <h2
-            id="trip-comments-heading"
-            className="text-2xl font-medium tracking-tight"
-          >
+          <h2 id="trip-comments-heading" className="font-semibold">
             Traveller comments
           </h2>
         </div>
         <p className="text-sm text-muted-foreground">
-          Share how this route went or ask the community a question.
+          {canReview
+            ? "Share how this route went or ask the community a question."
+            : "Read feedback from other travellers about your itinerary."}
         </p>
       </div>
 
       {/* Comment form */}
-      <Card className="rounded-[22px] border-brand-line bg-white shadow-none">
-        <CardContent className="p-5 sm:p-6">
-          <form
-            onSubmit={form.handleSubmit((values) => postComment.mutate(values))}
-            className="flex flex-col gap-4"
-          >
-            <div className="flex flex-col gap-2">
-              <Label>Your rating</Label>
-              <div
-                className="flex items-center gap-1"
-                role="radiogroup"
-                aria-label="Your rating"
-              >
-                {Array.from({ length: 5 }, (_, index) => {
-                  const value = index + 1;
-                  return (
-                    <Button
-                      key={value}
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      role="radio"
-                      aria-checked={rating === value}
-                      aria-label={`${value} ${value === 1 ? "star" : "stars"}`}
-                      onClick={() =>
-                        form.setValue("rating", value, {
-                          shouldValidate: true,
-                          shouldDirty: true,
-                        })
-                      }
-                      className="size-9 rounded-full text-brand-yellow hover:bg-brand-yellow-soft hover:text-brand-yellow"
-                    >
-                      <Star
-                        className={`size-5 ${value <= rating ? "fill-current" : ""}`}
-                      />
-                    </Button>
-                  );
-                })}
-                <span className="ml-2 text-xs text-muted-foreground">
-                  {rating} out of 5
-                </span>
+      {canReview && (
+        <Card className="rounded-[22px] border-brand-line bg-white shadow-none">
+          <CardContent className="p-5 sm:p-6">
+            <form
+              onSubmit={form.handleSubmit((values) =>
+                postComment.mutate(values),
+              )}
+              className="flex flex-col gap-4"
+            >
+              <div className="flex flex-col gap-2">
+                <Label>Your rating</Label>
+                <div
+                  className="flex items-center gap-1"
+                  role="radiogroup"
+                  aria-label="Your rating"
+                >
+                  {Array.from({ length: 5 }, (_, index) => {
+                    const value = index + 1;
+                    return (
+                      <Button
+                        key={value}
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        role="radio"
+                        aria-checked={rating === value}
+                        aria-label={`${value} ${value === 1 ? "star" : "stars"}`}
+                        onClick={() =>
+                          form.setValue("rating", value, {
+                            shouldValidate: true,
+                            shouldDirty: true,
+                          })
+                        }
+                        className="size-9 rounded-full text-brand-yellow hover:bg-brand-yellow-soft hover:text-brand-yellow"
+                      >
+                        <Star
+                          className={`size-5 ${value <= rating ? "fill-current" : ""}`}
+                        />
+                      </Button>
+                    );
+                  })}
+                  <span className="ml-2 text-xs text-muted-foreground">
+                    {rating} out of 5
+                  </span>
+                </div>
+                {form.formState.errors.rating && (
+                  <p className="text-xs text-destructive">
+                    {form.formState.errors.rating.message}
+                  </p>
+                )}
               </div>
-              {form.formState.errors.rating && (
-                <p className="text-xs text-destructive">
-                  {form.formState.errors.rating.message}
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="trip-comment">Your comment</Label>
+                <Textarea
+                  id="trip-comment"
+                  {...form.register("message")}
+                  placeholder="What should other travellers know about this route?"
+                  maxLength={500}
+                  required
+                  rows={3}
+                  className="rounded-xl border-brand-line px-3"
+                />
+                <span className="text-right text-xs text-muted-foreground">
+                  {message.length}/500
+                </span>
+                {form.formState.errors.message && (
+                  <p className="text-xs text-destructive">
+                    {form.formState.errors.message.message}
+                  </p>
+                )}
+              </div>
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <p className="text-xs text-muted-foreground" role="status">
+                  {notice}
                 </p>
-              )}
-            </div>
-            <div className="flex flex-col gap-2">
-              <Label htmlFor="trip-comment">Your comment</Label>
-              <Textarea
-                id="trip-comment"
-                {...form.register("message")}
-                placeholder="What should other travellers know about this route?"
-                maxLength={500}
-                required
-                rows={3}
-                className="rounded-xl border-brand-line px-3"
-              />
-              <span className="text-right text-xs text-muted-foreground">
-                {message.length}/500
-              </span>
-              {form.formState.errors.message && (
-                <p className="text-xs text-destructive">
-                  {form.formState.errors.message.message}
-                </p>
-              )}
-            </div>
-            <div className="flex items-center justify-between gap-3">
-              <p className="text-xs text-muted-foreground" role="status">
-                {notice}
-              </p>
-              <Button
-                type="submit"
-                disabled={postComment.isPending}
-                className="h-10 shrink-0 rounded-full bg-brand-blue px-4 text-white hover:bg-brand-blue-hover"
-              >
-                <Send className="size-4" />{" "}
-                {postComment.isPending ? "Posting…" : "Post comment"}
-              </Button>
-            </div>
-          </form>
-        </CardContent>
-      </Card>
+                <Button
+                  type="submit"
+                  disabled={postComment.isPending}
+                  className="h-10 shrink-0 rounded-full bg-brand-blue px-4 text-white hover:bg-brand-blue-hover"
+                >
+                  <Send className="size-4" />{" "}
+                  {postComment.isPending ? "Posting…" : "Post comment"}
+                </Button>
+              </div>
+            </form>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Existing community comments */}
       <div className="flex flex-col gap-3">
@@ -189,7 +195,7 @@ export function TripComments({ tripSlug }: TripCommentsProps) {
                       </span>
                     )}
                   </div>
-                  <p className="text-sm leading-6 text-muted-foreground">
+                  <p className="text-sm leading-6 break-words text-muted-foreground">
                     {comment.message}
                   </p>
                 </div>
@@ -200,7 +206,9 @@ export function TripComments({ tripSlug }: TripCommentsProps) {
           !commentsQuery.error &&
           !comments.length && (
             <p className="rounded-xl border border-dashed border-brand-line p-6 text-center text-sm text-muted-foreground">
-              No comments yet. Be the first to share your experience.
+              {canReview
+                ? "No comments yet. Be the first to share your experience."
+                : "No feedback from other travellers yet."}
             </p>
           )}
       </div>

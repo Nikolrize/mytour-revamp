@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Controller, useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -20,10 +20,12 @@ import {
   MapPin,
   Sparkles,
   Users,
+  Trash2,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -33,22 +35,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { TripStopManager } from "@/components/trip-stop-manager";
 import { DateTimePicker } from "@/components/date-time-picker";
-import { destinations as sampleDestinations } from "@/lib/data";
+import { stateImages, tripInterestOptions } from "@/lib/data";
 import { tripPlanSchema } from "@/lib/schemas";
-import { useDestinations } from "@/hooks/use-destinations";
-import { usePlan } from "@/hooks/use-plan";
+import { usePlan, type GeneratedStop } from "@/hooks/use-plan";
 
 type TripPlanValues = z.infer<typeof tripPlanSchema>;
 
-const interests = [
-  "Local food",
-  "Culture",
-  "Nature",
-  "Beaches",
-  "Slow mornings",
-  "Hidden gems",
-];
+const interests = tripInterestOptions;
 
 function formatTime(time: string) {
   if (!time) return "time not set";
@@ -56,13 +51,14 @@ function formatTime(time: string) {
   return `${rawHour % 12 || 12}:${String(minute).padStart(2, "0")} ${rawHour < 12 ? "AM" : "PM"}`;
 }
 
-export function PlanBuilder() {
+export function PlanBuilder({ mode = "ai" }: { mode?: "ai" | "manual" }) {
   const router = useRouter();
   const form = useForm<TripPlanValues>({
     resolver: zodResolver(tripPlanSchema),
     defaultValues: {
       title: "",
-      states: ["Penang"],
+      description: "",
+      states: [],
       startTime: "",
       endTime: "",
       travellers: "Just me",
@@ -76,26 +72,39 @@ export function PlanBuilder() {
     handleSubmit: submitForm,
     formState: { errors },
   } = form;
-  const { statesQuery, createTrip } = usePlan((id) =>
-    router.push(`/trips/${id}`),
+  const { statesQuery, generateItinerary, createTrip, resolveStop } = usePlan(
+    (id) => router.push(`/trips/${id}`),
   );
-  const { destinations } = useDestinations();
   const tripName = useWatch({ control: form.control, name: "title" });
-  const selectedStates = useWatch({ control: form.control, name: "states" }) ?? [];
+  const selectedStates =
+    useWatch({ control: form.control, name: "states" }) ?? [];
   const startDate = useWatch({ control: form.control, name: "startDate" });
   const endDate = useWatch({ control: form.control, name: "endDate" });
   const startTime = useWatch({ control: form.control, name: "startTime" });
   const endTime = useWatch({ control: form.control, name: "endTime" });
   const travellers = useWatch({ control: form.control, name: "travellers" });
   const style = useWatch({ control: form.control, name: "style" });
-  const selectedInterests = useWatch({ control: form.control, name: "interests" }) ?? [];
+  const selectedInterests =
+    useWatch({ control: form.control, name: "interests" }) ?? [];
   const [generated, setGenerated] = useState(false);
+  const [generatedStops, setGeneratedStops] = useState<GeneratedStop[]>([]);
+  const [manualStops, setManualStops] = useState<GeneratedStop[]>([]);
 
-  const states = statesQuery.data?.states.map((state) => state.name) ?? [];
-  const chosenPlace =
-    destinations.find((place) => selectedStates.includes(place.state)) ??
-    destinations[0] ??
-    sampleDestinations[0];
+  const states = useMemo(
+    () => statesQuery.data?.states.map((state) => state.name) ?? [],
+    [statesQuery.data?.states],
+  );
+  useEffect(() => {
+    if (!states.length) return;
+    const current = form.getValues("states");
+    const available = current.filter((name) => states.includes(name));
+    if (!available.length) {
+      form.setValue("states", [states[0]], { shouldDirty: false });
+    } else if (available.length !== current.length) {
+      form.setValue("states", available, { shouldDirty: false });
+    }
+  }, [form, states]);
+  const selectedStateImage = stateImages[selectedStates[0]];
   const tripDays =
     startDate && endDate
       ? Math.max(1, differenceInCalendarDays(endDate, startDate) + 1)
@@ -158,8 +167,20 @@ export function PlanBuilder() {
     setGenerated(false);
   }
 
-  function handleSubmit(values: TripPlanValues) {
-    createTrip.mutate(values);
+  function handleGenerate(values: TripPlanValues) {
+    generateItinerary.mutate(values, {
+      onSuccess: ({ stops }) => {
+        setGeneratedStops(stops);
+        setGenerated(true);
+      },
+    });
+  }
+
+  function handleSave(values: TripPlanValues) {
+    createTrip.mutate({
+      values,
+      stops: mode === "manual" ? manualStops : generated ? generatedStops : [],
+    });
   }
 
   return (
@@ -173,18 +194,39 @@ export function PlanBuilder() {
           <Sparkles className="size-3.5" /> Your next Malaysia story
         </Badge>
         <h1 className="text-4xl font-medium tracking-[-0.06em] sm:text-6xl">
-           Let&apos;s make a <span className="text-brand-red">plan.</span>
+          {mode === "ai" ? "Plan with " : "Build your "}
+          <span className="text-brand-red">
+            {mode === "ai" ? "AI." : "own itinerary."}
+          </span>
         </h1>
         <p className="max-w-xl text-sm leading-6 text-muted-foreground sm:text-base">
           Name your trip, pick one or more states, and set the times that work
           for you.
         </p>
+        {mode === "manual" && (
+          <div className="flex justify-end">
+            <Button
+              type="button"
+              onClick={submitForm(handleSave)}
+              disabled={createTrip.isPending || resolveStop.isPending}
+              className="h-11 rounded-full bg-brand-blue px-6 text-white hover:bg-brand-blue-hover"
+            >
+              {createTrip.isPending ? "Saving trip…" : "Create trip"}
+            </Button>
+          </div>
+        )}
       </header>
 
       {/* Trip preferences and live itinerary preview */}
-      <div className="grid items-start gap-6 lg:grid-cols-[1.1fr_0.9fr]">
+      <div
+        className={
+          mode === "ai"
+            ? "grid items-start gap-6 lg:grid-cols-[1.1fr_0.9fr]"
+            : "grid items-start gap-6 lg:grid-cols-2"
+        }
+      >
         <form
-          onSubmit={submitForm(handleSubmit)}
+          onSubmit={(event) => event.preventDefault()}
           className="flex flex-col gap-6"
         >
           <Card className="rounded-[24px] border-brand-line bg-white shadow-sm">
@@ -213,6 +255,22 @@ export function PlanBuilder() {
                   </p>
                 )}
               </div>
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="trip-description">Description (optional)</Label>
+                <Textarea
+                  id="trip-description"
+                  {...register("description")}
+                  maxLength={2000}
+                  rows={3}
+                  placeholder="What is this trip about? Add any details you want to share."
+                  className="rounded-xl border-brand-line bg-background"
+                />
+                {errors.description && (
+                  <p className="text-xs text-destructive">
+                    {errors.description.message}
+                  </p>
+                )}
+              </div>
               <fieldset className="flex flex-col gap-3">
                 <legend className="text-sm font-medium">
                   Which states would you like to visit?
@@ -222,10 +280,7 @@ export function PlanBuilder() {
                 </p>
                 <div className="grid gap-3 sm:grid-cols-2">
                   {states.map((state) => {
-                    const place =
-                      destinations.find((item) => item.state === state) ??
-                      sampleDestinations.find((item) => item.state === state) ??
-                      sampleDestinations[0];
+                    const stateImage = stateImages[state];
                     const selected = selectedStates.includes(state);
                     return (
                       <Button
@@ -234,28 +289,25 @@ export function PlanBuilder() {
                         variant="ghost"
                         aria-pressed={selected}
                         onClick={() => toggleState(state)}
-                        className={`group relative h-auto min-h-24 w-full items-end justify-start overflow-hidden whitespace-normal rounded-2xl border p-4 text-left text-white transition-colors hover:bg-transparent ${selected ? "border-brand-blue ring-2 ring-brand-blue/20" : "border-transparent"}`}
+                        className={`group relative h-auto min-h-24 w-full items-end justify-start overflow-hidden whitespace-normal rounded-2xl border bg-brand-blue-deep p-4 text-left text-white transition-colors hover:bg-brand-blue-deep ${selected ? "border-brand-blue ring-2 ring-brand-blue/20" : "border-transparent"}`}
                       >
                         <span
                           className="absolute inset-0 bg-cover bg-center transition-transform duration-300 group-hover:scale-105"
                           style={
-                            place?.image
-                              ? { backgroundImage: `url('${place.image}')` }
+                            stateImage
+                              ? { backgroundImage: `url('${stateImage}')` }
                               : undefined
                           }
                           aria-hidden="true"
                         />
                         <span
-                          className="absolute inset-0 bg-gradient-to-t from-brand-blue-deep/80 to-brand-blue-deep/10"
+                          className="absolute inset-0 bg-black/50"
                           aria-hidden="true"
                         />
                         <span className="relative flex w-full items-end justify-between">
                           <span>
                             <span className="block text-sm font-semibold">
                               {state}
-                            </span>
-                            <span className="text-xs text-white/75">
-                              {place.name}
                             </span>
                           </span>
                           {selected && (
@@ -272,110 +324,115 @@ export function PlanBuilder() {
             </CardContent>
           </Card>
 
-          <Card className="rounded-[24px] border-brand-line bg-white shadow-sm">
-            <CardContent className="flex flex-col gap-6 p-5 sm:p-7">
-              <div className="flex items-start gap-3">
-                <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-brand-yellow-soft text-brand-red">
-                  <CalendarDays className="size-4" />
-                </span>
-                <div className="flex flex-col gap-1">
-                  <h2 className="font-semibold">A few trip details</h2>
-                  <p className="text-sm text-muted-foreground">
-                     We&apos;ll use these to keep your itinerary at the right pace.
-                  </p>
+          {mode === "ai" && (
+            <Card className="rounded-[24px] border-brand-line bg-white shadow-sm">
+              <CardContent className="flex flex-col gap-6 p-5 sm:p-7">
+                <div className="flex items-start gap-3">
+                  <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-brand-yellow-soft text-brand-red">
+                    <CalendarDays className="size-4" />
+                  </span>
+                  <div className="flex flex-col gap-1">
+                    <h2 className="font-semibold">A few trip details</h2>
+                    <p className="text-sm text-muted-foreground">
+                      We&apos;ll use these to keep your itinerary at the right
+                      pace.
+                    </p>
+                  </div>
                 </div>
-              </div>
-              <div className="grid gap-4 sm:grid-cols-2">
-                <Controller
-                  control={form.control}
-                  name="startDate"
-                  render={({ field }) => (
-                    <DateTimePicker
-                      id="trip-start"
-                      label="Trip starts"
-                      date={field.value}
-                      time={startTime}
-                      onDateChange={handleStartDateChange}
-                      onTimeChange={handleStartTimeChange}
-                    />
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <Controller
+                    control={form.control}
+                    name="startDate"
+                    render={({ field }) => (
+                      <DateTimePicker
+                        id="trip-start"
+                        label="Trip starts"
+                        date={field.value}
+                        time={startTime}
+                        onDateChange={handleStartDateChange}
+                        onTimeChange={handleStartTimeChange}
+                      />
+                    )}
+                  />
+                  <Controller
+                    control={form.control}
+                    name="endDate"
+                    render={({ field }) => (
+                      <DateTimePicker
+                        id="trip-end"
+                        label="Trip ends"
+                        date={field.value}
+                        time={endTime}
+                        minDate={startDate}
+                        minTime={
+                          startDate && endDate && isSameDay(startDate, endDate)
+                            ? startTime
+                            : undefined
+                        }
+                        onDateChange={(date) => {
+                          field.onChange(date);
+                          if (!date)
+                            setValue("endTime", "", { shouldValidate: true });
+                          setGenerated(false);
+                        }}
+                        onTimeChange={(time) => {
+                          setValue("endTime", time, { shouldValidate: true });
+                          setGenerated(false);
+                        }}
+                      />
+                    )}
+                  />
+                  {(errors.startDate || errors.endDate) && (
+                    <p className="text-xs text-destructive sm:col-span-2">
+                      {errors.startDate?.message || errors.endDate?.message}
+                    </p>
                   )}
-                />
-                <Controller
-                  control={form.control}
-                  name="endDate"
-                  render={({ field }) => (
-                    <DateTimePicker
-                      id="trip-end"
-                      label="Trip ends"
-                      date={field.value}
-                      time={endTime}
-                      minDate={startDate}
-                      minTime={
-                        startDate && endDate && isSameDay(startDate, endDate)
-                          ? startTime
-                          : undefined
-                      }
-                      onDateChange={(date) => {
-                        field.onChange(date);
-                        if (!date)
-                          setValue("endTime", "", { shouldValidate: true });
-                        setGenerated(false);
-                      }}
-                      onTimeChange={(time) => {
-                        setValue("endTime", time, { shouldValidate: true });
-                        setGenerated(false);
-                      }}
-                    />
-                  )}
-                />
-                {(errors.startDate || errors.endDate) && (
-                  <p className="text-xs text-destructive sm:col-span-2">
-                    {errors.startDate?.message || errors.endDate?.message}
-                  </p>
-                )}
-              </div>
-              <div className="flex flex-col gap-4">
-                <Label
-                  htmlFor="trip-travellers"
-                  className="text-sm font-medium"
-                >
-                   Who&apos;s going?
-                </Label>
-                <Controller
-                  control={form.control}
-                  name="travellers"
-                  render={({ field }) => (
-                    <Select
-                      value={field.value}
-                      onValueChange={(value) => {
-                        field.onChange(String(value ?? "Just me"));
-                        setGenerated(false);
-                      }}
-                    >
-                      <SelectTrigger
-                        id="trip-travellers"
-                        className="h-11 w-full rounded-xl border-brand-line px-3"
+                </div>
+                <div className="flex flex-col gap-4">
+                  <Label
+                    htmlFor="trip-travellers"
+                    className="text-sm font-medium"
+                  >
+                    Who&apos;s going?
+                  </Label>
+                  <Controller
+                    control={form.control}
+                    name="travellers"
+                    render={({ field }) => (
+                      <Select
+                        value={field.value}
+                        onValueChange={(value) => {
+                          field.onChange(String(value ?? "Just me"));
+                          setGenerated(false);
+                        }}
                       >
-                        <Users className="size-4 text-muted-foreground" />
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Just me">Just me</SelectItem>
-                        <SelectItem value="Two of us">Two of us</SelectItem>
-                        <SelectItem value="Friends">Friends</SelectItem>
-                        <SelectItem value="Family">Family</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  )}
-                />
-              </div>
-              <fieldset className="flex flex-col gap-3">
-                <legend className="text-sm font-medium">
-                  What kind of pace feels right?
-                </legend>
-                <div className="flex flex-wrap gap-2">
-                  {["A little of everything", "Take it slow", "Pack it in"].map(
-                    (item) => (
+                        <SelectTrigger
+                          id="trip-travellers"
+                          className="h-11 w-full rounded-xl border-brand-line px-3"
+                        >
+                          <Users className="size-4 text-muted-foreground" />
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Just me">Just me</SelectItem>
+                          <SelectItem value="Two of us">Two of us</SelectItem>
+                          <SelectItem value="Friends">Friends</SelectItem>
+                          <SelectItem value="Family">Family</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    )}
+                  />
+                </div>
+                <fieldset className="flex flex-col gap-3">
+                  <legend className="text-sm font-medium">
+                    What kind of pace feels right?
+                  </legend>
+                  <div className="flex flex-wrap gap-2">
+                    {[
+                      "A little of everything",
+                      "Take it slow",
+                      "Pack it in",
+                    ].map((item) => (
                       <Button
                         key={item}
                         type="button"
@@ -388,51 +445,71 @@ export function PlanBuilder() {
                       >
                         {item}
                       </Button>
-                    ),
-                  )}
-                </div>
-              </fieldset>
-              <fieldset className="flex flex-col gap-3">
-                <legend className="text-sm font-medium">
-                  What are you into?
-                </legend>
-                <div className="flex flex-wrap gap-2">
-                  {interests.map((interest) => (
-                    <Button
-                      key={interest}
-                      type="button"
-                      onClick={() => toggleInterest(interest)}
-                      variant={
-                        selectedInterests.includes(interest)
-                          ? "secondary"
-                          : "outline"
-                      }
-                      className={`h-9 rounded-full px-4 text-xs ${selectedInterests.includes(interest) ? "bg-brand-blue-soft text-brand-blue hover:bg-brand-blue-soft" : "border-brand-line text-muted-foreground"}`}
-                    >
-                      {interest}
-                    </Button>
-                  ))}
-                </div>
-              </fieldset>
-            </CardContent>
-          </Card>
+                    ))}
+                  </div>
+                </fieldset>
+                <fieldset className="flex flex-col gap-3">
+                  <legend className="text-sm font-medium">
+                    What are you into?
+                  </legend>
+                  <div className="flex flex-wrap gap-2">
+                    {interests.map((interest) => (
+                      <Button
+                        key={interest}
+                        type="button"
+                        onClick={() => toggleInterest(interest)}
+                        variant={
+                          selectedInterests.includes(interest)
+                            ? "secondary"
+                            : "outline"
+                        }
+                        className={`h-9 rounded-full px-4 text-xs ${selectedInterests.includes(interest) ? "bg-brand-blue-soft text-brand-blue hover:bg-brand-blue-soft" : "border-brand-line text-muted-foreground"}`}
+                      >
+                        {interest}
+                      </Button>
+                    ))}
+                  </div>
+                </fieldset>
+              </CardContent>
+            </Card>
+          )}
+
           <div className="flex flex-col gap-3 sm:flex-row">
-            <Button
-              type="submit"
-              disabled={createTrip.isPending}
-              className="h-12 flex-1 rounded-full bg-brand-blue text-white hover:bg-brand-blue-hover"
-            >
-              <Sparkles className="size-4" />{" "}
-              {createTrip.isPending ? "Saving trip…" : "Build my itinerary"}{" "}
-              <ArrowRight className="size-4" />
-            </Button>
-            <Button
-              type="submit"
-              variant="outline"
-              className="h-12 rounded-full border-brand-line bg-white px-6"
-            >
-              Start with a blank trip
-            </Button>
+            {mode === "ai" && (
+              <Button
+                type="button"
+                onClick={submitForm(handleGenerate)}
+                disabled={generateItinerary.isPending || createTrip.isPending}
+                className="h-12 flex-1 rounded-full bg-brand-blue text-white hover:bg-brand-blue-hover"
+              >
+                <Sparkles className="size-4" />{" "}
+                {generateItinerary.isPending
+                  ? "Building your route…"
+                  : generated
+                    ? "Regenerate with AI"
+                    : "Generate with AI"}{" "}
+                <ArrowRight className="size-4" />
+              </Button>
+            )}
+            {mode === "ai" && (
+              <Button
+                type="button"
+                onClick={submitForm(handleSave)}
+                disabled={
+                  createTrip.isPending ||
+                  generateItinerary.isPending ||
+                  resolveStop.isPending
+                }
+                variant="outline"
+                className="h-12 rounded-full px-6"
+              >
+                {createTrip.isPending
+                  ? "Saving trip…"
+                  : generated
+                    ? "Save itinerary"
+                    : "Start with a blank trip"}
+              </Button>
+            )}
           </div>
           {(errors.states || errors.endTime) && (
             <p role="alert" className="text-sm text-destructive">
@@ -444,120 +521,206 @@ export function PlanBuilder() {
               {createTrip.error.message}
             </p>
           )}
-        </form>
-
-        <Card className="overflow-hidden rounded-[24px] border-brand-line bg-white shadow-sm lg:sticky lg:top-6">
-          <div className="relative h-56 bg-brand-blue-soft">
-            <div
-              className="absolute inset-0 bg-cover bg-center"
-              style={{ backgroundImage: `url('${chosenPlace.image}')` }}
-              aria-hidden="true"
-            />
-            <div
-              className="absolute inset-0 bg-gradient-to-t from-brand-blue-deep/70 to-transparent"
-              aria-hidden="true"
-            />
-            <Badge className="absolute left-5 top-5 rounded-full border border-white/25 bg-white/15 text-white backdrop-blur hover:bg-white/15">
-              LIVE PREVIEW
-            </Badge>
-            <div className="absolute bottom-5 left-5 flex flex-col gap-1 text-white">
-              <span className="text-xs text-white/75">
-                {selectedStates.join(" · ")}
-              </span>
-              <h2 className="text-2xl font-medium">
-                {tripName || "Name your trip"}
-              </h2>
-            </div>
-          </div>
-          <CardContent className="flex flex-col gap-5 p-5 sm:p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs text-muted-foreground">
-                  Your trip outline
-                </p>
-                <h3 className="text-lg font-semibold">
-                  {tripName || `${selectedStates[0]} getaway`}
-                </h3>
-              </div>
-              <Badge
-                variant="secondary"
-                className="rounded-full bg-brand-blue-soft text-brand-blue"
-              >
-                {durationLabel}
-              </Badge>
-            </div>
-            {(startDate || endDate) && (
-              <p className="text-xs text-muted-foreground">
-                {startDate
-                  ? `Starts ${format(startDate, "MMM d, yyyy")} at ${formatTime(startTime)}`
-                  : "Start date not set"}
-                {endDate
-                  ? ` · Ends ${format(endDate, "MMM d, yyyy")} at ${formatTime(endTime)}`
-                  : " · End date not set"}
-              </p>
-            )}
-            <p className="text-xs text-muted-foreground">
-              Travelling: {travellers.toLowerCase()}
+          {generateItinerary.error && (
+            <p role="alert" className="text-sm text-destructive">
+              {generateItinerary.error.message}
             </p>
-            <div className="flex flex-col gap-0">
-              {[
-                ...Array.from(
-                  { length: Math.min(tripDays, 5) },
-                  (_, index) => ({
-                    day: `DAY ${index + 1}`,
-                    title:
-                      index === 0
-                        ? selectedInterests.includes("Local food")
-                          ? "A taste of the neighbourhood"
-                          : "Get to know the place"
-                        : index === tripDays - 1
-                          ? "One last stop before home"
-                          : selectedInterests.includes("Culture")
-                            ? "Local stories & slow wandering"
-                            : "Follow a local favourite",
-                    desc: `${selectedStates[Math.min(index, selectedStates.length - 1)]} · ${index === 0 ? "an easy first day" : "leave room to explore"}`,
-                  }),
-                ),
-              ].map((item, index) => (
-                <div
-                  key={item.day}
-                  className="grid grid-cols-[34px_1fr] gap-x-3"
-                >
-                  <span
-                    className={`relative z-10 grid size-[34px] place-items-center rounded-full ${index === 1 ? "bg-brand-red-soft text-brand-red" : "bg-brand-blue-soft text-brand-blue"}`}
+          )}
+        </form>
+        {mode === "manual" && (
+          <div className="flex min-w-0 flex-col gap-6">
+            {" "}
+            <TripStopManager
+              pending={resolveStop.isPending || createTrip.isPending}
+              error={resolveStop.error?.message}
+              onAdd={async (values) => {
+                const stop = await resolveStop.mutateAsync(values);
+                setManualStops((current) => [...current, stop]);
+              }}
+            />
+            {/* Manual stops are real draft entries, saved with the trip. */}
+            <section className="flex flex-col gap-4">
+              <h2 className="text-xl font-semibold">Your stops</h2>
+              {/* Daily itinerary cards include every detail entered for a stop. */}
+              {Array.from(new Set(manualStops.map((stop) => stop.day)))
+                .sort((a, b) => a - b)
+                .map((day) => (
+                  <Card
+                    key={day}
+                    className="rounded-[22px] border-brand-line bg-white shadow-none"
                   >
-                    <MapPin className="size-4" />
-                  </span>
-                  <div className="flex flex-col gap-1 pb-5">
-                    <p className="text-[10px] font-semibold tracking-[0.12em] text-muted-foreground">
-                      {item.day}
-                    </p>
-                    <p className="text-sm font-medium">{item.title}</p>
-                    <p className="text-xs text-muted-foreground">{item.desc}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-            {generated ? (
-              <div className="flex flex-col gap-2 rounded-2xl bg-brand-blue-soft p-4">
-                <p className="flex items-center gap-2 text-sm font-medium text-brand-blue">
-                  <Check className="size-4" /> Preview updated
-                </p>
-                <p className="text-xs leading-5 text-muted-foreground">
-                  {style} ·{" "}
-                  {selectedInterests.length
-                    ? selectedInterests.join(", ")
-                    : "No interests selected yet"}
-                </p>
+                    <CardContent className="flex flex-col gap-5 p-5 sm:p-6">
+                      <div className="flex items-center justify-between gap-3 border-b border-brand-line pb-4">
+                        <div className="flex items-center gap-3">
+                          <span className="grid size-9 place-items-center rounded-xl bg-brand-blue-soft text-brand-blue">
+                            <CalendarDays className="size-4" />
+                          </span>
+                          <h3 className="font-semibold">Day {day}</h3>
+                        </div>
+                        <span className="text-xs text-muted-foreground">
+                          {
+                            manualStops.filter((stop) => stop.day === day)
+                              .length
+                          }{" "}
+                          stops
+                        </span>
+                      </div>
+                      <div className="flex flex-col gap-5">
+                        {manualStops.map((stop, index) =>
+                          stop.day !== day ? null : (
+                            <div key={index} className="flex items-start gap-3">
+                              <span className="grid size-9 shrink-0 place-items-center rounded-full bg-brand-blue-soft text-brand-blue">
+                                <MapPin className="size-4" />
+                              </span>
+                              <div className="flex min-w-0 flex-1 flex-col gap-2">
+                                <p className="text-xs font-medium text-muted-foreground">
+                                  {formatTime(stop.startTime)}–
+                                  {formatTime(stop.endTime)}
+                                </p>
+                                <h4 className="break-words font-medium">
+                                  {stop.title}
+                                </h4>
+                                {stop.description && (
+                                  <p className="whitespace-pre-wrap break-words text-sm leading-6 text-muted-foreground">
+                                    {stop.description}
+                                  </p>
+                                )}
+                              </div>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                aria-label={"Remove " + stop.title}
+                                disabled={createTrip.isPending}
+                                onClick={() =>
+                                  setManualStops((current) =>
+                                    current.filter((_, i) => i !== index),
+                                  )
+                                }
+                                className="shrink-0 rounded-full text-destructive hover:bg-destructive/10 hover:text-destructive"
+                              >
+                                <Trash2 className="size-4" />
+                              </Button>
+                            </div>
+                          ),
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+            </section>
+          </div>
+        )}
+
+        {mode === "ai" && (
+          <Card className="overflow-hidden rounded-[24px] border-brand-line bg-white shadow-sm lg:sticky lg:top-6">
+            <div className="relative h-56 bg-brand-blue-soft">
+              <div
+                className="absolute inset-0 bg-cover bg-center"
+                style={
+                  selectedStateImage
+                    ? { backgroundImage: `url('${selectedStateImage}')` }
+                    : undefined
+                }
+                aria-hidden="true"
+              />
+              <div
+                className="absolute inset-0 bg-black/50"
+                aria-hidden="true"
+              />
+              <Badge className="absolute left-5 top-5 rounded-full border border-white/25 bg-white/15 text-white backdrop-blur hover:bg-white/15">
+                LIVE PREVIEW
+              </Badge>
+              <div className="absolute bottom-5 left-5 flex flex-col gap-1 text-white">
+                <span className="text-xs text-white/75">
+                  {selectedStates.join(" · ")}
+                </span>
+                <h2 className="text-2xl font-medium">
+                  {tripName || "Name your trip"}
+                </h2>
               </div>
-            ) : (
-              <p className="flex items-center gap-2 rounded-xl bg-brand-surface-muted px-4 py-3 text-xs text-muted-foreground">
-                <Compass className="size-4 text-brand-blue" /> Your plan will
-                take shape as you choose what matters.
+            </div>
+            <CardContent className="flex flex-col gap-5 p-5 sm:p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs text-muted-foreground">
+                    Your trip outline
+                  </p>
+                  <h3 className="text-lg font-semibold">
+                    {tripName || "Name your trip"}
+                  </h3>
+                </div>
+                <Badge
+                  variant="secondary"
+                  className="rounded-full bg-brand-blue-soft text-brand-blue"
+                >
+                  {durationLabel}
+                </Badge>
+              </div>
+              {(startDate || endDate) && (
+                <p className="text-xs text-muted-foreground">
+                  {startDate
+                    ? `Starts ${format(startDate, "MMM d, yyyy")} at ${formatTime(startTime)}`
+                    : "Start date not set"}
+                  {endDate
+                    ? ` · Ends ${format(endDate, "MMM d, yyyy")} at ${formatTime(endTime)}`
+                    : " · End date not set"}
+                </p>
+              )}
+              <p className="text-xs text-muted-foreground">
+                Travelling: {travellers.toLowerCase()}
               </p>
-            )}
-          </CardContent>
-        </Card>
+              <div className="flex flex-col gap-0">
+                {(!generated
+                  ? []
+                  : generatedStops.map((stop) => ({
+                      day: "DAY " + stop.day + " · " + stop.startTime,
+                      title: stop.title,
+                      desc: stop.area,
+                    }))
+                ).map((item, index) => (
+                  <div
+                    key={item.day}
+                    className="grid grid-cols-[34px_1fr] gap-x-3"
+                  >
+                    <span
+                      className={`relative z-10 grid size-[34px] place-items-center rounded-full ${index === 1 ? "bg-brand-red-soft text-brand-red" : "bg-brand-blue-soft text-brand-blue"}`}
+                    >
+                      <MapPin className="size-4" />
+                    </span>
+                    <div className="flex flex-col gap-1 pb-5">
+                      <p className="text-[10px] font-semibold tracking-[0.12em] text-muted-foreground">
+                        {item.day}
+                      </p>
+                      <p className="text-sm font-medium">{item.title}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {item.desc}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              {generated ? (
+                <div className="flex flex-col gap-2 rounded-2xl bg-brand-blue-soft p-4">
+                  <p className="flex items-center gap-2 text-sm font-medium text-brand-blue">
+                    <Check className="size-4" /> Preview updated
+                  </p>
+                  <p className="text-xs leading-5 text-muted-foreground">
+                    {style} ·{" "}
+                    {selectedInterests.length
+                      ? selectedInterests.join(", ")
+                      : "No interests selected yet"}
+                  </p>
+                </div>
+              ) : (
+                <p className="flex items-center gap-2 rounded-xl bg-brand-surface-muted px-4 py-3 text-xs text-muted-foreground">
+                  <Compass className="size-4 text-brand-blue" /> Generate an
+                  itinerary to see your actual stops here.
+                </p>
+              )}
+            </CardContent>
+          </Card>
+        )}
       </div>
     </div>
   );

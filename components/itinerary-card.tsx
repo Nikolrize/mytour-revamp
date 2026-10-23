@@ -1,3 +1,5 @@
+import { TripStatusBadge } from "@/components/trip-status-badge";
+import { TripTags } from "@/components/trip-tags";
 import Link from "next/link";
 import { ArrowRight, Heart, MapPin, Star } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -16,66 +18,65 @@ export function ItineraryCard({
   showAuthor = true,
 }: ItineraryCardProps) {
   return (
-    <Card
-      className="grid h-[33rem] grid-rows-[11rem_minmax(0,1fr)] overflow-hidden rounded-[24px] border-brand-line bg-white p-0 shadow-sm sm:h-[31rem]"
-    >
-      <div
-        className="relative min-h-[9rem] bg-brand-blue-soft"
-      >
+    <Card className="grid h-full min-h-[26rem] grid-rows-[11rem_1fr] gap-0 overflow-hidden rounded-[24px] border-brand-line bg-white p-0 shadow-sm">
+      <div className="relative min-h-[9rem] bg-brand-blue-soft">
         <div
           className="absolute inset-0 bg-cover bg-center"
           style={{ backgroundImage: `url('${itinerary.image}')` }}
           aria-hidden="true"
         />
         <div
-          className="absolute inset-0 bg-gradient-to-t from-brand-blue-deep/60 to-transparent"
+          className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/40 to-transparent"
           aria-hidden="true"
         />
-        <Badge className="absolute left-5 top-5 rounded-full bg-white/90 px-3 py-1.5 text-brand-blue hover:bg-white/90">
-          {itinerary.category.toUpperCase()}
-        </Badge>
-        <p className="absolute bottom-5 left-5 flex items-center gap-1 text-xs text-white">
-          <MapPin className="size-3.5" /> {itinerary.location}
-        </p>
+        <div className="absolute inset-x-5 bottom-5 flex min-w-0 flex-col gap-1.5 text-white">
+          <h2
+            className="truncate text-xl font-semibold tracking-tight"
+            title={itinerary.title}
+          >
+            {itinerary.title}
+          </h2>
+          {(itinerary.description || itinerary.note) && (
+            <p className="line-clamp-2 break-words text-sm leading-5 text-white/90">
+              {itinerary.description || itinerary.note}
+            </p>
+          )}
+          <p className="flex min-w-0 items-center gap-1 text-xs text-white/90">
+            <MapPin className="size-3.5 shrink-0" />
+            <span className="truncate">{itinerary.location}</span>
+          </p>
+        </div>
       </div>
-      <CardContent className="flex min-h-0 flex-col justify-between gap-4 overflow-hidden p-4 sm:p-5">
+      <CardContent className="flex min-w-0 flex-col gap-4 p-4 sm:p-5">
         <div className="flex flex-col gap-3">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between gap-3">
             {showAuthor ? (
-              <div className="flex items-center gap-3">
+              <div className="flex min-w-0 items-center gap-3">
                 <Avatar className="size-10 shrink-0">
                   <AvatarFallback className="bg-brand-yellow-soft text-sm font-semibold text-brand-red-deep">
                     {getInitials(itinerary.author)}
                   </AvatarFallback>
                 </Avatar>
-                <div className="flex flex-col gap-0.5">
-                  <p className="text-sm font-semibold">{itinerary.author}</p>
+                <div className="flex min-w-0 flex-col gap-0.5">
+                  <p
+                    className="truncate text-sm font-semibold"
+                    title={itinerary.author}
+                  >
+                    {itinerary.author}
+                  </p>
                   <p className="text-xs text-muted-foreground">
                     {itinerary.location} · local traveller
                   </p>
                 </div>
               </div>
             ) : (
-              <Badge
-                variant="outline"
-                className="rounded-full border-brand-line px-3 py-1 text-muted-foreground"
-              >
-                {itinerary.status}
-              </Badge>
+              <TripStatusBadge status={itinerary.status} />
             )}
-            <span className="flex items-center gap-1 text-xs font-medium text-brand-red">
+            <span className="flex shrink-0 items-center gap-1 text-xs font-medium text-brand-red">
               <Star className="size-3.5 fill-current" /> {itinerary.rating}
             </span>
           </div>
-          <div className="flex flex-col gap-2">
-            <h2 className="text-xl font-medium tracking-[-0.045em]">
-              {itinerary.title}
-            </h2>
-            <p className="text-sm font-medium">{itinerary.note}</p>
-            <p className="line-clamp-2 text-sm leading-5 text-muted-foreground">
-              {itinerary.description}
-            </p>
-          </div>
+
           <div className="flex flex-wrap gap-2">
             <Badge
               variant="outline"
@@ -83,12 +84,7 @@ export function ItineraryCard({
             >
               {itinerary.days}
             </Badge>
-            <Badge
-              variant="outline"
-              className="rounded-full border-brand-line px-3 py-1 text-muted-foreground"
-            >
-              {itinerary.category}
-            </Badge>
+
             <Badge
               variant="outline"
               className="rounded-full border-brand-line px-3 py-1 text-muted-foreground"
@@ -97,7 +93,12 @@ export function ItineraryCard({
             </Badge>
           </div>
         </div>
-        <div className="flex items-center justify-between border-t border-brand-line pt-4">
+        {!!itinerary.interests?.length && (
+          <div className="flex flex-wrap gap-2" aria-label="Trip interests">
+            <TripTags interests={itinerary.interests} limit={3} />
+          </div>
+        )}
+        <div className="mt-auto flex shrink-0 items-center justify-between gap-2 border-t border-brand-line pt-3">
           <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
             <Heart className="size-4" /> {itinerary.saves} saves
           </span>

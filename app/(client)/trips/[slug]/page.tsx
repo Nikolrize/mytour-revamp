@@ -1,17 +1,18 @@
 "use client";
 
+import { ConfirmAction } from "@/components/confirm-action";
+import { TripStatusBadge } from "@/components/trip-status-badge";
+import { TripTags } from "@/components/trip-tags";
 import Link from "next/link";
-import { Suspense } from "react";
+import { Suspense, useState } from "react";
 import { useParams } from "next/navigation";
 import {
   ArrowLeft,
-  ArrowRight,
   CalendarDays,
   Clock3,
   MapPin,
-  Share2,
-  Sparkles,
   Star,
+  Trash2,
 } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -20,25 +21,66 @@ import { Card, CardContent } from "@/components/ui/card";
 import { TripComments } from "@/components/trip-comments";
 import { getInitials } from "@/lib/utils";
 import { useTripDetails } from "@/hooks/use-trip-details";
+import { useSaveTrip, useUpdateTripVisibility } from "@/hooks/use-trips";
+import { RouteMap } from "@/components/route-map";
+import { TripStopEditor } from "@/components/trip-stop-editor";
+import { TripActions } from "@/components/trip-actions";
+import { TripStopManager } from "@/components/trip-stop-manager";
+import { useTripStops } from "@/hooks/use-trip-stops";
 
 export default function TripDetailPage() {
   return (
-    <Suspense fallback={<div className="flex min-h-[50svh] w-full items-center justify-center text-sm text-muted-foreground">Loading trip…</div>}>
-      <TripDetailContent />
+    <Suspense
+      fallback={
+        <div className="flex min-h-[50svh] w-full items-center justify-center text-sm text-muted-foreground">
+          Loading trip…
+        </div>
+      }
+    >
+      <TripDetailRoute />
     </Suspense>
   );
+}
+
+function TripDetailRoute() {
+  const { slug } = useParams<{ slug: string }>();
+  return <TripDetailContent key={slug} />;
 }
 
 function TripDetailContent() {
   const { slug } = useParams<{ slug: string }>();
   const tripQuery = useTripDetails(slug);
   const trip = tripQuery.data?.trip;
+  const isOwner = tripQuery.data?.isOwner ?? false;
+  const [editingTripId, setEditingTripId] = useState<string | null>(null);
+  const isEditing = isOwner && editingTripId === slug;
+  const saved = useSaveTrip(slug, Boolean(trip && trip.isPublic && !isOwner));
+  const visibility = useUpdateTripVisibility(slug);
+  const { remove } = useTripStops(slug, false);
 
   if (tripQuery.isPending) {
-    return <div className="flex min-h-[50svh] w-full items-center justify-center text-sm text-muted-foreground">Loading trip…</div>;
+    return (
+      <div className="flex min-h-[50svh] w-full items-center justify-center text-sm text-muted-foreground">
+        Loading trip…
+      </div>
+    );
   }
   if (tripQuery.error || !trip) {
-    return <div className="flex min-h-[50svh] w-full flex-col items-center justify-center gap-3 text-center"><h1 className="text-2xl font-semibold">Trip not found</h1><p className="text-sm text-muted-foreground">{tripQuery.error?.message ?? "This trip may have been removed or is private."}</p><Link href="/community" className="text-sm font-medium text-brand-blue hover:underline">Back to community</Link></div>;
+    return (
+      <div className="flex min-h-[50svh] w-full flex-col items-center justify-center gap-3 text-center">
+        <h1 className="text-2xl font-semibold">Trip not found</h1>
+        <p className="text-sm text-muted-foreground">
+          {tripQuery.error?.message ??
+            "This trip may have been removed or is private."}
+        </p>
+        <Link
+          href="/explore"
+          className="text-sm font-medium text-brand-blue hover:underline"
+        >
+          Back to Explore
+        </Link>
+      </div>
+    );
   }
 
   const groupedStops = trip.stops.reduce<Record<number, typeof trip.stops>>(
@@ -55,26 +97,24 @@ function TripDetailContent() {
       {/* Trip detail heading */}
       <div className="flex flex-col gap-5">
         <Link
-          href={trip.isPublic ? "/community" : "/trips"}
+          href={trip.isPublic ? "/explore" : "/trips"}
           className="flex w-fit items-center gap-2 text-sm font-medium text-muted-foreground transition-colors hover:text-brand-blue"
         >
           <ArrowLeft className="size-4" /> Back to{" "}
-          {trip.isPublic ? "community" : "my trips"}
+          {trip.isPublic ? "Explore" : "my trips"}
         </Link>
         <div className="relative flex min-h-[40svh] flex-col justify-end overflow-hidden rounded-[28px] bg-brand-blue-deep p-6 text-white sm:min-h-[46svh] sm:p-10">
           <div
-            className="absolute inset-0 bg-cover bg-center opacity-80"
+            className="absolute inset-0 bg-cover bg-center"
             style={{ backgroundImage: `url('${trip.image}')` }}
             aria-hidden="true"
           />
-          <div
-            className="absolute inset-0 bg-gradient-to-t from-brand-blue-deep/90 via-brand-blue-deep/30 to-transparent"
-            aria-hidden="true"
-          />
+          <div className="absolute inset-0 bg-black/50" aria-hidden="true" />
+          {/* Automatic trip status */}
+          <div className="absolute top-6 left-6 z-10 sm:top-10 sm:left-10">
+            <TripStatusBadge status={trip.status} />
+          </div>
           <div className="relative flex flex-col gap-4">
-            <Badge className="w-fit rounded-full border border-white/25 bg-white/15 text-white backdrop-blur hover:bg-white/15">
-              {trip.category}
-            </Badge>
             <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
               <div className="flex max-w-2xl flex-col gap-2">
                 <p className="flex items-center gap-1.5 text-sm text-white/75">
@@ -83,32 +123,80 @@ function TripDetailContent() {
                 <h1 className="text-4xl font-medium tracking-[-0.06em] sm:text-6xl">
                   {trip.title}
                 </h1>
-                <p className="text-sm text-white/80 sm:text-base">
-                  {trip.note}
-                </p>
+                {trip.note && (
+                  <p className="text-sm text-white/80 sm:text-base">
+                    {trip.note}
+                  </p>
+                )}
               </div>
               <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  className="h-10 rounded-full border-white/40 bg-white/10 text-white hover:bg-white/20 hover:text-white"
-                >
-                  <Share2 className="size-4" /> Share
-                </Button>
-                <Button
-                  nativeButton={false}
-                  render={<Link href="/plan" />}
-                  className="h-10 rounded-full bg-brand-yellow px-4 text-foreground hover:bg-brand-yellow-hover"
-                >
-                  Use this route <ArrowRight className="size-4" />
-                </Button>
+                {isOwner ? (
+                  <ConfirmAction
+                    title={
+                      trip.isPublic
+                        ? "Are you sure you want to make this trip private?"
+                        : "Are you sure you want to publish this trip?"
+                    }
+                    description={
+                      trip.isPublic
+                        ? "This trip will disappear from Explore and will no longer be available through community post attachments."
+                        : "Your itinerary and description will be visible in Explore. Other travellers can view, save, and copy it."
+                    }
+                    actionLabel={
+                      trip.isPublic ? "Make private" : "Publish in Explore"
+                    }
+                    onConfirm={() => visibility.mutateAsync(!trip.isPublic)}
+                    pending={visibility.isPending}
+                    error={visibility.error?.message}
+                    variant="default"
+                    className="h-11 rounded-full bg-brand-yellow px-5 font-semibold text-foreground shadow-md hover:bg-brand-yellow-hover"
+                  >
+                    {trip.isPublic ? "Make private" : "Publish in Explore"}
+                  </ConfirmAction>
+                ) : trip.isPublic ? (
+                  <Button
+                    variant="outline"
+                    disabled={saved.toggleSave.isPending}
+                    onClick={() => saved.toggleSave.mutate()}
+                    className="h-10 rounded-full border-white/40 bg-white/10 text-white hover:bg-white/20 hover:text-white"
+                  >
+                    {saved.isSaved ? "Saved" : "Save trip"}
+                  </Button>
+                ) : null}
               </div>
             </div>
           </div>
         </div>
       </div>
 
+      {/* Trip interest tags */}
+      {!!trip.interests?.length && (
+        <div
+          className="flex flex-wrap items-center gap-2"
+          aria-label="Trip interests"
+        >
+          <TripTags interests={trip.interests} />
+        </div>
+      )}
+      <TripActions
+        key={slug}
+        trip={trip}
+        isOwner={isOwner}
+        isEditing={isEditing}
+        onEditingChange={(enabled) => setEditingTripId(enabled ? slug : null)}
+      />
+      {isEditing && (
+        <p
+          role="status"
+          className="rounded-xl bg-brand-blue-soft px-4 py-3 text-sm text-brand-blue"
+        >
+          Editing trip. Save each change with its action button, then choose
+          Done editing to return to view mode.
+        </p>
+      )}
+
       {/* Trip overview and day-by-day itinerary */}
-      <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(18rem,24vw)]">
+      <div className="grid items-start gap-6 md:grid-cols-2">
         <section className="flex flex-col gap-6" aria-label="Daily itinerary">
           <div className="flex items-center justify-between gap-4">
             <div className="flex flex-col gap-1">
@@ -151,7 +239,7 @@ function TripDetailContent() {
                 <div className="relative flex flex-col gap-5">
                   {stops.map((stop, index) => (
                     <div
-                      key={`${day}-${stop.place}`}
+                      key={stop.id ?? `${day}-${stop.place}-${index}`}
                       className="relative grid grid-cols-[34px_1fr] gap-x-3"
                     >
                       <span
@@ -170,7 +258,31 @@ function TripDetailContent() {
                           <Clock3 className="size-3.5" /> {stop.time}{" "}
                           <span className="px-1">·</span> {stop.area}
                         </p>
-                        <h3 className="font-medium">{stop.place}</h3>
+                        <div className="flex items-start justify-between gap-3">
+                          <h3 className="font-medium">{stop.place}</h3>
+                          <div className="flex shrink-0 items-center">
+                            {isEditing && stop.id && (
+                              <TripStopEditor tripId={slug} stop={stop} />
+                            )}
+                            {isEditing && stop.id && (
+                              <ConfirmAction
+                                title={`Are you sure you want to remove ${stop.place}?`}
+                                description="This stop will be removed from your itinerary and route map."
+                                actionLabel="Remove stop"
+                                onConfirm={() => remove.mutateAsync(stop.id!)}
+                                pending={remove.isPending}
+                                error={remove.error?.message}
+                                variant="ghost"
+                                size="icon"
+                                ariaLabel={`Remove ${stop.place}`}
+                                className="size-9 shrink-0 rounded-full text-destructive hover:bg-destructive/10 hover:text-destructive"
+                                destructive
+                              >
+                                <Trash2 className="size-4 text-destructive" />
+                              </ConfirmAction>
+                            )}
+                          </div>
+                        </div>
                         <p className="text-sm leading-6 text-muted-foreground">
                           {stop.note}
                         </p>
@@ -184,7 +296,7 @@ function TripDetailContent() {
         </section>
 
         {/* Trip metadata and route preview */}
-        <aside className="flex flex-col gap-4 lg:sticky lg:top-6">
+        <aside className="flex min-w-0 flex-col gap-4">
           <Card className="rounded-[22px] border-brand-line bg-white shadow-none">
             <CardContent className="flex flex-col gap-5 p-5">
               <h2 className="font-semibold">Trip at a glance</h2>
@@ -232,32 +344,7 @@ function TripDetailContent() {
                   Preview
                 </Badge>
               </div>
-              <div className="relative flex min-h-48 flex-col justify-between overflow-hidden rounded-2xl bg-brand-blue-soft p-4">
-                <span
-                  className="absolute inset-0 opacity-40"
-                  style={{
-                    backgroundImage:
-                      "radial-gradient(circle at 20% 30%, #ffffff 0 3%, transparent 3.5%), radial-gradient(circle at 80% 22%, #ffffff 0 4%, transparent 4.5%), radial-gradient(circle at 65% 78%, #ffffff 0 5%, transparent 5.5%), linear-gradient(135deg, transparent 45%, rgba(255,255,255,.7) 46% 49%, transparent 50%)",
-                  }}
-                  aria-hidden="true"
-                />
-                <span className="relative z-10 grid size-8 place-items-center rounded-full bg-brand-blue text-white">
-                  <MapPin className="size-4" />
-                </span>
-                <div className="relative z-10 flex items-center justify-between">
-                  <span className="h-0.5 flex-1 rotate-[-14deg] bg-brand-red" />
-                  <span className="grid size-8 place-items-center rounded-full bg-brand-red text-white">
-                    <MapPin className="size-4" />
-                  </span>
-                  <span className="h-0.5 flex-1 rotate-[12deg] bg-brand-red" />
-                  <span className="grid size-8 place-items-center rounded-full bg-brand-blue text-white">
-                    <MapPin className="size-4" />
-                  </span>
-                </div>
-                <span className="relative z-10 text-[10px] text-muted-foreground">
-                  Illustrative route order · not to scale
-                </span>
-              </div>
+              <RouteMap stops={trip.stops} />
               <p className="text-xs leading-5 text-muted-foreground">
                 {trip.stops.length} planned stops across{" "}
                 {Object.keys(groupedStops).length} days. Stop order is a guide,
@@ -265,18 +352,33 @@ function TripDetailContent() {
               </p>
             </CardContent>
           </Card>
-          <Button
-            nativeButton={false}
-            render={<Link href="/plan" />}
-            className="h-11 rounded-full bg-brand-blue text-white hover:bg-brand-blue-hover"
-          >
-            <Sparkles className="size-4" /> Make this trip yours{" "}
-            <ArrowRight className="size-4" />
-          </Button>
+
+          {/* Traveller feedback below the route preview */}
+          {trip.isPublic && (
+            <Card className="rounded-[22px] border-brand-line bg-white shadow-none">
+              <CardContent className="p-5">
+                <TripComments tripSlug={trip.slug} canReview={!isOwner} />
+              </CardContent>
+            </Card>
+          )}
         </aside>
       </div>
-      {/* Reviews and community discussion */}
-      {trip.isPublic && <TripComments tripSlug={trip.slug} />}
+      {visibility.error && (
+        <p role="alert" className="text-right text-xs text-destructive">
+          {visibility.error.message}
+        </p>
+      )}
+      {saved.toggleSave.error && (
+        <p role="alert" className="text-right text-xs text-destructive">
+          {saved.toggleSave.error.message}
+        </p>
+      )}
+      {remove.error && (
+        <p role="alert" className="text-sm text-destructive">
+          {remove.error.message}
+        </p>
+      )}
+      {isEditing && <TripStopManager tripId={slug} />}
     </div>
   );
 }

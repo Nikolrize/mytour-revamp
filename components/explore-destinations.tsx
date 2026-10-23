@@ -114,7 +114,7 @@ export function ExploreDestinations() {
                   aria-hidden="true"
                 />
                 <div
-                  className="absolute inset-0 bg-gradient-to-t from-brand-blue-deep/85 via-brand-blue-deep/10 to-brand-blue-deep/10"
+                  className="absolute inset-0 bg-black/50"
                   aria-hidden="true"
                 />
                 <CardContent className="relative flex min-h-[32svh] sm:min-h-[36svh] flex-col justify-between p-5 text-white">

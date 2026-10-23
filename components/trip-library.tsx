@@ -1,36 +1,41 @@
 "use client";
 
+import { NewPlanMenu } from "@/components/new-plan-menu";
+
 import { useMemo, useState } from "react";
-import Link from "next/link";
-import { ArrowRight, Compass, Plus, Route, Share2 } from "lucide-react";
+
+import { Compass, Route, Share2 } from "lucide-react";
 import { ItineraryCard } from "@/components/itinerary-card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { MetricCard } from "@/components/metric-card";
 import { EmptyState } from "@/components/empty-state";
-import { useMyTrips } from "@/hooks/use-trips";
+import { useMyTrips, useSavedTrips } from "@/hooks/use-trips";
 import type { Itinerary } from "@/lib/type";
 
-const filters = ["All trips", "Planning", "Ready to go", "Completed"];
+const filters = ["All trips", "Saved", "Planning", "Ongoing", "Completed"];
 const emptyTrips: Itinerary[] = [];
 
 export function TripLibrary() {
   const [activeFilter, setActiveFilter] = useState("All trips");
   const { data, isPending: loading, error } = useMyTrips();
+  const savedQuery = useSavedTrips(activeFilter === "Saved");
   const myTrips = data?.trips ?? emptyTrips;
+  const tripsToFilter =
+    activeFilter === "Saved" ? (savedQuery.data?.trips ?? emptyTrips) : myTrips;
 
   const trips = useMemo(
     () =>
-      activeFilter === "All trips"
-        ? myTrips
-        : myTrips.filter((trip) => trip.status === activeFilter),
-    [activeFilter, myTrips],
+      activeFilter === "All trips" || activeFilter === "Saved"
+        ? tripsToFilter
+        : tripsToFilter.filter((trip) => trip.status === activeFilter),
+    [activeFilter, tripsToFilter],
   );
   const planningCount = myTrips.filter(
     (trip) => trip.status === "Planning",
   ).length;
-  const readyCount = myTrips.filter(
-    (trip) => trip.status === "Ready to go",
+  const ongoingCount = myTrips.filter(
+    (trip) => trip.status === "Ongoing",
   ).length;
 
   return (
@@ -52,13 +57,10 @@ export function TripLibrary() {
               Keep your ideas, plans, and favourite routes together.
             </p>
           </div>
-          <Button
-            nativeButton={false}
-            render={<Link href="/plan" />}
+          <NewPlanMenu
+            label="Plan a new trip"
             className="h-11 w-fit shrink-0 rounded-full bg-brand-blue px-5 text-white hover:bg-brand-blue-hover"
-          >
-            <Plus className="size-4" /> Plan a new trip
-          </Button>
+          />
         </div>
       </header>
 
@@ -79,8 +81,8 @@ export function TripLibrary() {
           variant="compact"
         />
         <MetricCard
-          label="Ready to go"
-          value={readyCount}
+          label="Ongoing"
+          value={ongoingCount}
           icon={Share2}
           iconTone="bg-brand-red-soft text-brand-red"
           variant="compact"
@@ -110,14 +112,14 @@ export function TripLibrary() {
             {trips.length} {trips.length === 1 ? "trip" : "trips"}
           </span>
         </div>
-        {loading ? (
+        {loading || (activeFilter === "Saved" && savedQuery.isPending) ? (
           <p className="text-sm text-muted-foreground">Loading your trips…</p>
-        ) : error ? (
+        ) : error || (activeFilter === "Saved" && savedQuery.error) ? (
           <p
             role="alert"
             className="rounded-xl border border-destructive/30 p-5 text-sm text-destructive"
           >
-            {error.message}
+            {(activeFilter === "Saved" ? savedQuery.error : error)?.message}
           </p>
         ) : trips.length ? (
           <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
@@ -136,14 +138,7 @@ export function TripLibrary() {
             description="Start planning a trip and it will show up here."
             className="p-10"
             action={
-              <Button
-                nativeButton={false}
-                render={<Link href="/plan" />}
-                variant="outline"
-                className="rounded-full"
-              >
-                Start a trip <ArrowRight className="size-4" />
-              </Button>
+              <NewPlanMenu label="Start a trip" className="rounded-full" />
             }
           />
         )}

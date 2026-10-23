@@ -1,5 +1,4 @@
-import { ExploreDestinations } from "@/components/explore-destinations";
-
+import { ExploreTrips } from "@/components/explore-trips";
 export default function ExplorePage() {
-  return <ExploreDestinations />;
+  return <ExploreTrips />;
 }
