@@ -43,8 +43,8 @@ export function AuthPage({ mode }: AuthPageProps) {
       agreed: false,
     },
   });
-  const authMutation = useAuth(mode, () => {
-    router.replace("/trips");
+  const authMutation = useAuth(mode, (redirectTo) => {
+    router.replace(redirectTo);
     router.refresh();
   });
   const handleSubmit = form.handleSubmit((values) =>
@@ -57,17 +57,14 @@ export function AuthPage({ mode }: AuthPageProps) {
         {/* Travel brand panel */}
         <section className="relative hidden flex-col justify-between overflow-hidden bg-brand-blue-deep p-9 text-white lg:flex xl:p-12">
           <div
-            className="absolute inset-0 bg-cover bg-center opacity-70"
+            className="absolute inset-0 bg-cover bg-center"
             style={{
               backgroundImage:
                 "url('https://images.unsplash.com/photo-1596422846543-75c6fc197f07?auto=format&fit=crop&w=1400&q=85')",
             }}
             aria-hidden="true"
           />
-          <div
-            className="absolute inset-0 bg-gradient-to-b from-brand-blue-deep/85 via-brand-blue-deep/45 to-brand-blue-deep/90"
-            aria-hidden="true"
-          />
+          <div className="absolute inset-0 bg-black/50" aria-hidden="true" />
           <div className="relative flex flex-col gap-8">
             <Link
               href="/"
