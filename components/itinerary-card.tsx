@@ -1,3 +1,4 @@
+import { TripStateCover } from "@/components/trip-state-cover";
 import { TripStatusBadge } from "@/components/trip-status-badge";
 import { TripTags } from "@/components/trip-tags";
 import Link from "next/link";
@@ -20,11 +21,7 @@ export function ItineraryCard({
   return (
     <Card className="grid h-full min-h-[26rem] grid-rows-[11rem_1fr] gap-0 overflow-hidden rounded-[24px] border-brand-line bg-white p-0 shadow-sm">
       <div className="relative min-h-[9rem] bg-brand-blue-soft">
-        <div
-          className="absolute inset-0 bg-cover bg-center"
-          style={{ backgroundImage: `url('${itinerary.image}')` }}
-          aria-hidden="true"
-        />
+        <TripStateCover trip={itinerary} />
         <div
           className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/40 to-transparent"
           aria-hidden="true"
@@ -36,11 +33,7 @@ export function ItineraryCard({
           >
             {itinerary.title}
           </h2>
-          {(itinerary.description || itinerary.note) && (
-            <p className="line-clamp-2 break-words text-sm leading-5 text-white/90">
-              {itinerary.description || itinerary.note}
-            </p>
-          )}
+
           <p className="flex min-w-0 items-center gap-1 text-xs text-white/90">
             <MapPin className="size-3.5 shrink-0" />
             <span className="truncate">{itinerary.location}</span>
@@ -77,6 +70,11 @@ export function ItineraryCard({
             </span>
           </div>
 
+          {(itinerary.description || itinerary.note) && (
+            <p className="line-clamp-2 break-words text-sm leading-5 text-muted-foreground">
+              {itinerary.description || itinerary.note}
+            </p>
+          )}
           <div className="flex flex-wrap gap-2">
             <Badge
               variant="outline"
