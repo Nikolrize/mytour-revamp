@@ -193,28 +193,30 @@ export function PlanBuilder({ mode = "ai" }: { mode?: "ai" | "manual" }) {
         >
           <Sparkles className="size-3.5" /> Your next Malaysia story
         </Badge>
-        <h1 className="text-4xl font-medium tracking-[-0.06em] sm:text-6xl">
-          {mode === "ai" ? "Plan with " : "Build your "}
-          <span className="text-brand-red">
-            {mode === "ai" ? "AI." : "own itinerary."}
-          </span>
-        </h1>
+        <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
+          <h1 className="text-4xl font-medium tracking-[-0.06em] sm:text-6xl">
+            {mode === "ai" ? "Plan with " : "Build your "}
+            <span className="text-brand-red">
+              {mode === "ai" ? "AI." : "own itinerary."}
+            </span>
+          </h1>
+          {mode === "manual" && (
+            <div className="flex justify-end">
+              <Button
+                type="button"
+                onClick={submitForm(handleSave)}
+                disabled={createTrip.isPending || resolveStop.isPending}
+                className="h-11 rounded-full bg-brand-blue px-6 text-white hover:bg-brand-blue-hover"
+              >
+                {createTrip.isPending ? "Saving trip…" : "Create trip"}
+              </Button>
+            </div>
+          )}
+        </div>
         <p className="max-w-xl text-sm leading-6 text-muted-foreground sm:text-base">
           Name your trip, pick one or more states, and set the times that work
           for you.
         </p>
-        {mode === "manual" && (
-          <div className="flex justify-end">
-            <Button
-              type="button"
-              onClick={submitForm(handleSave)}
-              disabled={createTrip.isPending || resolveStop.isPending}
-              className="h-11 rounded-full bg-brand-blue px-6 text-white hover:bg-brand-blue-hover"
-            >
-              {createTrip.isPending ? "Saving trip…" : "Create trip"}
-            </Button>
-          </div>
-        )}
       </header>
 
       {/* Trip preferences and live itinerary preview */}
@@ -289,7 +291,7 @@ export function PlanBuilder({ mode = "ai" }: { mode?: "ai" | "manual" }) {
                         variant="ghost"
                         aria-pressed={selected}
                         onClick={() => toggleState(state)}
-                        className={`group relative h-auto min-h-24 w-full items-end justify-start overflow-hidden whitespace-normal rounded-2xl border bg-brand-blue-deep p-4 text-left text-white transition-colors hover:bg-brand-blue-deep ${selected ? "border-brand-blue ring-2 ring-brand-blue/20" : "border-transparent"}`}
+                        className={`group relative h-auto min-h-24 w-full items-end justify-start overflow-hidden whitespace-normal rounded-2xl border bg-brand-blue-deep p-4 text-left text-white transition-colors hover:bg-brand-blue-deep hover:text-white ${selected ? "border-brand-blue ring-2 ring-brand-blue/20" : "border-transparent"}`}
                       >
                         <span
                           className="absolute inset-0 bg-cover bg-center transition-transform duration-300 group-hover:scale-105"
@@ -491,7 +493,7 @@ export function PlanBuilder({ mode = "ai" }: { mode?: "ai" | "manual" }) {
                 <ArrowRight className="size-4" />
               </Button>
             )}
-            {mode === "ai" && (
+            {mode === "ai" && generated && (
               <Button
                 type="button"
                 onClick={submitForm(handleSave)}
@@ -503,11 +505,7 @@ export function PlanBuilder({ mode = "ai" }: { mode?: "ai" | "manual" }) {
                 variant="outline"
                 className="h-12 rounded-full px-6"
               >
-                {createTrip.isPending
-                  ? "Saving trip…"
-                  : generated
-                    ? "Save itinerary"
-                    : "Start with a blank trip"}
+                {createTrip.isPending ? "Saving trip…" : "Save itinerary"}
               </Button>
             )}
           </div>
