@@ -26,6 +26,7 @@ export type Itinerary = {
   slug: string;
   title: string;
   author: string;
+  authorAvatar?: string | null;
   location: string;
   days: string;
   category: string;
@@ -57,6 +58,7 @@ export type TravelerProfile = {
 export type TripComment = {
   id: string;
   author: string;
+  authorAvatar?: string | null;
   date: string;
   rating: number;
   message: string;

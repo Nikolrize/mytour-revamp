@@ -6,7 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import type { z } from "zod";
 import { formatDistanceToNow } from "date-fns";
 import { MessageCircle, Send, Star } from "lucide-react";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
@@ -169,6 +169,12 @@ export function TripComments({
             >
               <CardContent className="flex gap-3 p-4 sm:p-5">
                 <Avatar className="size-10 shrink-0">
+                  {comment.authorAvatar && (
+                    <AvatarImage
+                      src={comment.authorAvatar}
+                      alt={comment.author}
+                    />
+                  )}
                   <AvatarFallback className="bg-brand-blue-soft text-xs font-semibold text-brand-blue">
                     {getInitials(comment.author)}
                   </AvatarFallback>

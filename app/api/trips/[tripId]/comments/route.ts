@@ -28,7 +28,10 @@ export async function GET(
   const userIds = [...new Set((rows ?? []).map((row) => row.user_id))];
   const [profiles, ratings] = await Promise.all([
     userIds.length
-      ? supabase.from("profiles").select("id, display_name").in("id", userIds)
+      ? supabase
+          .from("profiles")
+          .select("id, display_name, avatar_url")
+          .in("id", userIds)
       : Promise.resolve({ data: [], error: null }),
     userIds.length
       ? supabase
@@ -53,6 +56,9 @@ export async function GET(
     comments: (rows ?? []).map((row) => ({
       id: row.id,
       author: names.get(row.user_id) || "Traveller",
+      authorAvatar:
+        profiles.data?.find((profile) => profile.id === row.user_id)
+          ?.avatar_url ?? null,
       date: row.created_at,
       rating: stars.get(row.user_id) ?? 0,
       message: row.content,
@@ -135,7 +141,7 @@ export async function POST(
     return NextResponse.json({ message: error.message }, { status: 400 });
   const { data: profile } = await supabase
     .from("profiles")
-    .select("display_name")
+    .select("display_name, avatar_url")
     .eq("id", user.id)
     .maybeSingle();
   return NextResponse.json(
@@ -143,6 +149,7 @@ export async function POST(
       comment: {
         id: row.id,
         author: profile?.display_name || "Traveller",
+        authorAvatar: profile?.avatar_url ?? null,
         date: row.created_at,
         rating,
         message: row.content,

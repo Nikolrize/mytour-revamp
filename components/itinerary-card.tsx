@@ -3,7 +3,7 @@ import { TripStatusBadge } from "@/components/trip-status-badge";
 import { TripTags } from "@/components/trip-tags";
 import Link from "next/link";
 import { ArrowRight, Heart, MapPin, Star } from "lucide-react";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import type { Itinerary } from "@/lib/type";
@@ -46,6 +46,12 @@ export function ItineraryCard({
             {showAuthor ? (
               <div className="flex min-w-0 items-center gap-3">
                 <Avatar className="size-10 shrink-0">
+                  {itinerary.authorAvatar && (
+                    <AvatarImage
+                      src={itinerary.authorAvatar}
+                      alt={itinerary.author}
+                    />
+                  )}
                   <AvatarFallback className="bg-brand-yellow-soft text-sm font-semibold text-brand-red-deep">
                     {getInitials(itinerary.author)}
                   </AvatarFallback>

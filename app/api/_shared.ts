@@ -1,3 +1,4 @@
+import { stateImages } from "@/lib/data";
 import { getTripStatus, getMalaysiaDate } from "@/lib/trip-status";
 import { getTripInterests } from "@/lib/trip-interests";
 import { differenceInCalendarDays } from "date-fns";
@@ -70,7 +71,10 @@ export async function mapTripsToItineraries(
         .from("trip_states")
         .select("trip_id, state_id")
         .in("trip_id", tripIds),
-      supabase.from("profiles").select("id, display_name").in("id", authorIds),
+      supabase
+        .from("profiles")
+        .select("id, display_name, avatar_url")
+        .in("id", authorIds),
       supabase
         .from("trip_ratings")
         .select("trip_id, user_id, rating")
@@ -225,6 +229,9 @@ export async function mapTripsToItineraries(
       slug: trip.id,
       title: trip.title,
       author: authors.get(trip.user_id) || "Traveller",
+      authorAvatar:
+        profileResult.data?.find((profile) => profile.id === trip.user_id)
+          ?.avatar_url ?? null,
       location: stateNames.join(", ") || "Malaysia",
       days: dayCount + (dayCount === 1 ? " day" : " days"),
       category:
@@ -246,7 +253,8 @@ export async function mapTripsToItineraries(
               : null,
           )
           .find(Boolean) ||
-        "/mytour-logo.png",
+        stateImages[stateNames[0]] ||
+        stateImages["Kuala Lumpur"],
       note: trip.description || "",
       description: trip.description || "",
       interests: getTripInterests(trip.interests, trip.description),
