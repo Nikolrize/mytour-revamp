@@ -110,10 +110,6 @@ function TripDetailContent() {
             aria-hidden="true"
           />
           <div className="absolute inset-0 bg-black/50" aria-hidden="true" />
-          {/* Automatic trip status */}
-          <div className="absolute top-6 left-6 z-10 sm:top-10 sm:left-10">
-            <TripStatusBadge status={trip.status} />
-          </div>
           <div className="relative flex flex-col gap-4">
             <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
               <div className="flex max-w-2xl flex-col gap-2">
@@ -169,22 +165,26 @@ function TripDetailContent() {
         </div>
       </div>
 
-      {/* Trip interest tags */}
-      {!!trip.interests?.length && (
+      {/* Interest tags and editing controls share the toolbar. */}
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div
-          className="flex flex-wrap items-center gap-2"
+          className="flex min-w-0 flex-1 flex-wrap items-center gap-2"
           aria-label="Trip interests"
         >
-          <TripTags interests={trip.interests} />
+          <TripTags interests={trip.interests} limit={3} />
         </div>
-      )}
-      <TripActions
-        key={slug}
-        trip={trip}
-        isOwner={isOwner}
-        isEditing={isEditing}
-        onEditingChange={(enabled) => setEditingTripId(enabled ? slug : null)}
-      />
+        <div className="shrink-0">
+          <TripActions
+            key={slug}
+            trip={trip}
+            isOwner={isOwner}
+            isEditing={isEditing}
+            onEditingChange={(enabled) =>
+              setEditingTripId(enabled ? slug : null)
+            }
+          />
+        </div>
+      </div>
       {isEditing && (
         <p
           role="status"
@@ -299,7 +299,10 @@ function TripDetailContent() {
         <aside className="flex min-w-0 flex-col gap-4">
           <Card className="rounded-[22px] border-brand-line bg-white shadow-none">
             <CardContent className="flex flex-col gap-5 p-5">
-              <h2 className="font-semibold">Trip at a glance</h2>
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <h2 className="font-semibold">Trip at a glance</h2>
+                <TripStatusBadge status={trip.status} />
+              </div>
               <div className="flex flex-col gap-4 text-sm">
                 <div className="flex items-center justify-between">
                   <span className="flex items-center gap-2 text-muted-foreground">

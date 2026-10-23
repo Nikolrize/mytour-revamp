@@ -61,7 +61,7 @@ export function TripActions({
   return (
     <div className="flex flex-col gap-3">
       {/* Owner editing and deletion, or community reuse and reporting */}
-      <div className="flex flex-wrap gap-2">
+      <div className={`flex flex-wrap gap-2 ${isOwner ? "justify-end" : ""}`}>
         {isOwner ? (
           <>
             {!isEditing ? (
