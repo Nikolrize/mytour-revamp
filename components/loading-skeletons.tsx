@@ -226,37 +226,23 @@ export function PageLoadingSkeleton({
 }
 
 export function ProfileLoadingSkeleton() {
-  return (
-    <div className="flex w-full flex-col gap-8 py-10 sm:py-14">
-      <LoadingBlock label="Loading profile">
-        <div className="flex flex-col gap-8">
-          <div className="flex flex-col gap-3">
-            <Skeleton className="h-6 w-32" />
-            <Skeleton className="h-12 w-60" />
-            <Skeleton className="h-4 w-2/3" />
+  return <div className="flex w-full flex-col gap-8 py-10 sm:py-14">
+    <LoadingBlock label="Loading profile">
+      <div className="flex flex-col gap-6 rounded-3xl border border-brand-line bg-white p-6 sm:p-8">
+        <div className="flex flex-col gap-5 sm:flex-row sm:items-center">
+          <Skeleton className="size-36 shrink-0 rounded-full sm:size-48" />
+          <div className="flex flex-1 flex-col gap-4">
+            <Skeleton className="h-9 w-2/3" /><Skeleton className="h-4 w-1/3" />
+            <Skeleton className="h-4 w-full" /><Skeleton className="h-4 w-4/5" />
+            <div className="flex gap-5"><Skeleton className="h-10 w-20" /><Skeleton className="h-10 w-20" /><Skeleton className="h-10 w-20" /></div>
           </div>
-          <div className="grid gap-5 lg:grid-cols-[1.5fr_1fr]">
-            <div className="flex items-center gap-6 rounded-3xl border border-brand-line bg-white p-6">
-              <Skeleton className="size-32 shrink-0 rounded-full sm:size-40" />
-              <div className="flex flex-1 flex-col gap-4">
-                <Skeleton className="h-7 w-2/3" />
-                <Skeleton className="h-4 w-1/2" />
-                <Skeleton className="h-4 w-full" />
-              </div>
-            </div>
-            <div className="flex flex-col gap-5 rounded-3xl border border-brand-line bg-white p-6">
-              <Skeleton className="h-6 w-36" />
-              <Skeleton className="h-7 w-full" />
-              <Skeleton className="h-7 w-full" />
-              <Skeleton className="h-7 w-full" />
-            </div>
-          </div>
-          <Skeleton className="h-7 w-40" />
+          <Skeleton className="h-10 w-28 rounded-full" />
         </div>
-      </LoadingBlock>
-      <TripCardGridSkeleton count={3} />
-    </div>
-  );
+      </div>
+      <div className="flex gap-2 pt-8"><Skeleton className="h-9 w-36 rounded-full" /><Skeleton className="h-9 w-36 rounded-full" /></div>
+    </LoadingBlock>
+    <TripCardGridSkeleton count={3} />
+  </div>;
 }
 
 export function TripDetailLoadingSkeleton() {
