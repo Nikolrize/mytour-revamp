@@ -1,57 +1,95 @@
 "use client";
 
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  keepPreviousData,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
 import { apiRequest } from "@/lib/api";
-import type { Itinerary } from "@/lib/type";
+import type { TripPageOptions, TripPageResponse } from "@/lib/type";
 
-export function useMyTrips(enabled = true) {
+// A query key per page/filter combination keeps pages cached independently.
+export function useTripPage(options: TripPageOptions = {}, enabled = true) {
+  const {
+    scope = "mine",
+    page = 1,
+    pageSize = 12,
+    search = "",
+    state = "all",
+    tags = [],
+    sort = "latest",
+    status = "all",
+    publicOnly = false,
+  } = options;
+  const filters = {
+    page,
+    pageSize,
+    search,
+    state,
+    tags,
+    sort,
+    status,
+    publicOnly,
+  };
   return useQuery({
-    queryKey: ["trips", "mine"],
-    refetchInterval: 60_000,
-    refetchOnWindowFocus: true,
+    queryKey: ["trips", scope, filters],
     enabled,
-    queryFn: () => apiRequest<{ trips: Itinerary[] }>("/api/trips"),
-  });
-}
-
-export function usePublicTrips() {
-  return useQuery({
-    queryKey: ["trips", "public"],
+    queryFn: ({ signal }) => {
+      const params = new URLSearchParams({
+        scope,
+        page: String(page),
+        pageSize: String(pageSize),
+        q: search,
+        state,
+        sort,
+        status,
+        publicOnly: String(publicOnly),
+      });
+      tags.forEach((tag) => params.append("tag", tag));
+      return apiRequest<TripPageResponse>("/api/trips?" + params, { signal });
+    },
+    placeholderData: keepPreviousData,
+    staleTime: 30_000,
     refetchInterval: 60_000,
-    refetchOnWindowFocus: true,
-    queryFn: () =>
-      apiRequest<{ trips: Itinerary[] }>("/api/trips?scope=public"),
   });
 }
-
-export function useSavedTrips(enabled = true) {
-  return useQuery({
-    queryKey: ["trips", "saved"],
-    refetchInterval: 60_000,
-    refetchOnWindowFocus: true,
-    queryFn: () => apiRequest<{ trips: Itinerary[] }>("/api/trips?scope=saved"),
-    enabled,
-  });
+export function useMyTrips(enabled = true, options: TripPageOptions = {}) {
+  return useTripPage({ ...options, scope: "mine" }, enabled);
+}
+export function usePublicTrips(options: TripPageOptions = {}) {
+  return useTripPage({ ...options, scope: "public" });
+}
+export function useSavedTrips(enabled = true, options: TripPageOptions = {}) {
+  return useTripPage({ ...options, scope: "saved" }, enabled);
 }
 
+// Read one saved flag instead of downloading the complete Saved collection.
 export function useSaveTrip(tripId: string, enabled = true) {
   const queryClient = useQueryClient();
-  const savedTrips = useSavedTrips(enabled);
-  const isSaved =
-    savedTrips.data?.trips.some((trip) => trip.slug === tripId) ?? false;
+  const key = ["trip-save-status", tripId];
+  const savedStatus = useQuery({
+    queryKey: key,
+    enabled,
+    queryFn: ({ signal }) =>
+      apiRequest<{ saved: boolean }>(`/api/trips/${tripId}/save`, { signal }),
+  });
+  const isSaved = savedStatus.data?.saved ?? false;
   const toggleSave = useMutation({
     mutationFn: () =>
-      apiRequest(`/api/trips/${tripId}/save`, {
+      apiRequest<{ saved: boolean }>(`/api/trips/${tripId}/save`, {
         method: isSaved ? "DELETE" : "POST",
       }),
-    onSuccess: async () => {
+    onSuccess: async (result) => {
+      queryClient.setQueryData(key, result);
       await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ["trips", "saved"] }),
-        queryClient.invalidateQueries({ queryKey: ["trips", "public"] }),
+        queryClient.invalidateQueries({ queryKey: ["trips"] }),
+        queryClient.invalidateQueries({ queryKey: ["trip", tripId] }),
+        queryClient.invalidateQueries({ queryKey: ["community-posts"] }),
       ]);
     },
   });
-  return { isSaved, toggleSave, savedTrips };
+  return { isSaved, toggleSave, savedStatus };
 }
 
 export function useUpdateTripVisibility(tripId: string) {

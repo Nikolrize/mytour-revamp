@@ -2,7 +2,7 @@ import { TripStateCover } from "@/components/trip-state-cover";
 import { TripStatusBadge } from "@/components/trip-status-badge";
 import { TripTags } from "@/components/trip-tags";
 import Link from "next/link";
-import { ArrowRight, Heart, MapPin, Star } from "lucide-react";
+import { ArrowRight, BookmarkCheck, Heart, MapPin, Star } from "lucide-react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
@@ -12,11 +12,13 @@ import { getInitials } from "@/lib/utils";
 type ItineraryCardProps = {
   itinerary: Itinerary;
   showAuthor?: boolean;
+  isSaved?: boolean;
 };
 
 export function ItineraryCard({
   itinerary,
   showAuthor = true,
+  isSaved = false,
 }: ItineraryCardProps) {
   return (
     <Card className="grid h-full min-h-[26rem] grid-rows-[11rem_1fr] gap-0 overflow-hidden rounded-[24px] border-brand-line bg-white p-0 shadow-sm">
@@ -26,6 +28,11 @@ export function ItineraryCard({
           className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/40 to-transparent"
           aria-hidden="true"
         />
+        {isSaved && (
+          <Badge className="absolute top-3 right-3 gap-1.5 rounded-full bg-brand-blue px-3 py-1 text-white">
+            <BookmarkCheck className="size-3.5" /> Saved
+          </Badge>
+        )}
         <div className="absolute inset-x-5 bottom-5 flex min-w-0 flex-col gap-1.5 text-white">
           <h2
             className="truncate text-xl font-semibold tracking-tight"

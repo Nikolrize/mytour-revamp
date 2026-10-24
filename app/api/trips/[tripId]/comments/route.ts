@@ -2,9 +2,12 @@ import { NextResponse } from "next/server";
 import { getApiContext } from "@/app/api/_shared";
 
 export async function GET(
-  _request: Request,
+  request: Request,
   context: { params: Promise<{ tripId: string }> },
 ) {
+  const page = Number(new URL(request.url).searchParams.get("page") || "1");
+  if (!Number.isInteger(page) || page < 1 || page > 100000)
+    return NextResponse.json({ message: "Invalid page." }, { status: 400 });
   const { supabase } = await getApiContext();
   const { tripId } = await context.params;
   const { data: trip, error: tripError } = await supabase
@@ -16,20 +19,36 @@ export async function GET(
     return NextResponse.json({ message: tripError.message }, { status: 500 });
   if (!trip?.is_public)
     return NextResponse.json({ message: "Trip not found." }, { status: 404 });
-  const { data: rows, error } = await supabase
-    .from("trip_comments")
-    .select("id, user_id, trip_id, content, created_at, updated_at")
-    .eq("trip_id", tripId)
-    .neq("user_id", trip.user_id)
-    .order("created_at", { ascending: false })
-    .limit(100);
+  const makeQuery = (head = false) =>
+    supabase
+      .from("trip_comments")
+      .select("id, user_id, trip_id, content, created_at, updated_at", {
+        count: "exact",
+        head,
+      })
+      .eq("trip_id", tripId)
+      .neq("user_id", trip.user_id)
+      .order("created_at", { ascending: false })
+      .order("id", { ascending: false });
+  const counted = await makeQuery(true);
+  if (counted.error)
+    return NextResponse.json(
+      { message: counted.error.message },
+      { status: 500 },
+    );
+  const totalPages = Math.max(1, Math.ceil((counted.count ?? 0) / 12));
+  const currentPage = Math.min(page, totalPages);
+  const { data: rows, error } = await makeQuery().range(
+    (currentPage - 1) * 12,
+    currentPage * 12 - 1,
+  );
   if (error)
     return NextResponse.json({ message: error.message }, { status: 500 });
   const userIds = [...new Set((rows ?? []).map((row) => row.user_id))];
   const [profiles, ratings] = await Promise.all([
     userIds.length
       ? supabase
-          .from("profiles")
+          .from("users")
           .select("id, display_name, avatar_url")
           .in("id", userIds)
       : Promise.resolve({ data: [], error: null }),
@@ -53,6 +72,10 @@ export async function GET(
     (ratings.data ?? []).map((rating) => [rating.user_id, rating.rating]),
   );
   return NextResponse.json({
+    page: currentPage,
+    pageSize: 12,
+    total: counted.count ?? 0,
+    totalPages,
     comments: (rows ?? []).map((row) => ({
       id: row.id,
       author: names.get(row.user_id) || "Traveller",
@@ -140,7 +163,7 @@ export async function POST(
   if (error)
     return NextResponse.json({ message: error.message }, { status: 400 });
   const { data: profile } = await supabase
-    .from("profiles")
+    .from("users")
     .select("display_name, avatar_url")
     .eq("id", user.id)
     .maybeSingle();

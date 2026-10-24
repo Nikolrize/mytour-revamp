@@ -3,17 +3,16 @@
 import { ConfirmAction } from "@/components/confirm-action";
 import { TripStatusBadge } from "@/components/trip-status-badge";
 import { TripStateCover } from "@/components/trip-state-cover";
-import { TripDistance } from "@/components/trip-distance";
 import { TripTags } from "@/components/trip-tags";
 import Link from "next/link";
 import { Suspense, useState } from "react";
-import { useParams } from "next/navigation";
+import { useProfile } from "@/hooks/use-profile";
+import { useParams, useRouter } from "next/navigation";
 import {
   ArrowLeft,
   CalendarDays,
   Clock3,
   MapPin,
-  Route,
   Star,
   Trash2,
 } from "lucide-react";
@@ -52,12 +51,21 @@ function TripDetailRoute() {
 
 function TripDetailContent() {
   const { slug } = useParams<{ slug: string }>();
+  const router = useRouter();
+  const { profileQuery } = useProfile();
+  const signedIn = Boolean(profileQuery.data?.profile);
+  const isAdmin =
+    profileQuery.data?.profile?.role === "admin" ||
+    profileQuery.data?.profile?.role === "master_admin";
   const tripQuery = useTripDetails(slug);
   const trip = tripQuery.data?.trip;
   const isOwner = tripQuery.data?.isOwner ?? false;
   const [editingTripId, setEditingTripId] = useState<string | null>(null);
   const isEditing = isOwner && editingTripId === slug;
-  const saved = useSaveTrip(slug, Boolean(trip && trip.isPublic && !isOwner));
+  const saved = useSaveTrip(
+    slug,
+    Boolean(signedIn && !isAdmin && trip && trip.isPublic && !isOwner),
+  );
   const visibility = useUpdateTripVisibility(slug);
   const { remove } = useTripStops(slug, false);
 
@@ -100,11 +108,13 @@ function TripDetailContent() {
       {/* Trip detail heading */}
       <div className="flex flex-col gap-5">
         <Link
-          href={trip.isPublic ? "/explore" : "/trips"}
+          href={
+            isAdmin ? "/admin/trips" : trip.isPublic ? "/explore" : "/trips"
+          }
           className="flex w-fit items-center gap-2 text-sm font-medium text-muted-foreground transition-colors hover:text-brand-blue"
         >
           <ArrowLeft className="size-4" /> Back to{" "}
-          {trip.isPublic ? "Explore" : "my trips"}
+          {isAdmin ? "Manage trips" : trip.isPublic ? "Explore" : "my trips"}
         </Link>
         <div className="relative flex min-h-[40svh] flex-col justify-end overflow-hidden rounded-[28px] bg-brand-blue-deep p-6 text-white sm:min-h-[46svh] sm:p-10">
           <TripStateCover trip={trip} />
@@ -148,14 +158,28 @@ function TripDetailContent() {
                   >
                     {trip.isPublic ? "Make private" : "Publish in Explore"}
                   </ConfirmAction>
-                ) : trip.isPublic ? (
+                ) : trip.isPublic && !isAdmin ? (
                   <Button
                     variant="outline"
-                    disabled={saved.toggleSave.isPending}
-                    onClick={() => saved.toggleSave.mutate()}
+                    disabled={
+                      profileQuery.isPending ||
+                      (signedIn && saved.savedStatus.isPending) ||
+                      saved.toggleSave.isPending
+                    }
+                    onClick={() =>
+                      signedIn
+                        ? saved.toggleSave.mutate()
+                        : router.push("/login")
+                    }
                     className="h-10 rounded-full border-white/40 bg-white/10 text-white hover:bg-white/20 hover:text-white"
                   >
-                    {saved.isSaved ? "Saved" : "Save trip"}
+                    {saved.toggleSave.isPending
+                      ? saved.isSaved
+                        ? "Removing…"
+                        : "Saving…"
+                      : saved.isSaved
+                        ? "Saved"
+                        : "Save trip"}
                   </Button>
                 ) : null}
               </div>
@@ -232,7 +256,7 @@ function TripDetailContent() {
                     </div>
                   </div>
                   <span className="text-xs text-muted-foreground">
-                    {stops.length} stops · <TripDistance stops={stops} />
+                    {stops.length} stops
                   </span>
                 </div>
                 <div className="relative flex flex-col gap-5">
@@ -303,13 +327,6 @@ function TripDetailContent() {
                 <TripStatusBadge status={trip.status} />
               </div>
               <div className="flex flex-col gap-4 text-sm">
-                <div className="flex items-center justify-between gap-3">
-                  <span className="flex items-center gap-2 text-muted-foreground">
-                    <Route className="size-4 shrink-0" aria-hidden="true" />
-                    Total driving distance
-                  </span>
-                  <TripDistance stops={trip.stops} />
-                </div>
                 <div className="flex items-center justify-between">
                   <span className="flex items-center gap-2 text-muted-foreground">
                     <CalendarDays className="size-4" /> Duration
@@ -369,7 +386,10 @@ function TripDetailContent() {
           {trip.isPublic && (
             <Card className="rounded-[22px] border-brand-line bg-white shadow-none">
               <CardContent className="p-5">
-                <TripComments tripSlug={trip.slug} canReview={!isOwner} />
+                <TripComments
+                  tripSlug={trip.slug}
+                  canReview={!isOwner && !isAdmin}
+                />
               </CardContent>
             </Card>
           )}

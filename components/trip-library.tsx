@@ -2,7 +2,7 @@
 
 import { NewPlanMenu } from "@/components/new-plan-menu";
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
 
 import { Compass, Route, Share2 } from "lucide-react";
 import { ItineraryCard } from "@/components/itinerary-card";
@@ -10,7 +10,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { MetricCard } from "@/components/metric-card";
 import { EmptyState } from "@/components/empty-state";
-import { useMyTrips, useSavedTrips } from "@/hooks/use-trips";
+import { useTripPage } from "@/hooks/use-trips";
+import { ItineraryPagination } from "@/components/itinerary-pagination";
 import type { Itinerary } from "@/lib/type";
 
 const filters = ["All trips", "Saved", "Planning", "Ongoing", "Completed"];
@@ -18,25 +19,25 @@ const emptyTrips: Itinerary[] = [];
 
 export function TripLibrary() {
   const [activeFilter, setActiveFilter] = useState("All trips");
-  const { data, isPending: loading, error } = useMyTrips();
-  const savedQuery = useSavedTrips(activeFilter === "Saved");
-  const myTrips = data?.trips ?? emptyTrips;
-  const tripsToFilter =
-    activeFilter === "Saved" ? (savedQuery.data?.trips ?? emptyTrips) : myTrips;
-
-  const trips = useMemo(
-    () =>
+  const [page, setPage] = useState(1);
+  const query = useTripPage({
+    scope:
+      activeFilter === "All trips"
+        ? "all"
+        : activeFilter === "Saved"
+          ? "saved"
+          : "mine",
+    status:
       activeFilter === "All trips" || activeFilter === "Saved"
-        ? tripsToFilter
-        : tripsToFilter.filter((trip) => trip.status === activeFilter),
-    [activeFilter, tripsToFilter],
-  );
-  const planningCount = myTrips.filter(
-    (trip) => trip.status === "Planning",
-  ).length;
-  const ongoingCount = myTrips.filter(
-    (trip) => trip.status === "Ongoing",
-  ).length;
+        ? "all"
+        : (activeFilter as Itinerary["status"]),
+    page,
+  });
+  const trips = query.data?.trips ?? emptyTrips;
+  const loading = query.isPending;
+  const listError = query.error;
+  const total = query.data?.total ?? 0;
+  const stats = query.data?.stats;
 
   return (
     <div className="flex w-full flex-col gap-9 py-10 sm:gap-11 sm:py-14">
@@ -68,21 +69,21 @@ export function TripLibrary() {
       <section className="grid gap-3 sm:grid-cols-3" aria-label="Trip summary">
         <MetricCard
           label="Trips saved"
-          value={myTrips.length}
+          value={stats?.saved ?? 0}
           icon={Route}
           iconTone="bg-brand-blue-soft text-brand-blue"
           variant="compact"
         />
         <MetricCard
           label="Still planning"
-          value={planningCount}
+          value={stats?.planning ?? 0}
           icon={Compass}
           iconTone="bg-brand-yellow-soft text-brand-red"
           variant="compact"
         />
         <MetricCard
           label="Ongoing"
-          value={ongoingCount}
+          value={stats?.ongoing ?? 0}
           icon={Share2}
           iconTone="bg-brand-red-soft text-brand-red"
           variant="compact"
@@ -100,7 +101,10 @@ export function TripLibrary() {
             {filters.map((filter) => (
               <Button
                 key={filter}
-                onClick={() => setActiveFilter(filter)}
+                onClick={() => {
+                  setActiveFilter(filter);
+                  setPage(1);
+                }}
                 variant={filter === activeFilter ? "default" : "outline"}
                 className={`h-9 rounded-full px-4 text-xs ${filter === activeFilter ? "bg-brand-blue text-white hover:bg-brand-blue-hover" : "border-brand-line text-muted-foreground"}`}
               >
@@ -109,17 +113,17 @@ export function TripLibrary() {
             ))}
           </div>
           <span className="text-xs text-muted-foreground">
-            {trips.length} {trips.length === 1 ? "trip" : "trips"}
+            {total} {total === 1 ? "trip" : "trips"}
           </span>
         </div>
-        {loading || (activeFilter === "Saved" && savedQuery.isPending) ? (
+        {loading ? (
           <p className="text-sm text-muted-foreground">Loading your trips…</p>
-        ) : error || (activeFilter === "Saved" && savedQuery.error) ? (
+        ) : listError ? (
           <p
             role="alert"
             className="rounded-xl border border-destructive/30 p-5 text-sm text-destructive"
           >
-            {(activeFilter === "Saved" ? savedQuery.error : error)?.message}
+            {listError.message}
           </p>
         ) : trips.length ? (
           <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
@@ -127,6 +131,7 @@ export function TripLibrary() {
               <ItineraryCard
                 key={trip.slug}
                 itinerary={trip}
+                isSaved={Boolean(trip.isSaved)}
                 showAuthor={false}
               />
             ))}
@@ -140,6 +145,14 @@ export function TripLibrary() {
             action={
               <NewPlanMenu label="Start a trip" className="rounded-full" />
             }
+          />
+        )}
+        {query.data && !listError && (
+          <ItineraryPagination
+            page={query.data.page}
+            totalPages={query.data.totalPages}
+            busy={query.isFetching}
+            onPageChange={setPage}
           />
         )}
       </section>

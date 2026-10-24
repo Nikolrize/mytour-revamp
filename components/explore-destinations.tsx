@@ -5,7 +5,7 @@ import { ArrowRight, MapPin, Search, SlidersHorizontal } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
+import { SearchField } from "@/components/search-field";
 import { EmptyState } from "@/components/empty-state";
 import { categories } from "@/lib/data";
 import { useDestinations } from "@/hooks/use-destinations";
@@ -13,6 +13,7 @@ import { useDestinations } from "@/hooks/use-destinations";
 export function ExploreDestinations() {
   const [category, setCategory] = useState("All places");
   const [query, setQuery] = useState("");
+  const [draftSearch, setDraftSearch] = useState("");
   const { destinations, loading, error } = useDestinations();
   const places = useMemo(
     () =>
@@ -48,21 +49,13 @@ export function ExploreDestinations() {
               a place that feels like you.
             </p>
           </div>
-          <div className="flex w-full items-center gap-2 rounded-full border border-brand-line bg-white p-1.5 pl-4 shadow-sm lg:max-w-[390px]">
-            <Search className="size-4 shrink-0 text-muted-foreground" />
-            <Input
-              value={query}
-              onChange={(event) => setQuery(event.target.value)}
+          <div className="w-full lg:max-w-[390px]">
+            <SearchField
+              value={draftSearch}
+              onChange={setDraftSearch}
+              onSearch={() => setQuery(draftSearch.trim())}
               placeholder="Search places or states"
-              className="h-10 border-0 bg-transparent px-1 shadow-none focus-visible:ring-0"
-              aria-label="Search places or states"
             />
-            <Button
-              size="sm"
-              className="h-10 rounded-full bg-brand-blue px-4 text-white hover:bg-brand-blue-hover"
-            >
-              Search
-            </Button>
           </div>
         </div>
       </header>
@@ -153,6 +146,7 @@ export function ExploreDestinations() {
                 className="rounded-full"
                 onClick={() => {
                   setQuery("");
+                  setDraftSearch("");
                   setCategory("All places");
                 }}
               >

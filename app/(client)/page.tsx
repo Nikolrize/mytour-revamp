@@ -75,7 +75,7 @@ export default function Home() {
             and make it your own.
           </p>
         </div>
-        <ExploreTrips embedded />
+        <ExploreTrips embedded maxItems={6} />
       </section>
 
       <section id="how-it-works" className="w-full">

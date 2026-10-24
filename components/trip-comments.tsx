@@ -1,6 +1,9 @@
 "use client";
 
-import { useEffect } from "react";
+import Link from "next/link";
+import { useProfile } from "@/hooks/use-profile";
+import { useEffect, useState } from "react";
+import { ItineraryPagination } from "@/components/itinerary-pagination";
 import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import type { z } from "zod";
@@ -23,7 +26,10 @@ export function TripComments({
   tripSlug,
   canReview = true,
 }: TripCommentsProps) {
-  const { commentsQuery, postComment } = useTripComments(tripSlug);
+  const { profileQuery } = useProfile();
+  const signedIn = Boolean(profileQuery.data?.profile);
+  const [page, setPage] = useState(1);
+  const { commentsQuery, postComment } = useTripComments(tripSlug, page);
   const form = useForm<CommentValues>({
     resolver: zodResolver(commentSchema),
     defaultValues: { rating: 5, message: "" },
@@ -57,17 +63,27 @@ export function TripComments({
         <p className="text-sm text-muted-foreground">
           {canReview
             ? "Share how this route went or ask the community a question."
-            : "Read feedback from other travellers about your itinerary."}
+            : "Read feedback from other travellers about this itinerary."}
         </p>
       </div>
 
+      {canReview && !signedIn && !profileQuery.isPending && (
+        <Button
+          nativeButton={false}
+          render={<Link href="/login" />}
+          variant="outline"
+          className="w-fit rounded-full"
+        >
+          Log in to rate or comment
+        </Button>
+      )}
       {/* Comment form */}
-      {canReview && (
+      {canReview && signedIn && (
         <Card className="rounded-[22px] border-brand-line bg-white shadow-none">
           <CardContent className="p-5 sm:p-6">
             <form
               onSubmit={form.handleSubmit((values) =>
-                postComment.mutate(values),
+                postComment.mutate(values, { onSuccess: () => setPage(1) }),
               )}
               className="flex flex-col gap-4"
             >
@@ -218,6 +234,13 @@ export function TripComments({
             </p>
           )}
       </div>
+      <ItineraryPagination
+        label="Trip comment pages"
+        page={commentsQuery.data?.page ?? page}
+        totalPages={commentsQuery.data?.totalPages ?? 1}
+        busy={commentsQuery.isFetching}
+        onPageChange={setPage}
+      />
     </section>
   );
 }

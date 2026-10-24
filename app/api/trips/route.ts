@@ -14,80 +14,94 @@ function normalizeStateName(value: string) {
   return name.replace(/^(pulau|wilayah persekutuan)\s+/, "");
 }
 
+// Filter, sort and paginate inside Postgres before hydrating itinerary cards.
 export async function GET(request: Request) {
-  const { supabase, user } = await getApiContext();
-  const url = new URL(request.url);
-  const scope = url.searchParams.get("scope") ?? "mine";
-  if (!["mine", "public", "saved"].includes(scope))
+  const params = new URL(request.url).searchParams;
+  const parsed = z
+    .object({
+      scope: z.enum(["public", "mine", "saved", "all"]),
+      page: z.coerce.number().int().min(1).max(100000),
+      pageSize: z.coerce.number().int().min(1).max(12),
+      search: z.string().trim().max(200),
+      state: z.string().max(80),
+      tags: z
+        .array(z.enum(tripInterestOptions))
+        .max(tripInterestOptions.length),
+      sort: z.enum(["latest", "saved", "rating"]),
+      status: z.enum(["all", "Planning", "Ongoing", "Completed"]),
+      publicOnly: z.enum(["true", "false"]),
+    })
+    .safeParse({
+      scope: params.get("scope") ?? "mine",
+      page: params.get("page") ?? "1",
+      pageSize: params.get("pageSize") ?? "12",
+      search: params.get("q") ?? "",
+      state: params.get("state") ?? "all",
+      tags: params.getAll("tag"),
+      sort: params.get("sort") ?? "latest",
+      status: params.get("status") ?? "all",
+      publicOnly: params.get("publicOnly") ?? "false",
+    });
+  if (!parsed.success)
     return NextResponse.json(
-      { message: "Choose a valid trip scope." },
+      { message: "Invalid itinerary pagination or filters." },
       { status: 400 },
     );
-
-  if (scope !== "public" && !user) {
+  const input = parsed.data;
+  const { supabase, user } = await getApiContext();
+  if (input.scope !== "public" && !user)
     return NextResponse.json(
       { message: "Sign in to view your trips." },
       { status: 401 },
     );
-  }
-
-  if (scope === "saved") {
-    const { data: saves, error: savesError } = await supabase
-      .from("saved_trips")
-      .select("trip_id")
-      .eq("user_id", user!.id)
-      .order("saved_at", { ascending: false });
-    if (savesError)
-      return NextResponse.json(
-        { message: savesError.message },
-        { status: 500 },
-      );
-    const ids = (saves ?? []).map((row) => row.trip_id);
-    if (!ids.length) return NextResponse.json({ trips: [] });
-    const { data, error } = await supabase
-      .from("trips")
-      .select("*")
-      .in("id", ids)
-      .eq("is_public", true);
-    if (error)
-      return NextResponse.json({ message: error.message }, { status: 500 });
-    const ordered = ids
-      .map((id) => (data ?? []).find((trip) => trip.id === id))
-      .filter((trip) => trip !== undefined) as TripRow[];
-    try {
-      return NextResponse.json({
-        trips: await mapTripsToItineraries(supabase, ordered),
-      });
-    } catch (cause) {
-      return NextResponse.json(
-        {
-          message:
-            cause instanceof Error
-              ? cause.message
-              : "Could not load saved trips.",
-        },
-        { status: 500 },
-      );
-    }
-  }
-
-  let query = supabase
-    .from("trips")
-    .select("*")
-    .order("created_at", { ascending: false });
-  if (scope === "public") query = query.eq("is_public", true);
-  else query = query.eq("user_id", user!.id);
-
-  const { data, error } = await query;
-  if (error)
-    return NextResponse.json({ message: error.message }, { status: 500 });
-
-  try {
-    const trips = await mapTripsToItineraries(
-      supabase,
-      (data ?? []) as TripRow[],
+  const result =
+    input.scope === "public"
+      ? await supabase.rpc("get_public_trip_page", {
+          _page: input.page,
+          _page_size: input.pageSize,
+          _search: input.search,
+          _state: input.state,
+          _tags: input.tags,
+          _sort: input.sort,
+        })
+      : await supabase.rpc("get_personal_trip_page", {
+          _scope: input.scope,
+          _page: input.page,
+          _page_size: input.pageSize,
+          _status: input.status,
+          _search: input.search,
+          _public_only: input.publicOnly === "true",
+        });
+  if (result.error)
+    return NextResponse.json(
+      { message: "Could not load the itinerary page: " + result.error.message },
+      { status: 500 },
     );
-    return NextResponse.json({ trips });
+  const page = result.data as {
+    trips: (TripRow & { viewer_saved?: boolean })[];
+    total: number;
+    page: number;
+    pageSize: number;
+    totalPages: number;
+    states?: string[];
+    stats?: Record<string, number>;
+  };
+  try {
+    const mapped = await mapTripsToItineraries(supabase, page.trips);
+    const savedIds = new Set(
+      page.trips.filter((trip) => trip.viewer_saved).map((trip) => trip.id),
+    );
+    return NextResponse.json(
+      {
+        ...page,
+        states: page.states ?? [],
+        trips: mapped.map((trip) => ({
+          ...trip,
+          isSaved: savedIds.has(trip.slug),
+        })),
+      },
+      { headers: { "Cache-Control": "private, no-store" } },
+    );
   } catch (error) {
     return NextResponse.json(
       {

@@ -25,7 +25,7 @@ export async function POST(
     .from("saved_trips")
     .upsert(
       { user_id: user.id, trip_id: tripId },
-      { onConflict: "user_id,trip_id" },
+      { onConflict: "user_id,trip_id", ignoreDuplicates: true },
     );
   if (error)
     return NextResponse.json({ message: error.message }, { status: 400 });
@@ -51,4 +51,30 @@ export async function DELETE(
   if (error)
     return NextResponse.json({ message: error.message }, { status: 400 });
   return NextResponse.json({ saved: false });
+}
+
+// The saved state is independent of which library page is currently loaded.
+export async function GET(
+  _request: Request,
+  context: { params: Promise<{ tripId: string }> },
+) {
+  const { supabase, user } = await getApiContext();
+  if (!user)
+    return NextResponse.json({ message: "Sign in required." }, { status: 401 });
+  const { tripId } = await context.params;
+  const result = await supabase
+    .from("saved_trips")
+    .select("trip_id")
+    .eq("user_id", user.id)
+    .eq("trip_id", tripId)
+    .maybeSingle();
+  if (result.error)
+    return NextResponse.json(
+      { message: "Could not load saved status." },
+      { status: 500 },
+    );
+  return NextResponse.json(
+    { saved: Boolean(result.data) },
+    { headers: { "Cache-Control": "private, no-store" } },
+  );
 }

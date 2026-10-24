@@ -41,7 +41,7 @@ export function ProfilePage() {
   const { profileQuery, updateProfile, uploadAvatar } = useProfile(() =>
     setEditing(false),
   );
-  const tripsQuery = useMyTrips();
+  const tripsQuery = useMyTrips(true, { pageSize: 3 });
   const profile = useMemo(() => {
     const record = profileQuery.data?.profile;
     return record
@@ -165,12 +165,14 @@ export function ProfilePage() {
             </div>
             <div className="grid grid-cols-3 gap-2 text-center">
               <div className="flex flex-col gap-1 rounded-xl bg-brand-surface-muted p-3">
-                <span className="text-xl font-semibold">{myTrips.length}</span>
+                <span className="text-xl font-semibold">
+                  {tripsQuery.data?.stats?.planned ?? 0}
+                </span>
                 <span className="text-[10px] text-muted-foreground">trips</span>
               </div>
               <div className="flex flex-col gap-1 rounded-xl bg-brand-surface-muted p-3">
                 <span className="text-xl font-semibold">
-                  {myTrips.filter((trip) => trip.isPublic).length}
+                  {tripsQuery.data?.stats?.shared ?? 0}
                 </span>
                 <span className="text-[10px] text-muted-foreground">
                   shared
@@ -178,13 +180,7 @@ export function ProfilePage() {
               </div>
               <div className="flex flex-col gap-1 rounded-xl bg-brand-surface-muted p-3">
                 <span className="text-xl font-semibold">
-                  {
-                    new Set(
-                      myTrips.flatMap((trip) =>
-                        trip.stops.map((stop) => stop.place),
-                      ),
-                    ).size
-                  }
+                  {tripsQuery.data?.stats?.places ?? 0}
                 </span>
                 <span className="text-[10px] text-muted-foreground">
                   places

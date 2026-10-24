@@ -2,6 +2,7 @@ import { tripDetailsSchema } from "@/lib/schemas";
 import { NextResponse } from "next/server";
 import {
   getApiContext,
+  userIsAdmin,
   mapTripsToItineraries,
   type TripRow,
 } from "@/app/api/_shared";
@@ -20,7 +21,11 @@ export async function GET(
 
   if (error)
     return NextResponse.json({ message: error.message }, { status: 500 });
-  if (!trip || (!trip.is_public && trip.user_id !== user?.id)) {
+  const canModerate =
+    trip && !trip.is_public && user
+      ? await userIsAdmin(supabase, user.id)
+      : false;
+  if (!trip || (!trip.is_public && trip.user_id !== user?.id && !canModerate)) {
     return NextResponse.json({ message: "Trip not found." }, { status: 404 });
   }
 

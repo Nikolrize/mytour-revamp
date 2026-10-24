@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { ReportConfirmation } from "@/components/report-confirmation";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -8,6 +9,7 @@ import type { z } from "zod";
 import { Pencil, Trash2, Copy, Flag, Check } from "lucide-react";
 import type { Itinerary } from "@/lib/type";
 import { tripDetailsSchema, tripReportSchema } from "@/lib/schemas";
+import { useProfile } from "@/hooks/use-profile";
 import { useTripActions } from "@/hooks/use-trips";
 import { Button } from "@/components/ui/button";
 import {
@@ -45,10 +47,13 @@ export function TripActions({
   onEditingChange: (enabled: boolean) => void;
 }) {
   const router = useRouter();
+  const { profileQuery } = useProfile();
+  const signedIn = Boolean(profileQuery.data?.profile);
   const { copy, update, remove, report } = useTripActions(trip.slug);
   const [editing, setEditing] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [reporting, setReporting] = useState(false);
+  const [reportConfirmed, setReportConfirmed] = useState(false);
   const editForm = useForm<z.infer<typeof tripDetailsSchema>>({
     resolver: zodResolver(tripDetailsSchema),
     defaultValues: { title: trip.title, description: trip.description },
@@ -58,6 +63,11 @@ export function TripActions({
     defaultValues: { reason: "", details: "" },
   });
   const error = copy.error || update.error || remove.error || report.error;
+  if (
+    profileQuery.data?.profile?.role === "admin" ||
+    profileQuery.data?.profile?.role === "master_admin"
+  )
+    return null;
   return (
     <div className="flex flex-col gap-3">
       {/* Owner editing and deletion, or community reuse and reporting */}
@@ -202,23 +212,35 @@ export function TripActions({
         ) : (
           <>
             <Button
-              disabled={copy.isPending}
+              disabled={profileQuery.isPending || copy.isPending}
               onClick={() =>
-                copy.mutate(undefined, {
-                  onSuccess: ({ id }) => router.push(`/trips/${id}`),
-                })
+                signedIn
+                  ? copy.mutate(undefined, {
+                      onSuccess: ({ id }) => router.push(`/trips/${id}`),
+                    })
+                  : router.push("/login")
               }
               className="rounded-full"
             >
               <Copy className="size-4" />{" "}
-              {copy.isPending ? "Copying…" : "Use this route"}
+              {copy.isPending ? "Copying…" : "Copy itinerary"}
             </Button>
-            <Dialog open={reporting} onOpenChange={setReporting}>
+            <Dialog
+              open={reporting}
+              onOpenChange={(open) => {
+                if (open && !signedIn) {
+                  router.push("/login");
+                  return;
+                }
+                setReporting(open);
+              }}
+            >
               <DialogTrigger
                 render={
                   <Button
                     variant="outline"
                     className="rounded-full"
+                    disabled={profileQuery.isPending}
                     onClick={() => report.reset()}
                   />
                 }
@@ -239,6 +261,7 @@ export function TripActions({
                       onSuccess: () => {
                         setReporting(false);
                         reportForm.reset();
+                        setReportConfirmed(true);
                       },
                     }),
                   )}
@@ -285,11 +308,10 @@ export function TripActions({
           {error.message}
         </p>
       )}
-      {report.isSuccess && (
-        <p role="status" className="text-sm text-brand-blue">
-          Your report has been sent to the moderation team.
-        </p>
-      )}
+      <ReportConfirmation
+        open={reportConfirmed}
+        onOpenChange={setReportConfirmed}
+      />
     </div>
   );
 }
