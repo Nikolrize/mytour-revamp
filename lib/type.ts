@@ -37,6 +37,7 @@ export type Itinerary = {
   description: string;
   interests?: string[];
   isPublic: boolean;
+  isSaved?: boolean;
   status: "Planning" | "Ongoing" | "Completed";
   stops: ItineraryStop[];
 };
@@ -72,6 +73,7 @@ export type CommunityPost = {
   createdAt: string;
   author: CommunityAuthor;
   canDelete: boolean;
+  canReport: boolean;
   liked: boolean;
   likeCount: number;
   commentCount: number;
@@ -92,4 +94,62 @@ export type TripFilters = {
   state: string;
   tags: string[];
   sort: "latest" | "saved" | "rating";
+};
+
+export type ManagedAccount = {
+  id: string;
+  display_name: string;
+  avatar_url: string | null;
+  bio: string | null;
+  role: "master_admin" | "admin" | "client";
+  status: "active" | "inactive";
+  created_at: string;
+  tripCount: number;
+  postCount: number;
+};
+
+export type PasswordResetRequest = {
+  id: string;
+  userId: string;
+  email: string;
+  displayName: string;
+  role: ManagedAccount["role"];
+  requestedAt: string;
+};
+
+export type TripPageOptions = {
+  scope?: "public" | "mine" | "saved" | "all";
+  page?: number;
+  pageSize?: number;
+  search?: string;
+  state?: string;
+  tags?: string[];
+  sort?: TripFilters["sort"];
+  status?: "all" | Itinerary["status"];
+  publicOnly?: boolean;
+};
+export type TripPageResponse = {
+  trips: Itinerary[];
+  total: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
+  states: string[];
+  stats?: {
+    saved: number;
+    planned: number;
+    shared: number;
+    places: number;
+    planning: number;
+    ongoing: number;
+    completed: number;
+  };
+};
+
+// Shared metadata for database-paginated collections.
+export type PaginationMeta = {
+  page: number;
+  pageSize: number;
+  total: number;
+  totalPages: number;
 };

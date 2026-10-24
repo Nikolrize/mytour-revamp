@@ -24,6 +24,7 @@ type ConfirmActionProps = {
   variant?: ComponentProps<typeof Button>["variant"];
   size?: ComponentProps<typeof Button>["size"];
   className?: string;
+  confirmClassName?: string;
   destructive?: boolean;
   ariaLabel?: string;
 };
@@ -39,6 +40,7 @@ export function ConfirmAction({
   variant = "outline",
   size = "default",
   className,
+  confirmClassName,
   destructive = false,
   ariaLabel,
 }: ConfirmActionProps) {
@@ -80,9 +82,10 @@ export function ConfirmAction({
           <Button
             variant={destructive ? "destructive" : "default"}
             className={
-              destructive
+              confirmClassName ??
+              (destructive
                 ? undefined
-                : "bg-brand-blue text-white hover:bg-brand-blue-hover"
+                : "bg-brand-blue text-white hover:bg-brand-blue-hover")
             }
             disabled={pending}
             onClick={async () => {

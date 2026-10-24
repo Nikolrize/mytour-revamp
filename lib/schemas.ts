@@ -159,10 +159,12 @@ export const tripDetailsSchema = z.object({
   description: z.string().trim().max(2000),
 });
 
-export const tripReportSchema = z.object({
+export const contentReportSchema = z.object({
   reason: z.string().trim().min(1, "Enter a reason.").max(120),
   details: z.string().trim().max(1000),
 });
+
+export const tripReportSchema = contentReportSchema;
 
 export const editStopSchema = z
   .object({
@@ -194,3 +196,40 @@ export const communityPostSchema = z.object({
 export const communityCommentSchema = z.object({
   content: z.string().trim().min(1, "Write a comment.").max(1000),
 });
+
+// Account roles are assigned only when an administrator creates an account.
+export const adminAccountCreateSchema = z.object({
+  displayName: z.string().trim().min(1, "Enter a name.").max(60),
+  email: z.string().trim().email("Enter a valid email."),
+  password: z.string().min(8, "Use at least 8 characters.").max(128),
+  role: z.enum(["admin", "client"]),
+});
+export const adminAccountEditSchema = z
+  .object({
+    email: z.string().trim().email("Enter a valid email."),
+    password: z.union([
+      z.literal(""),
+      z.string().min(8, "Use at least 8 characters.").max(128),
+    ]),
+    confirmPassword: z.string().max(128),
+    displayName: z.string().trim().min(1, "Enter a name.").max(60),
+  })
+  .strict()
+  .refine((values) => values.password === values.confirmPassword, {
+    path: ["confirmPassword"],
+    message: "Passwords do not match.",
+  });
+
+// Password recovery forms share validation with their API routes.
+export const forgotPasswordSchema = z.object({
+  email: z.string().trim().email("Enter a valid email address.").max(254),
+});
+export const resetPasswordSchema = z
+  .object({
+    password: z.string().min(8, "Use at least 8 characters.").max(128),
+    confirmPassword: z.string().max(128),
+  })
+  .refine((values) => values.password === values.confirmPassword, {
+    path: ["confirmPassword"],
+    message: "Passwords do not match.",
+  });
