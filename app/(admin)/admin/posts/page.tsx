@@ -1,7 +1,22 @@
+import { Suspense } from "react";
 import { CommunityFeed } from "@/components/community-feed";
 import { Badge } from "@/components/ui/badge";
 
-export default function ManagePostsPage() {
+type PostSearchParams = Promise<{ post?: string | string[] }>;
+async function FilteredPosts({
+  searchParams,
+}: {
+  searchParams: PostSearchParams;
+}) {
+  const { post } = await searchParams;
+  const postId = typeof post === "string" ? post : "";
+  return <CommunityFeed key={postId} moderation postId={postId} />;
+}
+export default function ManagePostsPage({
+  searchParams,
+}: {
+  searchParams: PostSearchParams;
+}) {
   return (
     <div className="flex flex-col gap-6">
       <header className="flex flex-col gap-2">
@@ -19,7 +34,13 @@ export default function ManagePostsPage() {
           that need moderation.
         </p>
       </header>
-      <CommunityFeed moderation />
+      <Suspense
+        fallback={
+          <p className="text-sm text-muted-foreground">Loading posts…</p>
+        }
+      >
+        <FilteredPosts searchParams={searchParams} />
+      </Suspense>
     </div>
   );
 }

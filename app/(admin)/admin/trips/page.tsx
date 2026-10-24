@@ -1,8 +1,30 @@
-import { Map } from "lucide-react";
+import { Suspense } from "react";
+
 import { Badge } from "@/components/ui/badge";
 import { AdminDatabaseTable } from "@/components/admin-database-table";
 
-export default function ManageTripsPage() {
+type TripSearchParams = Promise<{ trip?: string | string[] }>;
+
+async function FilteredTripsTable({
+  searchParams,
+}: {
+  searchParams: TripSearchParams;
+}) {
+  const { trip } = await searchParams;
+  return (
+    <AdminDatabaseTable
+      kind="trips"
+      initialSearch={typeof trip === "string" ? trip : ""}
+      searchPlaceholder="Search itineraries, authors or locations"
+    />
+  );
+}
+
+export default function ManageTripsPage({
+  searchParams,
+}: {
+  searchParams: TripSearchParams;
+}) {
   return (
     <div className="flex flex-col gap-6">
       {/* Itinerary management heading */}
@@ -21,12 +43,14 @@ export default function ManageTripsPage() {
             Review and manage public routes shared by travellers.
           </p>
         </div>
-        <div className="flex items-center gap-2 rounded-xl bg-white px-3 py-2 text-sm text-muted-foreground">
-          <Map className="size-4 text-brand-blue" />
-          Live Supabase itineraries
-        </div>
       </header>
-      <AdminDatabaseTable kind="trips" searchPlaceholder="Search itineraries, authors or locations" />
+      <Suspense
+        fallback={
+          <p className="text-sm text-muted-foreground">Loading trips…</p>
+        }
+      >
+        <FilteredTripsTable searchParams={searchParams} />
+      </Suspense>
     </div>
   );
 }

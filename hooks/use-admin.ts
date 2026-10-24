@@ -1,6 +1,12 @@
 "use client";
 
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  keepPreviousData,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
+import type { PaginationMeta } from "@/lib/type";
 import { apiRequest } from "@/lib/api";
 
 export type AdminKind = "users" | "trips" | "reports";
@@ -12,38 +18,50 @@ export function useAdminOverview() {
   });
 }
 
-export function useAdminRecords(kind: AdminKind) {
+export function useAdminRecords(
+  kind: AdminKind,
+  page = 1,
+  search = "",
+  pageSize = 12,
+) {
   const queryClient = useQueryClient();
   const query = useQuery({
-    queryKey: ["admin", kind],
-    queryFn: async () =>
-      (
-        await apiRequest<Record<string, Record<string, unknown>[]>>(
-          `/api/admin/${kind}`,
-        )
-      )[kind],
+    queryKey: ["admin", kind, { page, search, pageSize }],
+    queryFn: ({ signal }) =>
+      apiRequest<
+        PaginationMeta & {
+          users?: Record<string, unknown>[];
+          trips?: Record<string, unknown>[];
+          reports?: Record<string, unknown>[];
+        }
+      >(
+        "/api/admin/" +
+          kind +
+          "?" +
+          new URLSearchParams({
+            page: String(page),
+            pageSize: String(pageSize),
+            search,
+          }),
+        { signal },
+      ),
+    placeholderData: keepPreviousData,
   });
   const action = useMutation({
     mutationFn: async ({ item }: { item?: Record<string, unknown> }) => {
       if (!item) throw new Error("Could not find the selected record.");
-      if (kind === "users")
-        return apiRequest(`/api/admin/users/${String(item.id)}`, {
-          method: "PATCH",
-          body: JSON.stringify({
-            isAdmin: !(
-              Array.isArray(item.roles) && item.roles.includes("admin")
-            ),
-          }),
-        });
       if (kind === "trips")
         return apiRequest(`/api/admin/trips/${String(item.slug)}`, {
           method: "PATCH",
           body: JSON.stringify({ isPublic: !Boolean(item.isPublic) }),
         });
-      if (kind === "reports" && item.status === "open")
+      if (kind === "reports")
         return apiRequest(`/api/admin/reports/${String(item.id)}`, {
           method: "PATCH",
-          body: JSON.stringify({ status: "resolved" }),
+          body: JSON.stringify({
+            status: item.status === "open" ? "resolved" : "open",
+            targetType: item.targetType ?? "trip",
+          }),
         });
       throw new Error("This item has no available action.");
     },
@@ -56,5 +74,18 @@ export function useAdminRecords(kind: AdminKind) {
         queryClient.invalidateQueries({ queryKey: ["profile"] }),
       ]),
   });
-  return { query, action };
+  const remove = useMutation({
+    mutationFn: (id: string) =>
+      apiRequest(`/api/admin/trips/${id}`, { method: "DELETE" }),
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["admin"] }),
+        queryClient.invalidateQueries({ queryKey: ["trips"] }),
+        queryClient.invalidateQueries({ queryKey: ["trip"] }),
+        queryClient.invalidateQueries({ queryKey: ["community-posts"] }),
+        queryClient.invalidateQueries({ queryKey: ["profile"] }),
+      ]);
+    },
+  });
+  return { query, action, remove };
 }

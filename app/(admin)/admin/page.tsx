@@ -1,3 +1,4 @@
+import { AdminUsers } from "@/components/admin-users";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -42,14 +43,14 @@ export default function AdminDashboardPage() {
           </div>
           <Button
             nativeButton={false}
-            render={<Link href="/admin/posts" />}
+            render={<Link href="/admin/reports" />}
             variant="outline"
             className="h-9 shrink-0 rounded-full border-brand-line bg-white text-brand-blue"
           >
             Open moderation <ArrowRight className="size-4" />
           </Button>
         </div>
-        <AdminDatabaseTable kind="reports" searchPlaceholder="Search moderation queue" />
+        <AdminDatabaseTable compact kind="reports" searchPlaceholder="Search moderation queue" />
       </section>
 
       {/* Recent platform activity */}
@@ -62,14 +63,16 @@ export default function AdminDashboardPage() {
                 Recently joined members
               </p>
             </div>
-            <Link
-              href="/admin/users"
-              className="flex items-center gap-1 text-sm font-medium text-brand-blue"
+            <Button
+              nativeButton={false}
+              render={<Link href="/admin/users" />}
+              variant="outline"
+              className="h-9 shrink-0 rounded-full border-brand-line bg-white text-brand-blue"
             >
               Manage <ArrowRight className="size-4" />
-            </Link>
+            </Button>
           </div>
-          <AdminDatabaseTable kind="users" searchPlaceholder="Search travellers" />
+          <AdminUsers compact />
         </div>
         <div className="flex flex-col gap-4">
           <div className="flex items-end justify-between">
@@ -79,14 +82,16 @@ export default function AdminDashboardPage() {
                 Latest routes shared by the community
               </p>
             </div>
-            <Link
-              href="/admin/trips"
-              className="flex items-center gap-1 text-sm font-medium text-brand-blue"
+            <Button
+              nativeButton={false}
+              render={<Link href="/admin/trips" />}
+              variant="outline"
+              className="h-9 shrink-0 rounded-full border-brand-line bg-white text-brand-blue"
             >
               Manage <ArrowRight className="size-4" />
-            </Link>
+            </Button>
           </div>
-          <AdminDatabaseTable kind="trips" searchPlaceholder="Search itineraries" />
+          <AdminDatabaseTable compact kind="trips" searchPlaceholder="Search itineraries" />
         </div>
       </section>
     </div>

@@ -1,15 +1,15 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { Search } from "lucide-react";
+import { type ReactNode, useMemo, useState } from "react";
+import { SearchField } from "@/components/search-field";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import {
   Table,
   TableBody,
   TableCell,
+  TableText,
   TableHead,
   TableHeader,
   TableRow,
@@ -20,7 +20,13 @@ type AdminTableProps = {
   rows: AdminRow[];
   entityLabel: string;
   searchPlaceholder: string;
+  initialSearch?: string;
+  search?: string;
+  onSearchChange?: (value: string) => void;
+  total?: number;
   onAction?: (row: AdminRow) => void;
+  pendingActionId?: string;
+  renderExtraActions?: (row: AdminRow) => ReactNode;
 };
 
 function statusClass(status: string) {
@@ -37,18 +43,28 @@ export function AdminManagementTable({
   rows,
   entityLabel,
   searchPlaceholder,
+  initialSearch = "",
+  search,
+  onSearchChange,
+  total,
   onAction,
+  renderExtraActions,
+  pendingActionId,
 }: AdminTableProps) {
-  const [query, setQuery] = useState("");
+  const [localQuery, setQuery] = useState(initialSearch);
+  const [draftSearch, setDraftSearch] = useState(initialSearch);
+  const query = search ?? localQuery;
   const filteredRows = useMemo(() => {
+    if (onSearchChange) return rows;
     const normalized = query.trim().toLowerCase();
     if (!normalized) return rows;
     return rows.filter((row) =>
-      Object.values(row).some((value) =>
-        value.toLowerCase().includes(normalized),
+      Object.values(row).some(
+        (value) =>
+          typeof value === "string" && value.toLowerCase().includes(normalized),
       ),
     );
-  }, [query, rows]);
+  }, [query, rows, onSearchChange]);
 
   return (
     <Card className="overflow-hidden rounded-2xl border-brand-line bg-white shadow-none">
@@ -57,18 +73,20 @@ export function AdminManagementTable({
           <div>
             <h2 className="font-semibold">All {entityLabel}</h2>
             <p className="text-xs text-muted-foreground">
-              {filteredRows.length}{" "}
-              {filteredRows.length === 1 ? "result" : "results"}
+              {total ?? filteredRows.length}{" "}
+              {(total ?? filteredRows.length) === 1 ? "result" : "results"}
             </p>
           </div>
-          <div className="relative w-full sm:max-w-xs">
-            <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              value={query}
-              onChange={(event) => setQuery(event.target.value)}
+          <div className="w-full sm:max-w-md">
+            <SearchField
+              value={draftSearch}
+              onChange={setDraftSearch}
               placeholder={searchPlaceholder}
-              aria-label={searchPlaceholder}
-              className="h-10 rounded-xl border-brand-line pl-9"
+              onSearch={() =>
+                onSearchChange
+                  ? onSearchChange(draftSearch.trim())
+                  : setQuery(draftSearch.trim())
+              }
             />
           </div>
         </div>
@@ -79,6 +97,12 @@ export function AdminManagementTable({
               <TableHead>
                 {entityLabel === "users" ? "User" : "Title"}
               </TableHead>
+              {entityLabel === "reports" && (
+                <>
+                  <TableHead>Type</TableHead>
+                  <TableHead>Reason</TableHead>
+                </>
+              )}
               <TableHead>Status</TableHead>
               <TableHead className="hidden lg:table-cell">Details</TableHead>
               <TableHead className="text-right">Action</TableHead>
@@ -88,16 +112,31 @@ export function AdminManagementTable({
             {filteredRows.map((row) => (
               <TableRow key={row.id}>
                 <TableCell className="font-mono text-xs text-muted-foreground">
-                  {row.id}
+                  {row.id.slice(0, 8)}
                 </TableCell>
                 <TableCell>
                   <div className="flex flex-col gap-0.5">
-                    <span className="font-medium">{row.primary}</span>
-                    <span className="text-xs text-muted-foreground">
+                    <TableText className="font-medium">{row.primary}</TableText>
+                    <TableText className="text-xs text-muted-foreground">
                       {row.secondary}
-                    </span>
+                    </TableText>
                   </div>
                 </TableCell>
+                {entityLabel === "reports" && (
+                  <TableCell>
+                    <Badge
+                      variant="secondary"
+                      className="rounded-full bg-brand-blue-soft text-brand-blue"
+                    >
+                      {row.category}
+                    </Badge>
+                  </TableCell>
+                )}
+                {entityLabel === "reports" && (
+                  <TableCell className="text-sm">
+                    <TableText>{row.reason ?? ""}</TableText>
+                  </TableCell>
+                )}
                 <TableCell>
                   <Badge
                     variant="outline"
@@ -107,25 +146,28 @@ export function AdminManagementTable({
                   </Badge>
                 </TableCell>
                 <TableCell className="hidden text-xs text-muted-foreground lg:table-cell">
-                  {row.meta}
+                  <TableText>{row.meta}</TableText>
                 </TableCell>
-                <TableCell className="text-right">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => onAction?.(row)}
-                    disabled={!onAction}
-                    className="rounded-full border-brand-line bg-white text-brand-blue"
-                  >
-                    {row.action}
-                  </Button>
+                <TableCell className="overflow-visible text-right">
+                  <div className="flex items-center justify-end gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => onAction?.(row)}
+                      disabled={!onAction || pendingActionId === row.id}
+                      className="rounded-full border-brand-line bg-white text-brand-blue"
+                    >
+                      {pendingActionId === row.id ? "Updating…" : row.action}
+                    </Button>
+                    {renderExtraActions?.(row)}
+                  </div>
                 </TableCell>
               </TableRow>
             ))}
             {!filteredRows.length && (
               <TableRow>
                 <TableCell
-                  colSpan={5}
+                  colSpan={entityLabel === "reports" ? 7 : 5}
                   className="h-24 text-center text-sm text-muted-foreground"
                 >
                   No {entityLabel} match that search.
