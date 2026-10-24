@@ -5,6 +5,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import type { z } from "zod";
 import { communityCommentSchema } from "@/lib/schemas";
+import { useProfile } from "@/hooks/use-profile";
 import { useCommunityComments } from "@/hooks/use-community";
 import { CommunityAuthor } from "@/components/community-author";
 import { CommunityDelete } from "@/components/community-delete";
@@ -20,6 +21,8 @@ export function CommunityComments({
   signedIn: boolean;
 }) {
   const { query, create, remove } = useCommunityComments(postId);
+  const { profileQuery } = useProfile();
+  const canComment = profileQuery.data?.profile.role === "client";
   const form = useForm<z.infer<typeof communityCommentSchema>>({
     resolver: zodResolver(communityCommentSchema),
     defaultValues: { content: "" },
@@ -36,7 +39,7 @@ export function CommunityComments({
       className="flex flex-col gap-4 border-t border-brand-line pt-4"
       aria-label="Post comments"
     >
-      {signedIn ? (
+      {signedIn && canComment ? (
         <form
           className="flex flex-col gap-2"
           onSubmit={form.handleSubmit(({ content }) =>
@@ -74,7 +77,7 @@ export function CommunityComments({
             </p>
           )}
         </form>
-      ) : (
+      ) : signedIn ? null : (
         <p className="text-sm text-muted-foreground">
           <Link href="/login" className="text-brand-blue hover:underline">
             Sign in
@@ -91,7 +94,7 @@ export function CommunityComments({
         </p>
       )}
       {!query.isPending && !query.error && !comments.length && (
-        <p className="text-sm text-muted-foreground">Start the conversation.</p>
+        <p className="text-sm text-muted-foreground">No comments yet.</p>
       )}
       {comments.map((comment) => (
         <div

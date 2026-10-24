@@ -5,17 +5,20 @@ import {
   communityError,
   mapPosts,
   photoBucket,
+  uuid,
 } from "@/app/api/community/_shared";
 
 export async function GET(request: Request) {
   const context = await getApiContext();
   const params = new URL(request.url).searchParams;
-  const page = Number(params.get("page") || "0");
+  const page = Number(params.get("page") || "1");
   const search = (params.get("search") || "").trim();
+  const postId = params.get("postId") || "";
   const kind = params.get("kind") || "all";
   const sort = params.get("sort") || "newest";
   if (
     search.length > 200 ||
+    (Boolean(postId) && !uuid.safeParse(postId).success) ||
     !["all", "photos", "itinerary"].includes(kind) ||
     !["newest", "oldest"].includes(sort)
   )
@@ -23,29 +26,26 @@ export async function GET(request: Request) {
       { message: "Invalid community filters." },
       { status: 400 },
     );
-  if (!Number.isInteger(page) || page < 0 || page > 10000)
+  if (!Number.isInteger(page) || page < 1 || page > 10000)
     return NextResponse.json({ message: "Invalid page." }, { status: 400 });
-  let query = context.supabase
-    .from("community_posts")
-    .select("id, user_id, content, image_paths, trip_id, created_at");
-  // Filter before pagination so search includes the entire feed.
-  if (search)
-    query = query.ilike(
-      "content",
-      `%${search.replace(/[\\%_]/g, (character) => "\\" + character)}%`,
-    );
-  if (kind === "photos") query = query.neq("image_paths", "{}");
-  if (kind === "itinerary") query = query.not("trip_id", "is", null);
-  const { data, error } = await query
-    .order("created_at", { ascending: sort === "oldest" })
-    .order("id", { ascending: sort === "oldest" })
-    .range(page * 20, page * 20 + 20);
-  if (error) return communityError(error);
+  // Match post text and author names before counting and selecting a page.
+  const result = await context.supabase.rpc("get_community_post_page", {
+    _page: page,
+    _search: search,
+    _kind: kind,
+    _sort: sort,
+    _post_id: postId || null,
+  });
+  if (result.error) return communityError(result.error);
+  const { posts, ...pagination } = result.data;
   try {
-    return NextResponse.json({
-      posts: await mapPosts(context, (data ?? []).slice(0, 20)),
-      nextPage: (data?.length ?? 0) > 20 ? page + 1 : null,
-    });
+    return NextResponse.json(
+      {
+        ...pagination,
+        posts: await mapPosts(context, posts ?? []),
+      },
+      { headers: { "Cache-Control": "private, no-store" } },
+    );
   } catch (cause) {
     return communityError(cause as { code?: string; message: string });
   }

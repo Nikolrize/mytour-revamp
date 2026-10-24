@@ -9,7 +9,8 @@ import {
 import type { CommunityAuthor, CommunityPost } from "@/lib/type";
 
 export const photoBucket = "community-photos";
-export const uuid = z.string().uuid();
+// PostgreSQL UUIDs can include imported IDs without RFC version/variant bits.
+export const uuid = z.guid();
 export type CommunityContext = Awaited<ReturnType<typeof getApiContext>>;
 export function communityError(error: { code?: string; message: string }) {
   const missing = ["42P01", "PGRST205", "PGRST202", "42883"].includes(
@@ -26,7 +27,7 @@ export function communityError(error: { code?: string; message: string }) {
 }
 export async function authors(context: CommunityContext, ids: string[]) {
   const result = await context.supabase
-    .from("profiles")
+    .from("users")
     .select("id, display_name, avatar_url")
     .in("id", [...new Set(ids)]);
   if (result.error) throw result.error;
@@ -111,6 +112,7 @@ export async function mapPosts(
           .publicUrl,
     ),
     canDelete: post.user_id === context.user?.id || admin,
+    canReport: post.user_id !== context.user?.id && !admin,
     likeCount: Number(statsById.get(post.id)?.like_count ?? 0),
     commentCount: Number(statsById.get(post.id)?.comment_count ?? 0),
     liked: statsById.get(post.id)?.liked ?? false,

@@ -9,7 +9,9 @@ import type { z } from "zod";
 import { ImagePlus, Send, X } from "lucide-react";
 import { communityPostSchema } from "@/lib/schemas";
 import type { CommunityAuthor as Author } from "@/lib/type";
-import { useMyTrips, useSavedTrips } from "@/hooks/use-trips";
+import { useTripPage } from "@/hooks/use-trips";
+import { SearchField } from "@/components/search-field";
+import { ItineraryPagination } from "@/components/itinerary-pagination";
 import { useCreateCommunityPost } from "@/hooks/use-community";
 import { CommunityAuthor } from "@/components/community-author";
 import { Card, CardContent } from "@/components/ui/card";
@@ -55,11 +57,11 @@ function PhotoPreview({
           width={300}
           height={300}
           unoptimized
-          className="aspect-square w-full object-cover"
+          className="h-[14svh] max-h-28 w-full object-cover"
         />
       ) : (
         <div
-          className="aspect-square bg-brand-blue-soft"
+          className="h-[14svh] max-h-28 bg-brand-blue-soft"
           aria-label="Loading photo preview"
         />
       )}
@@ -94,15 +96,17 @@ export function CommunityComposer({
     defaultValues: { content: "", tripId: "" },
   });
   const create = useCreateCommunityPost();
-  const mine = useMyTrips();
-  const saved = useSavedTrips();
-  const options = [
-    ...new Map(
-      [...(mine.data?.trips ?? []), ...(saved.data?.trips ?? [])]
-        .filter((trip) => trip.isPublic)
-        .map((trip) => [trip.slug, trip]),
-    ).values(),
-  ];
+  const [tripSearch, setTripSearch] = useState("");
+  const [tripPage, setTripPage] = useState(1);
+  const [selectedTripLabel, setSelectedTripLabel] = useState("");
+  const [draftTripSearch, setDraftTripSearch] = useState("");
+  const tripOptions = useTripPage({
+    scope: "all",
+    page: tripPage,
+    publicOnly: true,
+    search: tripSearch,
+  });
+  const options = tripOptions.data?.trips ?? [];
   const [photos, setPhotos] = useState<File[]>([]);
   const [photoError, setPhotoError] = useState("");
   const submit = form.handleSubmit((values) => {
@@ -115,6 +119,7 @@ export function CommunityComposer({
       {
         onSuccess: () => {
           form.reset({ content: "", tripId: "" });
+          setSelectedTripLabel("");
           setPhotos([]);
           setPhotoError("");
           onPublished?.();
@@ -146,7 +151,7 @@ export function CommunityComposer({
             </p>
           )}
           {!!photos.length && (
-            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+            <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
               {photos.map((file) => (
                 <PhotoPreview
                   key={`${file.name}-${file.lastModified}-${file.size}`}
@@ -165,6 +170,16 @@ export function CommunityComposer({
             <Label htmlFor="community-trip">
               Attach an itinerary (optional)
             </Label>
+            <SearchField
+              placeholder="Search itineraries to attach"
+              value={draftTripSearch}
+              onChange={setDraftTripSearch}
+              disabled={create.isPending}
+              onSearch={() => {
+                setTripSearch(draftTripSearch.trim());
+                setTripPage(1);
+              }}
+            />
             <Controller
               control={form.control}
               name="tripId"
@@ -172,17 +187,19 @@ export function CommunityComposer({
                 <Select
                   value={field.value || "none"}
                   disabled={create.isPending}
-                  onValueChange={(value) =>
-                    field.onChange(value === "none" ? "" : value)
-                  }
+                  onValueChange={(value) => {
+                    field.onChange(value === "none" ? "" : value);
+                    setSelectedTripLabel(
+                      options.find((trip) => trip.slug === value)?.title ?? "",
+                    );
+                  }}
                 >
                   <SelectTrigger
                     id="community-trip"
                     className="w-full rounded-xl"
                   >
                     <SelectValue>
-                      {options.find((trip) => trip.slug === field.value)
-                        ?.title ?? "No itinerary attached"}
+                      {selectedTripLabel || "No itinerary attached"}
                     </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
@@ -203,7 +220,15 @@ export function CommunityComposer({
               </Link>{" "}
               to make it available here.
             </p>
-            {(mine.error || saved.error) && (
+            {tripOptions.data && (
+              <ItineraryPagination
+                page={tripOptions.data.page}
+                totalPages={tripOptions.data.totalPages}
+                busy={tripOptions.isFetching}
+                onPageChange={setTripPage}
+              />
+            )}
+            {tripOptions.error && (
               <p role="alert" className="text-xs text-destructive">
                 Could not load itinerary options. You can still publish without
                 attaching one.

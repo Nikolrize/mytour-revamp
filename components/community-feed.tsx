@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import Image from "next/image";
+import { ItineraryPagination } from "@/components/itinerary-pagination";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -21,9 +21,14 @@ import {
 } from "@/hooks/use-community";
 import { useProfile } from "@/hooks/use-profile";
 import { useTripActions } from "@/hooks/use-trips";
+import {
+  CommunityPostText,
+  CommunityPostPhotos,
+} from "@/components/community-post-content";
 import { CommunityAuthor } from "@/components/community-author";
 import { CommunityComposer } from "@/components/community-composer";
 import { CommunityComments } from "@/components/community-comments";
+import { CommunityReport } from "@/components/community-report";
 import { CommunityDelete } from "@/components/community-delete";
 import { TripTags } from "@/components/trip-tags";
 import { Button } from "@/components/ui/button";
@@ -108,7 +113,7 @@ function AttachedItinerary({
             }
             className="rounded-full"
           >
-            {copy.isPending ? "Copying…" : "Use this itinerary"}
+            {copy.isPending ? "Copying…" : "Copy itinerary"}
           </Button>
         )}
       </div>
@@ -136,63 +141,23 @@ function CommunityPostCard({
         {/* Story author, text, and photos */}
         <div className="flex items-start justify-between gap-3">
           <CommunityAuthor author={post.author} createdAt={post.createdAt} />
-          {post.canDelete && (
-            <CommunityDelete
-              kind="post"
-              pending={remove.isPending}
-              error={remove.error?.message}
-              onConfirm={() => remove.mutateAsync()}
-            />
-          )}
-        </div>
-        {post.content && (
-          <p className="whitespace-pre-wrap break-words text-sm leading-7">
-            {post.content}
-          </p>
-        )}
-        {!!post.images.length && (
-          <div
-            className={`grid gap-2 ${post.images.length > 1 ? "grid-cols-2" : "grid-cols-1"}`}
-          >
-            {post.images.map((image, index) => (
-              <Dialog key={image}>
-                <DialogTrigger
-                  render={
-                    <button
-                      type="button"
-                      className="overflow-hidden rounded-2xl focus-visible:outline-2 focus-visible:outline-brand-blue"
-                      aria-label={`Open photo ${index + 1} from ${post.author.name}`}
-                    />
-                  }
-                >
-                  <Image
-                    src={image}
-                    alt={`Travel photo ${index + 1} shared by ${post.author.name}`}
-                    width={1000}
-                    height={750}
-                    unoptimized
-                    className={`w-full object-cover ${post.images.length === 1 ? "max-h-[65svh]" : "aspect-square"}`}
-                  />
-                </DialogTrigger>
-                <DialogContent className="max-w-[92vw] sm:max-w-[75vw]">
-                  <DialogHeader>
-                    <DialogTitle>Photo by {post.author.name}</DialogTitle>
-                    <DialogDescription>
-                      Photo {index + 1} of {post.images.length}
-                    </DialogDescription>
-                  </DialogHeader>
-                  <Image
-                    src={image}
-                    alt={`Travel photo ${index + 1} shared by ${post.author.name}`}
-                    width={1600}
-                    height={1200}
-                    unoptimized
-                    className="max-h-[75svh] w-full rounded-xl object-contain"
-                  />
-                </DialogContent>
-              </Dialog>
-            ))}
+          <div className="flex shrink-0 items-center gap-1">
+            {post.canReport && (
+              <CommunityReport postId={post.id} signedIn={signedIn} />
+            )}
+            {post.canDelete && (
+              <CommunityDelete
+                kind="post"
+                pending={remove.isPending}
+                error={remove.error?.message}
+                onConfirm={() => remove.mutateAsync()}
+              />
+            )}
           </div>
+        </div>
+        {post.content && <CommunityPostText content={post.content} />}
+        {!!post.images.length && (
+          <CommunityPostPhotos images={post.images} author={post.author.name} />
         )}
         <AttachedItinerary post={post} signedIn={signedIn} />
         {/* Social interactions are independent of itinerary ratings and saves. */}
@@ -248,17 +213,31 @@ function CommunityPostCard({
 
 export function CommunityFeed({
   moderation = false,
+  postId = "",
 }: {
   moderation?: boolean;
+  postId?: string;
 }) {
+  const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
   const [draftSearch, setDraftSearch] = useState("");
   const [kind, setKind] = useState("all");
   const [sort, setSort] = useState("newest");
   const [composerOpen, setComposerOpen] = useState(false);
-  const feed = useCommunityPosts({ search, kind, sort });
-  const hasFilters = Boolean(search || kind !== "all" || sort !== "newest");
+  const [selectedPost, setSelectedPost] = useState(postId);
+  const feed = useCommunityPosts({
+    search,
+    kind,
+    sort,
+    postId: selectedPost,
+    page,
+  });
+  const hasFilters = Boolean(
+    search || kind !== "all" || sort !== "newest" || selectedPost,
+  );
   function clearFilters() {
+    setPage(1);
+    setSelectedPost("");
     setSearch("");
     setDraftSearch("");
     setKind("all");
@@ -266,14 +245,7 @@ export function CommunityFeed({
   }
   const { profileQuery } = useProfile();
   const profile = profileQuery.data?.profile;
-  const posts = [
-    ...new Map(
-      (feed.data?.pages.flatMap((page) => page.posts) ?? []).map((post) => [
-        post.id,
-        post,
-      ]),
-    ).values(),
-  ];
+  const posts = feed.data?.posts ?? [];
   return (
     <div className="flex w-full min-w-0 flex-col gap-5">
       {/* Browse stories before opening the optional post composer. */}
@@ -282,6 +254,7 @@ export function CommunityFeed({
           onSubmit={(event) => {
             event.preventDefault();
             setSearch(draftSearch.trim());
+            setPage(1);
           }}
           className="flex flex-col gap-3 sm:flex-row sm:items-end"
         >
@@ -294,7 +267,7 @@ export function CommunityFeed({
                 value={draftSearch}
                 onChange={(event) => setDraftSearch(event.target.value)}
                 maxLength={200}
-                placeholder="Search post text"
+                placeholder="Search post text or author"
                 className="h-10 border-0 px-0 shadow-none focus-visible:ring-0"
               />
             </div>
@@ -311,7 +284,10 @@ export function CommunityFeed({
             <Label htmlFor="community-kind">Post Type</Label>
             <Select
               value={kind}
-              onValueChange={(value) => setKind(value ?? "all")}
+              onValueChange={(value) => {
+                setKind(value ?? "all");
+                setPage(1);
+              }}
             >
               <SelectTrigger
                 id="community-kind"
@@ -336,7 +312,10 @@ export function CommunityFeed({
             <Label htmlFor="community-sort">Sort By</Label>
             <Select
               value={sort}
-              onValueChange={(value) => setSort(value ?? "newest")}
+              onValueChange={(value) => {
+                setSort(value ?? "newest");
+                setPage(1);
+              }}
             >
               <SelectTrigger
                 id="community-sort"
@@ -406,8 +385,10 @@ export function CommunityFeed({
         )}
       </div>
       <section
+        id="community-results"
+        aria-busy={feed.isFetching}
         aria-label={moderation ? "Community post moderation" : "Community feed"}
-        className="flex flex-col gap-6"
+        className="flex scroll-mt-28 flex-col gap-6"
       >
         {feed.isPending && (
           <p className="text-sm text-muted-foreground">
@@ -450,16 +431,18 @@ export function CommunityFeed({
             signedIn={Boolean(profile)}
           />
         ))}
-        {feed.hasNextPage && (
-          <Button
-            variant="outline"
-            className="self-center rounded-full"
-            disabled={feed.isFetchingNextPage}
-            onClick={() => feed.fetchNextPage()}
-          >
-            {feed.isFetchingNextPage ? "Loading…" : "Load more stories"}
-          </Button>
-        )}
+        <ItineraryPagination
+          label="Community pages"
+          page={feed.data?.page ?? page}
+          totalPages={feed.data?.totalPages ?? 1}
+          busy={feed.isFetching}
+          onPageChange={(next) => {
+            setPage(next);
+            document
+              .getElementById("community-results")
+              ?.scrollIntoView({ behavior: "smooth", block: "start" });
+          }}
+        />
       </section>
     </div>
   );
