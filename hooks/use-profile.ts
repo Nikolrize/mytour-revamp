@@ -3,7 +3,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { z } from "zod";
 import { apiRequest } from "@/lib/api";
-import { profileSchema } from "@/lib/schemas";
+import { profileSchema, resetPasswordSchema } from "@/lib/schemas";
 
 export type ProfileValues = z.infer<typeof profileSchema>;
 export type ProfileRecord = {
@@ -36,6 +36,7 @@ export function useProfile(onUpdated?: () => void) {
     onSuccess: async (result) => {
       queryClient.setQueryData(["profile"], result);
       await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["public-profile"] }),
         queryClient.invalidateQueries({ queryKey: ["trips"] }),
         queryClient.invalidateQueries({ queryKey: ["community-posts"] }),
         queryClient.invalidateQueries({ queryKey: ["community-comments"] }),
@@ -60,4 +61,11 @@ export function useProfile(onUpdated?: () => void) {
     },
   });
   return { profileQuery, updateProfile, uploadAvatar };
+}
+
+// Password updates use their own action so saving a bio cannot change credentials.
+export function useChangePassword() {
+  return useMutation({
+    mutationFn: (values: z.infer<typeof resetPasswordSchema>) => apiRequest<{ message: string }>("/api/profile/password", { method: "POST", body: JSON.stringify(values) }),
+  });
 }
