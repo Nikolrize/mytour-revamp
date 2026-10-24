@@ -1,5 +1,7 @@
 "use client";
 
+import { ProfileLoadingSkeleton } from "@/components/loading-skeletons";
+
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useForm, useWatch } from "react-hook-form";
@@ -79,6 +81,8 @@ export function ProfilePage() {
     tripsQuery.error?.message ||
     updateProfile.error?.message ||
     uploadAvatar.error?.message;
+
+  if (loading) return <ProfileLoadingSkeleton />;
 
   return (
     <div className="flex w-full flex-col gap-8 py-10 sm:gap-10 sm:py-14">
@@ -348,11 +352,6 @@ export function ProfilePage() {
                 />
               ))}
             </div>
-            {loading && (
-              <p className="text-sm text-muted-foreground">
-                Loading your trips…
-              </p>
-            )}
             {!loading && !myTrips.length && (
               <p className="rounded-xl border border-dashed border-brand-line p-6 text-sm text-muted-foreground">
                 You have not planned a trip yet.

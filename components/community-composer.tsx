@@ -1,5 +1,7 @@
 "use client";
 
+import { LoadingBlock } from "@/components/loading-skeletons";
+
 import { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
@@ -16,6 +18,7 @@ import { useCreateCommunityPost } from "@/hooks/use-community";
 import { CommunityAuthor } from "@/components/community-author";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -60,10 +63,9 @@ function PhotoPreview({
           className="h-[14svh] max-h-28 w-full object-cover"
         />
       ) : (
-        <div
-          className="h-[14svh] max-h-28 bg-brand-blue-soft"
-          aria-label="Loading photo preview"
-        />
+        <LoadingBlock label="Loading photo preview">
+          <Skeleton className="h-[14svh] max-h-28 w-full rounded-none" />
+        </LoadingBlock>
       )}
       <Button
         type="button"
@@ -180,39 +182,48 @@ export function CommunityComposer({
                 setTripPage(1);
               }}
             />
-            <Controller
-              control={form.control}
-              name="tripId"
-              render={({ field }) => (
-                <Select
-                  value={field.value || "none"}
-                  disabled={create.isPending}
-                  onValueChange={(value) => {
-                    field.onChange(value === "none" ? "" : value);
-                    setSelectedTripLabel(
-                      options.find((trip) => trip.slug === value)?.title ?? "",
-                    );
-                  }}
-                >
-                  <SelectTrigger
-                    id="community-trip"
-                    className="w-full rounded-xl"
+            {tripOptions.isPending ? (
+              <LoadingBlock label="Loading itinerary options">
+                <Skeleton className="h-10 w-full rounded-xl" />
+              </LoadingBlock>
+            ) : (
+              <Controller
+                control={form.control}
+                name="tripId"
+                render={({ field }) => (
+                  <Select
+                    value={field.value || "none"}
+                    disabled={create.isPending}
+                    onValueChange={(value) => {
+                      field.onChange(value === "none" ? "" : value);
+                      setSelectedTripLabel(
+                        options.find((trip) => trip.slug === value)?.title ??
+                          "",
+                      );
+                    }}
                   >
-                    <SelectValue>
-                      {selectedTripLabel || "No itinerary attached"}
-                    </SelectValue>
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">No itinerary attached</SelectItem>
-                    {options.map((trip) => (
-                      <SelectItem key={trip.slug} value={trip.slug}>
-                        {trip.title}
+                    <SelectTrigger
+                      id="community-trip"
+                      className="w-full rounded-xl"
+                    >
+                      <SelectValue>
+                        {selectedTripLabel || "No itinerary attached"}
+                      </SelectValue>
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">
+                        No itinerary attached
                       </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              )}
-            />
+                      {options.map((trip) => (
+                        <SelectItem key={trip.slug} value={trip.slug}>
+                          {trip.title}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              />
+            )}
             <p className="text-xs leading-5 text-muted-foreground">
               Choose one of your published or saved itineraries.{" "}
               <Link href="/trips" className="text-brand-blue hover:underline">

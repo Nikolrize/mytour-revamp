@@ -1,5 +1,7 @@
 "use client";
 
+import { TripCardGridSkeleton } from "@/components/loading-skeletons";
+
 import { useMemo, useState } from "react";
 import { ArrowRight, MapPin, Search, SlidersHorizontal } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -85,7 +87,7 @@ export function ExploreDestinations() {
           </p>
         </div>
         {loading ? (
-          <p className="text-sm text-muted-foreground">Loading destinations…</p>
+          <TripCardGridSkeleton />
         ) : error ? (
           <p role="alert" className="text-sm text-destructive">
             {error}

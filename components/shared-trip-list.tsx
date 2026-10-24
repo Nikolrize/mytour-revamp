@@ -1,5 +1,7 @@
 "use client";
 
+import { TripCardGridSkeleton } from "@/components/loading-skeletons";
+
 import { ItineraryCard } from "@/components/itinerary-card";
 import { usePublicTrips } from "@/hooks/use-trips";
 
@@ -9,10 +11,7 @@ export function SharedTripList({ limit }: { limit?: number } = {}) {
     ? (data?.trips ?? []).slice(0, limit)
     : (data?.trips ?? []);
 
-  if (isPending)
-    return (
-      <p className="text-sm text-muted-foreground">Loading shared trips…</p>
-    );
+  if (isPending) return <TripCardGridSkeleton count={limit ?? 6} />;
   if (error)
     return (
       <p role="alert" className="text-sm text-destructive">

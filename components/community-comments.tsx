@@ -1,5 +1,7 @@
 "use client";
 
+import { CommentsLoadingSkeleton } from "@/components/loading-skeletons";
+
 import Link from "next/link";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -85,9 +87,7 @@ export function CommunityComments({
           to comment.
         </p>
       )}
-      {query.isPending && (
-        <p className="text-sm text-muted-foreground">Loading comments…</p>
-      )}
+      {query.isPending && <CommentsLoadingSkeleton />}
       {query.error && (
         <p role="alert" className="text-sm text-destructive">
           {query.error.message}

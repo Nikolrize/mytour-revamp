@@ -1,6 +1,9 @@
 "use client";
 
+import { LoadingBlock } from "@/components/loading-skeletons";
+
 import dynamic from "next/dynamic";
+import { Skeleton } from "@/components/ui/skeleton";
 import type { ItineraryStop } from "@/lib/type";
 import { Button } from "@/components/ui/button";
 
@@ -12,7 +15,9 @@ const LeafletRouteMap = dynamic(
   {
     ssr: false,
     loading: () => (
-      <div className="h-64 animate-pulse rounded-2xl bg-brand-blue-soft" />
+      <LoadingBlock label="Loading route map">
+        <Skeleton className="h-64 w-full rounded-2xl" />
+      </LoadingBlock>
     ),
   },
 );

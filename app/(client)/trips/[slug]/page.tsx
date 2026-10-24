@@ -1,5 +1,7 @@
 "use client";
 
+import { TripDetailLoadingSkeleton } from "@/components/loading-skeletons";
+
 import { ConfirmAction } from "@/components/confirm-action";
 import { TripStatusBadge } from "@/components/trip-status-badge";
 import { TripStateCover } from "@/components/trip-state-cover";
@@ -32,13 +34,7 @@ import { useTripStops } from "@/hooks/use-trip-stops";
 
 export default function TripDetailPage() {
   return (
-    <Suspense
-      fallback={
-        <div className="flex min-h-[50svh] w-full items-center justify-center text-sm text-muted-foreground">
-          Loading trip…
-        </div>
-      }
-    >
+    <Suspense fallback={<TripDetailLoadingSkeleton />}>
       <TripDetailRoute />
     </Suspense>
   );
@@ -70,11 +66,7 @@ function TripDetailContent() {
   const { remove } = useTripStops(slug, false);
 
   if (tripQuery.isPending) {
-    return (
-      <div className="flex min-h-[50svh] w-full items-center justify-center text-sm text-muted-foreground">
-        Loading trip…
-      </div>
-    );
+    return <TripDetailLoadingSkeleton />;
   }
   if (tripQuery.error || !trip) {
     return (

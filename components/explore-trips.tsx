@@ -1,5 +1,7 @@
 "use client";
 
+import { TripCardGridSkeleton } from "@/components/loading-skeletons";
+
 import { type SetStateAction, useState } from "react";
 import Link from "next/link";
 import { ArrowRight, Search, X } from "lucide-react";
@@ -252,7 +254,9 @@ export function ExploreTrips({
           <p role="alert" className="text-sm text-destructive">
             {trips.error.message}
           </p>
-        ) : trips.isPending ? null : filtered.length ? (
+        ) : trips.isPending ? (
+          <TripCardGridSkeleton count={maxItems ?? 6} />
+        ) : filtered.length ? (
           <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
             {visibleTrips.map((trip) => (
               <ItineraryCard key={trip.slug} itinerary={trip} />

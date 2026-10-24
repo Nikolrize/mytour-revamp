@@ -1,5 +1,11 @@
 "use client";
 
+import {
+  LoadingBlock,
+  CommentsLoadingSkeleton,
+} from "@/components/loading-skeletons";
+
+import { Skeleton } from "@/components/ui/skeleton";
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Controller, useForm, useWatch } from "react-hook-form";
@@ -280,6 +286,15 @@ export function PlanBuilder({ mode = "ai" }: { mode?: "ai" | "manual" }) {
                 <p className="text-xs text-muted-foreground">
                   Choose one or add a few to make a multi-state trip.
                 </p>
+                {statesQuery.isPending && (
+                  <LoadingBlock label="Loading states">
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      {Array.from({ length: 8 }, (_, index) => (
+                        <Skeleton key={index} className="h-24 rounded-2xl" />
+                      ))}
+                    </div>
+                  </LoadingBlock>
+                )}
                 <div className="grid gap-3 sm:grid-cols-2">
                   {states.map((state) => {
                     const stateImage = stateImages[state];
@@ -668,6 +683,9 @@ export function PlanBuilder({ mode = "ai" }: { mode?: "ai" | "manual" }) {
               <p className="text-xs text-muted-foreground">
                 Travelling: {travellers.toLowerCase()}
               </p>
+              {generateItinerary.isPending && (
+                <CommentsLoadingSkeleton label="Generating itinerary" />
+              )}
               <div className="flex flex-col gap-0">
                 {(!generated
                   ? []

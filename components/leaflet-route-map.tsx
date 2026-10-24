@@ -1,5 +1,7 @@
 "use client";
 
+import { Skeleton } from "@/components/ui/skeleton";
+import { LoadingBlock } from "@/components/loading-skeletons";
 import { useEffect } from "react";
 import { divIcon, latLngBounds, type LatLngExpression } from "leaflet";
 import {
@@ -115,9 +117,13 @@ export function LeafletRouteMap({
       )}
       {!located.length && (
         <div className="absolute inset-0 z-[400] grid place-items-center bg-background/80 p-5 text-center text-sm text-muted-foreground">
-          {isLocating
-            ? "Finding your itinerary stops on the map…"
-            : "Could not locate these places automatically. Add a Google Maps link to confirm each location."}
+          {isLocating ? (
+            <LoadingBlock label="Locating itinerary stops" className="w-full">
+              <Skeleton className="h-52 w-full rounded-xl" />
+            </LoadingBlock>
+          ) : (
+            "Could not locate these places automatically. Add a Google Maps link to confirm each location."
+          )}
         </div>
       )}
     </div>

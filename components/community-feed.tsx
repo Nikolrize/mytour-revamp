@@ -1,5 +1,7 @@
 "use client";
 
+import { CommunityFeedSkeleton } from "@/components/loading-skeletons";
+
 import { useState } from "react";
 import { ItineraryPagination } from "@/components/itinerary-pagination";
 import Link from "next/link";
@@ -390,11 +392,7 @@ export function CommunityFeed({
         aria-label={moderation ? "Community post moderation" : "Community feed"}
         className="flex scroll-mt-28 flex-col gap-6"
       >
-        {feed.isPending && (
-          <p className="text-sm text-muted-foreground">
-            Loading travel stories…
-          </p>
-        )}
+        {feed.isPending && <CommunityFeedSkeleton />}
         {feed.error && (
           <div
             role="alert"

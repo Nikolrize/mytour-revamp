@@ -1,5 +1,7 @@
 "use client";
 
+import { CommentsLoadingSkeleton } from "@/components/loading-skeletons";
+
 import Link from "next/link";
 import { useProfile } from "@/hooks/use-profile";
 import { useEffect, useState } from "react";
@@ -169,9 +171,7 @@ export function TripComments({
 
       {/* Existing community comments */}
       <div className="flex flex-col gap-3">
-        {commentsQuery.isPending && (
-          <p className="text-sm text-muted-foreground">Loading comments…</p>
-        )}
+        {commentsQuery.isPending && <CommentsLoadingSkeleton />}
         {commentsQuery.error && (
           <p role="alert" className="text-sm text-destructive">
             {commentsQuery.error.message}

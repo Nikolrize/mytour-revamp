@@ -1,8 +1,11 @@
 "use client";
 
+import { LoadingBlock } from "@/components/loading-skeletons";
+
 import { NewPlanMenu } from "@/components/new-plan-menu";
 
 import Image from "next/image";
+import { Skeleton } from "@/components/ui/skeleton";
 import Link from "next/link";
 import { Menu, UserRound, LogOut, LayoutDashboard } from "lucide-react";
 import { useRouter, usePathname } from "next/navigation";
@@ -130,10 +133,9 @@ export function SiteHeader() {
               </DropdownMenuContent>
             </DropdownMenu>
           ) : profileQuery.isPending ? (
-            <span
-              className="size-10 rounded-full bg-brand-blue-soft"
-              aria-label="Loading account"
-            />
+            <LoadingBlock label="Loading account">
+              <Skeleton className="size-10 rounded-full" />
+            </LoadingBlock>
           ) : (
             <Button
               nativeButton={false}

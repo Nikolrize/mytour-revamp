@@ -1,5 +1,10 @@
 "use client";
 
+import {
+  TripCardGridSkeleton,
+  MetricsLoadingSkeleton,
+} from "@/components/loading-skeletons";
+
 import { NewPlanMenu } from "@/components/new-plan-menu";
 
 import { useState } from "react";
@@ -66,29 +71,36 @@ export function TripLibrary() {
       </header>
 
       {/* Trip library summary */}
-      <section className="grid gap-3 sm:grid-cols-3" aria-label="Trip summary">
-        <MetricCard
-          label="Trips saved"
-          value={stats?.saved ?? 0}
-          icon={Route}
-          iconTone="bg-brand-blue-soft text-brand-blue"
-          variant="compact"
-        />
-        <MetricCard
-          label="Still planning"
-          value={stats?.planning ?? 0}
-          icon={Compass}
-          iconTone="bg-brand-yellow-soft text-brand-red"
-          variant="compact"
-        />
-        <MetricCard
-          label="Ongoing"
-          value={stats?.ongoing ?? 0}
-          icon={Share2}
-          iconTone="bg-brand-red-soft text-brand-red"
-          variant="compact"
-        />
-      </section>
+      {loading ? (
+        <MetricsLoadingSkeleton count={3} />
+      ) : (
+        <section
+          className="grid gap-3 sm:grid-cols-3"
+          aria-label="Trip summary"
+        >
+          <MetricCard
+            label="Trips saved"
+            value={stats?.saved ?? 0}
+            icon={Route}
+            iconTone="bg-brand-blue-soft text-brand-blue"
+            variant="compact"
+          />
+          <MetricCard
+            label="Still planning"
+            value={stats?.planning ?? 0}
+            icon={Compass}
+            iconTone="bg-brand-yellow-soft text-brand-red"
+            variant="compact"
+          />
+          <MetricCard
+            label="Ongoing"
+            value={stats?.ongoing ?? 0}
+            icon={Share2}
+            iconTone="bg-brand-red-soft text-brand-red"
+            variant="compact"
+          />
+        </section>
+      )}
 
       {/* Saved itinerary collection */}
       <section className="flex flex-col gap-6" aria-label="Saved itineraries">
@@ -117,7 +129,7 @@ export function TripLibrary() {
           </span>
         </div>
         {loading ? (
-          <p className="text-sm text-muted-foreground">Loading your trips…</p>
+          <TripCardGridSkeleton />
         ) : listError ? (
           <p
             role="alert"
