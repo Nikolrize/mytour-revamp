@@ -1,52 +1,34 @@
-import { z } from "zod";
-import { NextResponse } from "next/server";
+import { errorResponse } from "@/app/api/_response";
 import { getApiContext, userIsAdmin } from "@/app/api/_shared";
+import { NextResponse } from "next/server";
+import { z } from "zod";
 
 export async function PATCH(
   request: Request,
   context: { params: Promise<{ reportId: string }> },
 ) {
   const { supabase, user } = await getApiContext();
-  if (!user)
-    return NextResponse.json({ message: "Sign in required." }, { status: 401 });
+  if (!user) return errorResponse("Sign in required.", 401);
   if (!(await userIsAdmin(supabase, user.id)))
-    return NextResponse.json(
-      { message: "Admin access required." },
-      { status: 403 },
-    );
+    return errorResponse("Admin access required.", 403);
   const { reportId } = await context.params;
   if (!z.guid().safeParse(reportId).success)
-    return NextResponse.json(
-      { message: "Invalid report ID." },
-      { status: 400 },
-    );
+    return errorResponse("Invalid report ID.", 400);
   let input: unknown;
   try {
     input = await request.json();
   } catch {
-    return NextResponse.json(
-      { message: "Invalid request body." },
-      { status: 400 },
-    );
+    return errorResponse("Invalid request body.", 400);
   }
   if (!input || typeof input !== "object")
-    return NextResponse.json(
-      { message: "Invalid request body." },
-      { status: 400 },
-    );
+    return errorResponse("Invalid request body.", 400);
   const body = input as Record<string, unknown>;
   const status = body.status;
   const targetType = body.targetType ?? "trip";
   if (targetType !== "trip" && targetType !== "post")
-    return NextResponse.json(
-      { message: "Invalid report type." },
-      { status: 400 },
-    );
+    return errorResponse("Invalid report type.", 400);
   if (status !== "open" && status !== "resolved" && status !== "dismissed")
-    return NextResponse.json(
-      { message: "Status must be open, resolved or dismissed." },
-      { status: 400 },
-    );
+    return errorResponse("Status must be open, resolved or dismissed.", 400);
   const { data, error } = await supabase
     .from(targetType === "post" ? "community_post_reports" : "trip_reports")
     .update({
@@ -58,17 +40,13 @@ export async function PATCH(
     .select("id, status")
     .maybeSingle();
   if (error)
-    return NextResponse.json(
-      {
-        message:
-          error.code === "23505"
-            ? "This reporter already has another flagged report for this post."
-            : "Could not update this report.",
-      },
-      { status: error.code === "23505" ? 409 : 400 },
+    return errorResponse(
+      error.code === "23505"
+        ? "This reporter already has another flagged report for this post."
+        : "Could not update this report.",
+      error.code === "23505" ? 409 : 400,
     );
-  if (!data)
-    return NextResponse.json({ message: "Report not found." }, { status: 404 });
+  if (!data) return errorResponse("Report not found.", 404);
   return NextResponse.json({ report: data });
 }
 
@@ -78,13 +56,9 @@ export async function GET(
   context: { params: Promise<{ reportId: string }> },
 ) {
   const { supabase, user } = await getApiContext();
-  if (!user)
-    return NextResponse.json({ message: "Sign in required." }, { status: 401 });
+  if (!user) return errorResponse("Sign in required.", 401);
   if (!(await userIsAdmin(supabase, user.id)))
-    return NextResponse.json(
-      { message: "Admin access required." },
-      { status: 403 },
-    );
+    return errorResponse("Admin access required.", 403);
   const { reportId } = await context.params;
   const targetType =
     new URL(request.url).searchParams.get("targetType") ?? "trip";
@@ -92,22 +66,14 @@ export async function GET(
     !z.guid().safeParse(reportId).success ||
     !["trip", "post"].includes(targetType)
   )
-    return NextResponse.json(
-      { message: "Invalid report request." },
-      { status: 400 },
-    );
+    return errorResponse("Invalid report request.", 400);
   const result = await supabase
     .from(targetType === "post" ? "community_post_reports" : "trip_reports")
     .select("*")
     .eq("id", reportId)
     .maybeSingle();
-  if (result.error)
-    return NextResponse.json(
-      { message: "Could not load report details." },
-      { status: 500 },
-    );
-  if (!result.data)
-    return NextResponse.json({ message: "Report not found." }, { status: 404 });
+  if (result.error) return errorResponse("Could not load report details.", 500);
+  if (!result.data) return errorResponse("Report not found.", 404);
   const row = result.data;
   const contentId = targetType === "post" ? row.post_id : row.trip_id;
   const peopleIds = [row.reporter_id, row.reviewed_by].filter(Boolean);
@@ -126,10 +92,7 @@ export async function GET(
     supabase.from("users").select("id,display_name").in("id", peopleIds),
   ]);
   if (content.error || people.error)
-    return NextResponse.json(
-      { message: "Could not load report information." },
-      { status: 500 },
-    );
+    return errorResponse("Could not load report information.", 500);
   const names = new Map(
     (people.data ?? []).map((person) => [person.id, person.display_name]),
   );

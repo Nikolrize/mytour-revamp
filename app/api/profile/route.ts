@@ -1,20 +1,16 @@
-import { NextResponse } from "next/server";
+import { errorResponse } from "@/app/api/_response";
 import { getApiContext } from "@/app/api/_shared";
+import { NextResponse } from "next/server";
 
 export async function GET() {
   const { supabase, user } = await getApiContext();
-  if (!user)
-    return NextResponse.json(
-      { message: "Sign in to view your profile." },
-      { status: 401 },
-    );
+  if (!user) return errorResponse("Sign in to view your profile.", 401);
   const { data, error } = await supabase
     .from("users")
     .select("id, display_name, avatar_url, bio, role, created_at, updated_at")
     .eq("id", user.id)
     .maybeSingle();
-  if (error)
-    return NextResponse.json({ message: error.message }, { status: 500 });
+  if (error) return errorResponse(error.message, 500);
   return NextResponse.json({
     profile: data ?? {
       id: user.id,
@@ -29,33 +25,20 @@ export async function GET() {
 
 export async function PATCH(request: Request) {
   const { supabase, user } = await getApiContext();
-  if (!user)
-    return NextResponse.json(
-      { message: "Sign in to update your profile." },
-      { status: 401 },
-    );
+  if (!user) return errorResponse("Sign in to update your profile.", 401);
   let input: unknown;
   try {
     input = await request.json();
   } catch {
-    return NextResponse.json(
-      { message: "Invalid request body." },
-      { status: 400 },
-    );
+    return errorResponse("Invalid request body.", 400);
   }
   if (!input || typeof input !== "object")
-    return NextResponse.json(
-      { message: "Invalid request body." },
-      { status: 400 },
-    );
+    return errorResponse("Invalid request body.", 400);
   const body = input as Record<string, unknown>;
   const displayName =
     typeof body.displayName === "string" ? body.displayName.trim() : "";
   if (!displayName || displayName.length > 60)
-    return NextResponse.json(
-      { message: "Name must be between 1 and 60 characters." },
-      { status: 400 },
-    );
+    return errorResponse("Name must be between 1 and 60 characters.", 400);
   const avatarUrl =
     typeof body.avatarUrl === "string" && body.avatarUrl.trim()
       ? body.avatarUrl.trim()
@@ -66,15 +49,9 @@ export async function PATCH(request: Request) {
     avatarUrl &&
     (!/^https?:\/\//i.test(avatarUrl) || avatarUrl.length > 2048)
   )
-    return NextResponse.json(
-      { message: "Avatar must be a valid http(s) URL." },
-      { status: 400 },
-    );
+    return errorResponse("Avatar must be a valid http(s) URL.", 400);
   if (bio && bio.length > 240)
-    return NextResponse.json(
-      { message: "Bio must be 240 characters or fewer." },
-      { status: 400 },
-    );
+    return errorResponse("Bio must be 240 characters or fewer.", 400);
   const changes = {
     display_name: displayName,
     avatar_url: avatarUrl,
@@ -99,14 +76,11 @@ export async function PATCH(request: Request) {
   }
   const { data, error } = result;
   if (error)
-    return NextResponse.json(
-      {
-        message:
-          error.code === "42501"
-            ? "Account permissions need a database update. Check the grants and own-row policies on public.users."
-            : error.message,
-      },
-      { status: 400 },
+    return errorResponse(
+      error.code === "42501"
+        ? "Account permissions need a database update. Check the grants and own-row policies on public.users."
+        : error.message,
+      400,
     );
   return NextResponse.json({ profile: data });
 }

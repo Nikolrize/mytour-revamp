@@ -1,34 +1,28 @@
-import { NextResponse } from "next/server";
+import { errorResponse } from "@/app/api/_response";
 import { getApiContext } from "@/app/api/_shared";
+import { NextResponse } from "next/server";
 
 export async function POST(
   _request: Request,
   context: { params: Promise<{ tripId: string }> },
 ) {
   const { supabase, user } = await getApiContext();
-  if (!user)
-    return NextResponse.json(
-      { message: "Sign in to save trips." },
-      { status: 401 },
-    );
+  if (!user) return errorResponse("Sign in to save trips.", 401);
   const { tripId } = await context.params;
   const { data: trip, error: tripError } = await supabase
     .from("trips")
     .select("id, is_public")
     .eq("id", tripId)
     .maybeSingle();
-  if (tripError)
-    return NextResponse.json({ message: tripError.message }, { status: 500 });
-  if (!trip?.is_public)
-    return NextResponse.json({ message: "Trip not found." }, { status: 404 });
+  if (tripError) return errorResponse(tripError.message, 500);
+  if (!trip?.is_public) return errorResponse("Trip not found.", 404);
   const { error } = await supabase
     .from("saved_trips")
     .upsert(
       { user_id: user.id, trip_id: tripId },
       { onConflict: "user_id,trip_id", ignoreDuplicates: true },
     );
-  if (error)
-    return NextResponse.json({ message: error.message }, { status: 400 });
+  if (error) return errorResponse(error.message, 400);
   return NextResponse.json({ saved: true });
 }
 
@@ -37,19 +31,14 @@ export async function DELETE(
   context: { params: Promise<{ tripId: string }> },
 ) {
   const { supabase, user } = await getApiContext();
-  if (!user)
-    return NextResponse.json(
-      { message: "Sign in to manage saved trips." },
-      { status: 401 },
-    );
+  if (!user) return errorResponse("Sign in to manage saved trips.", 401);
   const { tripId } = await context.params;
   const { error } = await supabase
     .from("saved_trips")
     .delete()
     .eq("user_id", user.id)
     .eq("trip_id", tripId);
-  if (error)
-    return NextResponse.json({ message: error.message }, { status: 400 });
+  if (error) return errorResponse(error.message, 400);
   return NextResponse.json({ saved: false });
 }
 
@@ -59,8 +48,7 @@ export async function GET(
   context: { params: Promise<{ tripId: string }> },
 ) {
   const { supabase, user } = await getApiContext();
-  if (!user)
-    return NextResponse.json({ message: "Sign in required." }, { status: 401 });
+  if (!user) return errorResponse("Sign in required.", 401);
   const { tripId } = await context.params;
   const result = await supabase
     .from("saved_trips")
@@ -68,11 +56,7 @@ export async function GET(
     .eq("user_id", user.id)
     .eq("trip_id", tripId)
     .maybeSingle();
-  if (result.error)
-    return NextResponse.json(
-      { message: "Could not load saved status." },
-      { status: 500 },
-    );
+  if (result.error) return errorResponse("Could not load saved status.", 500);
   return NextResponse.json(
     { saved: Boolean(result.data) },
     { headers: { "Cache-Control": "private, no-store" } },

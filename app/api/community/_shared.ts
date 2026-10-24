@@ -1,5 +1,4 @@
-import { NextResponse } from "next/server";
-import { z } from "zod";
+import { errorResponse } from "@/app/api/_response";
 import {
   getApiContext,
   mapTripsToItineraries,
@@ -7,6 +6,7 @@ import {
   type TripRow,
 } from "@/app/api/_shared";
 import type { CommunityAuthor, CommunityPost } from "@/lib/type";
+import { z } from "zod";
 
 export const photoBucket = "community-photos";
 // PostgreSQL UUIDs can include imported IDs without RFC version/variant bits.
@@ -16,13 +16,11 @@ export function communityError(error: { code?: string; message: string }) {
   const missing = ["42P01", "PGRST205", "PGRST202", "42883"].includes(
     error.code || "",
   );
-  return NextResponse.json(
-    {
-      message: missing
-        ? "Community needs a database update. Run 20261023_add_social_community.sql in Supabase first."
-        : "Could not complete this community request. Please try again.",
-    },
-    { status: missing ? 503 : 500 },
+  return errorResponse(
+    missing
+      ? "Community needs a database update. Run 20261023_add_social_community.sql in Supabase first."
+      : "Could not complete this community request. Please try again.",
+    missing ? 503 : 500,
   );
 }
 export async function authors(context: CommunityContext, ids: string[]) {
@@ -34,7 +32,11 @@ export async function authors(context: CommunityContext, ids: string[]) {
   return new Map<string, CommunityAuthor>(
     (result.data ?? []).map((row) => [
       row.id,
-      { id: row.id, name: row.display_name || "Traveller", avatarUrl: row.avatar_url },
+      {
+        id: row.id,
+        name: row.display_name || "Traveller",
+        avatarUrl: row.avatar_url,
+      },
     ]),
   );
 }

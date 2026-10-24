@@ -1,17 +1,7 @@
+import { errorResponse } from "@/app/api/_response";
+import { geocodeRequestSchema } from "@/lib/schemas";
 import { NextResponse } from "next/server";
-import { z } from "zod";
 
-const schema = z.object({
-  places: z
-    .array(
-      z.object({
-        name: z.string().trim().min(1).max(160),
-        area: z.string().trim().max(500),
-      }),
-    )
-    .min(1)
-    .max(10),
-});
 type Coordinates = { latitude: number; longitude: number };
 const cache = new Map<
   string,
@@ -78,12 +68,11 @@ function locate(name: string, area: string): Promise<Coordinates | null> {
 }
 
 export async function POST(request: Request) {
-  const parsed = schema.safeParse(await request.json().catch(() => null));
+  const parsed = geocodeRequestSchema.safeParse(
+    await request.json().catch(() => null),
+  );
   if (!parsed.success)
-    return NextResponse.json(
-      { message: "Provide up to ten place names and areas." },
-      { status: 400 },
-    );
+    return errorResponse("Provide up to ten place names and areas.", 400);
   const coordinates = [];
   for (const place of parsed.data.places)
     coordinates.push(await locate(place.name, place.area));

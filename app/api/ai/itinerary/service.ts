@@ -1,23 +1,4 @@
 import "server-only";
-import { z } from "zod";
-
-const clock = z.string().regex(/^(?:[01]\d|2[0-3]):[0-5]\d$/);
-export const generatedStopsSchema = z
-  .array(
-    z
-      .object({
-        destinationId: z.string().default(""),
-        title: z.string().trim().min(1).max(160),
-        state: z.string().trim().min(1),
-        day: z.number().int().min(1).max(14),
-        startTime: clock,
-        endTime: clock,
-        notes: z.string().max(1000),
-      })
-      .refine((stop) => stop.endTime > stop.startTime, "Invalid time range"),
-  )
-  .min(1)
-  .max(56);
 
 export class ItineraryServiceError extends Error {
   constructor(

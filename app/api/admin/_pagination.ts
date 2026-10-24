@@ -1,50 +1,25 @@
-import { NextResponse } from "next/server";
-import { z } from "zod";
+import { errorResponse } from "@/app/api/_response";
 import { getApiContext, userIsAdmin } from "@/app/api/_shared";
+import { adminPaginationSchema } from "@/lib/schemas";
 
-const schema = z.object({
-  page: z.coerce.number().int().min(1).max(100000).default(1),
-  pageSize: z.coerce.number().int().min(1).max(12).default(12),
-  search: z.string().trim().max(200).default(""),
-  role: z.enum(["all", "admin", "client"]).default("all"),
-  status: z
-    .enum(["all", "active", "inactive", "flagged", "reviewed"])
-    .default("all"),
-  visibility: z.enum(["all", "published", "private"]).default("all"),
-  phase: z.enum(["all", "planning", "ongoing", "completed"]).default("all"),
-  type: z.enum(["all", "trip", "post"]).default("all"),
-  accountRole: z
-    .enum(["all", "client", "admin", "master_admin"])
-    .default("all"),
-  sort: z.enum(["latest", "oldest"]).default("latest"),
-});
 // The database filters, counts and pages records with the caller's RLS permissions.
 export async function getAdminPage(request: Request, kind: string) {
   const { supabase, user } = await getApiContext();
   if (!user)
     return {
-      denied: NextResponse.json(
-        { message: "Sign in required." },
-        { status: 401 },
-      ),
+      denied: errorResponse("Sign in required.", 401),
     };
   if (!(await userIsAdmin(supabase, user.id)))
     return {
-      denied: NextResponse.json(
-        { message: "Admin access required." },
-        { status: 403 },
-      ),
+      denied: errorResponse("Admin access required.", 403),
     };
-  const parsed = schema.safeParse({
+  const parsed = adminPaginationSchema.safeParse({
     sort: kind === "password-requests" ? "oldest" : "latest",
     ...Object.fromEntries(new URL(request.url).searchParams),
   });
   if (!parsed.success)
     return {
-      denied: NextResponse.json(
-        { message: "Invalid pagination or search." },
-        { status: 400 },
-      ),
+      denied: errorResponse("Invalid pagination or search.", 400),
     };
   const { page, pageSize, search, role, ...filters } = parsed.data;
   const result = await supabase.rpc("get_filtered_admin_record_page", {
@@ -57,9 +32,9 @@ export async function getAdminPage(request: Request, kind: string) {
   });
   if (result.error)
     return {
-      denied: NextResponse.json(
-        { message: "Could not load admin records: " + result.error.message },
-        { status: 500 },
+      denied: errorResponse(
+        "Could not load admin records: " + result.error.message,
+        500,
       ),
     };
   return {

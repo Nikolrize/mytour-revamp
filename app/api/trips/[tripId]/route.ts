@@ -1,14 +1,15 @@
-import { tripDetailsSchema } from "@/lib/schemas";
-import { NextResponse } from "next/server";
+import { errorResponse } from "@/app/api/_response";
 import {
   getApiContext,
-  userIsAdmin,
   mapTripsToItineraries,
+  userIsAdmin,
   type TripRow,
 } from "@/app/api/_shared";
+import { tripDetailsSchema } from "@/lib/schemas";
+import { NextResponse } from "next/server";
 
 export async function GET(
-  request: Request,
+  _request: Request,
   context: { params: Promise<{ tripId: string }> },
 ) {
   const { supabase, user } = await getApiContext();
@@ -19,14 +20,13 @@ export async function GET(
     .eq("id", tripId)
     .maybeSingle();
 
-  if (error)
-    return NextResponse.json({ message: error.message }, { status: 500 });
+  if (error) return errorResponse(error.message, 500);
   const canModerate =
     trip && !trip.is_public && user
       ? await userIsAdmin(supabase, user.id)
       : false;
   if (!trip || (!trip.is_public && trip.user_id !== user?.id && !canModerate)) {
-    return NextResponse.json({ message: "Trip not found." }, { status: 404 });
+    return errorResponse("Trip not found.", 404);
   }
 
   try {
@@ -38,14 +38,11 @@ export async function GET(
       isOwner: trip.user_id === user?.id,
     });
   } catch (mapError) {
-    return NextResponse.json(
-      {
-        message:
-          mapError instanceof Error
-            ? mapError.message
-            : "Could not load this trip.",
-      },
-      { status: 500 },
+    return errorResponse(
+      mapError instanceof Error
+        ? mapError.message
+        : "Could not load this trip.",
+      500,
     );
   }
 }
@@ -55,34 +52,24 @@ export async function PATCH(
   context: { params: Promise<{ tripId: string }> },
 ) {
   const { supabase, user } = await getApiContext();
-  if (!user)
-    return NextResponse.json(
-      { message: "Sign in to edit this trip." },
-      { status: 401 },
-    );
+  if (!user) return errorResponse("Sign in to edit this trip.", 401);
   const { tripId } = await context.params;
 
   let body: unknown;
   try {
     body = await request.json();
   } catch {
-    return NextResponse.json(
-      { message: "Invalid request body." },
-      { status: 400 },
-    );
+    return errorResponse("Invalid request body.", 400);
   }
   if (!body || typeof body !== "object") {
-    return NextResponse.json(
-      { message: "Invalid request body." },
-      { status: 400 },
-    );
+    return errorResponse("Invalid request body.", 400);
   }
 
   const input = body as Record<string, unknown>;
   if ("status" in input)
-    return NextResponse.json(
-      { message: "Trip status is calculated automatically from its dates." },
-      { status: 400 },
+    return errorResponse(
+      "Trip status is calculated automatically from its dates.",
+      400,
     );
   const details = tripDetailsSchema
     .partial()
@@ -91,17 +78,14 @@ export async function PATCH(
     })
     .safeParse(input);
   if (!details.success)
-    return NextResponse.json(
-      { message: details.error.issues[0].message },
-      { status: 400 },
-    );
+    return errorResponse(details.error.issues[0].message, 400);
   const updates: Record<string, string | boolean | null> = {};
   if (typeof input.title === "string") {
     const title = input.title.trim();
     if (!title || title.length > 80)
-      return NextResponse.json(
-        { message: "Trip name must be between 1 and 80 characters." },
-        { status: 400 },
+      return errorResponse(
+        "Trip name must be between 1 and 80 characters.",
+        400,
       );
     updates.title = title;
   }
@@ -119,10 +103,7 @@ export async function PATCH(
   if (typeof input.endTime === "string" || input.endTime === null)
     updates.end_time = input.endTime;
   if (!Object.keys(updates).length)
-    return NextResponse.json(
-      { message: "No valid trip changes were provided." },
-      { status: 400 },
-    );
+    return errorResponse("No valid trip changes were provided.", 400);
 
   const { data, error } = await supabase
     .from("trips")
@@ -131,26 +112,17 @@ export async function PATCH(
     .eq("user_id", user.id)
     .select("id")
     .maybeSingle();
-  if (error)
-    return NextResponse.json({ message: error.message }, { status: 400 });
-  if (!data)
-    return NextResponse.json(
-      { message: "Trip not found or you cannot edit it." },
-      { status: 404 },
-    );
+  if (error) return errorResponse(error.message, 400);
+  if (!data) return errorResponse("Trip not found or you cannot edit it.", 404);
   return NextResponse.json({ id: data.id });
 }
 
 export async function DELETE(
-  request: Request,
+  _request: Request,
   context: { params: Promise<{ tripId: string }> },
 ) {
   const { supabase, user } = await getApiContext();
-  if (!user)
-    return NextResponse.json(
-      { message: "Sign in to delete this trip." },
-      { status: 401 },
-    );
+  if (!user) return errorResponse("Sign in to delete this trip.", 401);
   const { tripId } = await context.params;
   const { data, error } = await supabase
     .from("trips")
@@ -159,12 +131,8 @@ export async function DELETE(
     .eq("user_id", user.id)
     .select("id")
     .maybeSingle();
-  if (error)
-    return NextResponse.json({ message: error.message }, { status: 400 });
+  if (error) return errorResponse(error.message, 400);
   if (!data)
-    return NextResponse.json(
-      { message: "Trip not found or you cannot delete it." },
-      { status: 404 },
-    );
+    return errorResponse("Trip not found or you cannot delete it.", 404);
   return NextResponse.json({ id: data.id });
 }

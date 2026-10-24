@@ -1,12 +1,14 @@
-import { z } from "zod";
-import { tripInterestOptions } from "@/lib/data";
-import { NextResponse } from "next/server";
+import { errorResponse } from "@/app/api/_response";
 import {
   getApiContext,
   mapTripsToItineraries,
   removeIncompleteTrip,
   type TripRow,
 } from "@/app/api/_shared";
+import { tripInterestOptions } from "@/lib/data";
+import { tripPageQuerySchema } from "@/lib/schemas";
+import { NextResponse } from "next/server";
+import { z } from "zod";
 
 function normalizeStateName(value: string) {
   const name = value.trim().toLocaleLowerCase().replace(/\s+/g, " ");
@@ -17,43 +19,23 @@ function normalizeStateName(value: string) {
 // Filter, sort and paginate inside Postgres before hydrating itinerary cards.
 export async function GET(request: Request) {
   const params = new URL(request.url).searchParams;
-  const parsed = z
-    .object({
-      scope: z.enum(["public", "mine", "saved", "all"]),
-      page: z.coerce.number().int().min(1).max(100000),
-      pageSize: z.coerce.number().int().min(1).max(12),
-      search: z.string().trim().max(200),
-      state: z.string().max(80),
-      tags: z
-        .array(z.enum(tripInterestOptions))
-        .max(tripInterestOptions.length),
-      sort: z.enum(["latest", "saved", "rating"]),
-      status: z.enum(["all", "Planning", "Ongoing", "Completed"]),
-      publicOnly: z.enum(["true", "false"]),
-    })
-    .safeParse({
-      scope: params.get("scope") ?? "mine",
-      page: params.get("page") ?? "1",
-      pageSize: params.get("pageSize") ?? "12",
-      search: params.get("q") ?? "",
-      state: params.get("state") ?? "all",
-      tags: params.getAll("tag"),
-      sort: params.get("sort") ?? "latest",
-      status: params.get("status") ?? "all",
-      publicOnly: params.get("publicOnly") ?? "false",
-    });
+  const parsed = tripPageQuerySchema.safeParse({
+    scope: params.get("scope") ?? "mine",
+    page: params.get("page") ?? "1",
+    pageSize: params.get("pageSize") ?? "12",
+    search: params.get("q") ?? "",
+    state: params.get("state") ?? "all",
+    tags: params.getAll("tag"),
+    sort: params.get("sort") ?? "latest",
+    status: params.get("status") ?? "all",
+    publicOnly: params.get("publicOnly") ?? "false",
+  });
   if (!parsed.success)
-    return NextResponse.json(
-      { message: "Invalid itinerary pagination or filters." },
-      { status: 400 },
-    );
+    return errorResponse("Invalid itinerary pagination or filters.", 400);
   const input = parsed.data;
   const { supabase, user } = await getApiContext();
   if (input.scope !== "public" && !user)
-    return NextResponse.json(
-      { message: "Sign in to view your trips." },
-      { status: 401 },
-    );
+    return errorResponse("Sign in to view your trips.", 401);
   const result =
     input.scope === "public"
       ? await supabase.rpc("get_public_trip_page", {
@@ -73,9 +55,9 @@ export async function GET(request: Request) {
           _public_only: input.publicOnly === "true",
         });
   if (result.error)
-    return NextResponse.json(
-      { message: "Could not load the itinerary page: " + result.error.message },
-      { status: 500 },
+    return errorResponse(
+      "Could not load the itinerary page: " + result.error.message,
+      500,
     );
   const page = result.data as {
     trips: (TripRow & { viewer_saved?: boolean })[];
@@ -91,7 +73,11 @@ export async function GET(request: Request) {
     const savedIds = new Set(
       page.trips.filter((trip) => trip.viewer_saved).map((trip) => trip.id),
     );
-    const ownedIds = new Set(page.trips.filter((trip) => trip.user_id === user?.id).map((trip) => trip.id));
+    const ownedIds = new Set(
+      page.trips
+        .filter((trip) => trip.user_id === user?.id)
+        .map((trip) => trip.id),
+    );
     return NextResponse.json(
       {
         ...page,
@@ -105,38 +91,25 @@ export async function GET(request: Request) {
       { headers: { "Cache-Control": "private, no-store" } },
     );
   } catch (error) {
-    return NextResponse.json(
-      {
-        message:
-          error instanceof Error ? error.message : "Could not load trips.",
-      },
-      { status: 500 },
+    return errorResponse(
+      error instanceof Error ? error.message : "Could not load trips.",
+      500,
     );
   }
 }
 
 export async function POST(request: Request) {
   const { supabase, user } = await getApiContext();
-  if (!user)
-    return NextResponse.json(
-      { message: "Sign in to create a trip." },
-      { status: 401 },
-    );
+  if (!user) return errorResponse("Sign in to create a trip.", 401);
 
   let body: unknown;
   try {
     body = await request.json();
   } catch {
-    return NextResponse.json(
-      { message: "Invalid request body." },
-      { status: 400 },
-    );
+    return errorResponse("Invalid request body.", 400);
   }
   if (!body || typeof body !== "object") {
-    return NextResponse.json(
-      { message: "Invalid request body." },
-      { status: 400 },
-    );
+    return errorResponse("Invalid request body.", 400);
   }
 
   const input = body as Record<string, unknown>;
@@ -146,10 +119,7 @@ export async function POST(request: Request) {
     .default([])
     .safeParse(input.interests);
   if (!parsedInterests.success)
-    return NextResponse.json(
-      { message: "Choose valid trip interests." },
-      { status: 400 },
-    );
+    return errorResponse("Choose valid trip interests.", 400);
   const interests = [...new Set(parsedInterests.data)];
   const title = typeof input.title === "string" ? input.title.trim() : "";
   const description =
@@ -175,40 +145,30 @@ export async function POST(request: Request) {
   const stops = Array.isArray(input.stops) ? input.stops : [];
 
   if (description && description.length > 2000)
-    return NextResponse.json(
-      { message: "Descriptions can be up to 2,000 characters." },
-      { status: 400 },
-    );
+    return errorResponse("Descriptions can be up to 2,000 characters.", 400);
   if (!title || title.length > 80) {
-    return NextResponse.json(
-      { message: "Trip name must be between 1 and 80 characters." },
-      { status: 400 },
-    );
+    return errorResponse("Trip name must be between 1 and 80 characters.", 400);
   }
   if (!stateNames.length || stateNames.length > 16) {
-    return NextResponse.json(
-      { message: "Choose at least one valid Malaysian state or territory." },
-      { status: 400 },
+    return errorResponse(
+      "Choose at least one valid Malaysian state or territory.",
+      400,
     );
   }
   if (startDate && endDate && endDate < startDate) {
-    return NextResponse.json(
-      { message: "The trip end date must be after its start date." },
-      { status: 400 },
+    return errorResponse(
+      "The trip end date must be after its start date.",
+      400,
     );
   }
   if (stops.length > 200) {
-    return NextResponse.json(
-      { message: "A trip can have up to 200 stops." },
-      { status: 400 },
-    );
+    return errorResponse("A trip can have up to 200 stops.", 400);
   }
 
   const { data: allStates, error: stateError } = await supabase
     .from("states")
     .select("id, name");
-  if (stateError)
-    return NextResponse.json({ message: stateError.message }, { status: 500 });
+  if (stateError) return errorResponse(stateError.message, 500);
   const statesByName = new Map(
     (allStates ?? []).map((state) => [normalizeStateName(state.name), state]),
   );
@@ -216,11 +176,9 @@ export async function POST(request: Request) {
     statesByName.get(normalizeStateName(name)),
   );
   if (stateRows.some((state) => !state)) {
-    return NextResponse.json(
-      {
-        message: `Selected state not found in Supabase: ${stateNames[stateRows.findIndex((state) => !state)]}. Refresh the planner and choose an available state.`,
-      },
-      { status: 400 },
+    return errorResponse(
+      `Selected state not found in Supabase: ${stateNames[stateRows.findIndex((state) => !state)]}. Refresh the planner and choose an available state.`,
+      400,
     );
   }
   const matchedStateRows = stateRows.filter((state) => state !== undefined);
@@ -242,15 +200,11 @@ export async function POST(request: Request) {
     .select("id")
     .single();
   if (tripError)
-    return NextResponse.json(
-      {
-        message:
-          tripError.code === "PGRST204" &&
-          tripError.message.includes("interests")
-            ? "Trip interests need a database update. Run 20261023_add_trip_interests.sql in Supabase, then save again."
-            : tripError.message,
-      },
-      { status: 400 },
+    return errorResponse(
+      tripError.code === "PGRST204" && tripError.message.includes("interests")
+        ? "Trip interests need a database update. Run 20261023_add_trip_interests.sql in Supabase, then save again."
+        : tripError.message,
+      400,
     );
 
   const stateLinks = matchedStateRows.map((state) => ({
@@ -262,10 +216,7 @@ export async function POST(request: Request) {
     .insert(stateLinks);
   if (stateLinkError) {
     await removeIncompleteTrip(supabase, trip.id, user.id);
-    return NextResponse.json(
-      { message: stateLinkError.message },
-      { status: 400 },
-    );
+    return errorResponse(stateLinkError.message, 400);
   }
 
   if (stops.length) {
@@ -288,10 +239,7 @@ export async function POST(request: Request) {
       : { data: [], error: null };
     if (destinationRows.error) {
       await removeIncompleteTrip(supabase, trip.id, user.id);
-      return NextResponse.json(
-        { message: destinationRows.error.message },
-        { status: 500 },
-      );
+      return errorResponse(destinationRows.error.message, 500);
     }
     const destinationById = new Map(
       (destinationRows.data ?? []).map((row) => [String(row.id), row]),
@@ -306,12 +254,9 @@ export async function POST(request: Request) {
       )
     ) {
       await removeIncompleteTrip(supabase, trip.id, user.id);
-      return NextResponse.json(
-        {
-          message:
-            "A stop references a destination outside the selected states.",
-        },
-        { status: 400 },
+      return errorResponse(
+        "A stop references a destination outside the selected states.",
+        400,
       );
     }
     const stopRows = stops.flatMap((value, index) => {
@@ -356,20 +301,14 @@ export async function POST(request: Request) {
     });
     if (stopRows.length !== stops.length) {
       await removeIncompleteTrip(supabase, trip.id, user.id);
-      return NextResponse.json(
-        { message: "Every stop needs a name." },
-        { status: 400 },
-      );
+      return errorResponse("Every stop needs a name.", 400);
     }
     const { error: stopsError } = await supabase
       .from("itinerary_stops")
       .insert(stopRows);
     if (stopsError) {
       await removeIncompleteTrip(supabase, trip.id, user.id);
-      return NextResponse.json(
-        { message: stopsError.message },
-        { status: 400 },
-      );
+      return errorResponse(stopsError.message, 400);
     }
   }
 

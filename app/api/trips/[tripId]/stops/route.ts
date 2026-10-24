@@ -1,5 +1,6 @@
-import { NextResponse } from "next/server";
+import { errorResponse } from "@/app/api/_response";
 import { getApiContext } from "@/app/api/_shared";
+import { NextResponse } from "next/server";
 
 type Context = { params: Promise<{ tripId: string }> };
 
@@ -11,10 +12,9 @@ export async function GET(_request: Request, context: Context) {
     .select("id, user_id, is_public")
     .eq("id", tripId)
     .maybeSingle();
-  if (tripError)
-    return NextResponse.json({ message: tripError.message }, { status: 500 });
+  if (tripError) return errorResponse(tripError.message, 500);
   if (!trip || (!trip.is_public && trip.user_id !== user?.id))
-    return NextResponse.json({ message: "Trip not found." }, { status: 404 });
+    return errorResponse("Trip not found.", 404);
   const { data, error } = await supabase
     .from("itinerary_stops")
     .select(
@@ -23,18 +23,13 @@ export async function GET(_request: Request, context: Context) {
     .eq("trip_id", tripId)
     .order("stop_date")
     .order("position");
-  if (error)
-    return NextResponse.json({ message: error.message }, { status: 500 });
+  if (error) return errorResponse(error.message, 500);
   return NextResponse.json({ stops: data ?? [] });
 }
 
 export async function POST(request: Request, context: Context) {
   const { supabase, user } = await getApiContext();
-  if (!user)
-    return NextResponse.json(
-      { message: "Sign in to add stops." },
-      { status: 401 },
-    );
+  if (!user) return errorResponse("Sign in to add stops.", 401);
   const { tripId } = await context.params;
   const { data: trip, error: tripError } = await supabase
     .from("trips")
@@ -42,33 +37,22 @@ export async function POST(request: Request, context: Context) {
     .eq("id", tripId)
     .eq("user_id", user.id)
     .maybeSingle();
-  if (tripError)
-    return NextResponse.json({ message: tripError.message }, { status: 500 });
-  if (!trip)
-    return NextResponse.json(
-      { message: "Trip not found or you cannot edit it." },
-      { status: 404 },
-    );
+  if (tripError) return errorResponse(tripError.message, 500);
+  if (!trip) return errorResponse("Trip not found or you cannot edit it.", 404);
   let input: unknown;
   try {
     input = await request.json();
   } catch {
-    return NextResponse.json(
-      { message: "Invalid request body." },
-      { status: 400 },
-    );
+    return errorResponse("Invalid request body.", 400);
   }
   if (!input || typeof input !== "object")
-    return NextResponse.json(
-      { message: "Invalid request body." },
-      { status: 400 },
-    );
+    return errorResponse("Invalid request body.", 400);
   const body = input as Record<string, unknown>;
   const title = typeof body.title === "string" ? body.title.trim() : "";
   if (!title || title.length > 160)
-    return NextResponse.json(
-      { message: "Stop name must be between 1 and 160 characters." },
-      { status: 400 },
+    return errorResponse(
+      "Stop name must be between 1 and 160 characters.",
+      400,
     );
   const numeric = (value: unknown) =>
     typeof value === "number" && Number.isFinite(value) ? value : null;
@@ -78,10 +62,7 @@ export async function POST(request: Request, context: Context) {
     (latitude !== null && (latitude < -90 || latitude > 90)) ||
     (longitude !== null && (longitude < -180 || longitude > 180))
   )
-    return NextResponse.json(
-      { message: "Coordinates are outside the valid range." },
-      { status: 400 },
-    );
+    return errorResponse("Coordinates are outside the valid range.", 400);
   const { data: last } = await supabase
     .from("itinerary_stops")
     .select("position")
@@ -117,7 +98,6 @@ export async function POST(request: Request, context: Context) {
     })
     .select("*")
     .single();
-  if (error)
-    return NextResponse.json({ message: error.message }, { status: 400 });
+  if (error) return errorResponse(error.message, 400);
   return NextResponse.json({ stop: data }, { status: 201 });
 }

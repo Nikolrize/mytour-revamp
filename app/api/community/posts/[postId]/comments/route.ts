@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { errorResponse } from "@/app/api/_response";
 import { getApiContext, userIsAdmin } from "@/app/api/_shared";
 import {
   authors,
@@ -7,6 +7,7 @@ import {
   uuid,
 } from "@/app/api/community/_shared";
 import { communityCommentSchema } from "@/lib/schemas";
+import { NextResponse } from "next/server";
 
 type Context = { params: Promise<{ postId: string }> };
 export async function GET(request: Request, context: Context) {
@@ -19,14 +20,10 @@ export async function GET(request: Request, context: Context) {
     page < 0 ||
     page > 10000
   )
-    return NextResponse.json(
-      { message: "Invalid comment request." },
-      { status: 400 },
-    );
+    return errorResponse("Invalid comment request.", 400);
   const post = await postExists(api, postId);
   if (post.error) return communityError(post.error);
-  if (!post.data)
-    return NextResponse.json({ message: "Post not found." }, { status: 404 });
+  if (!post.data) return errorResponse("Post not found.", 404);
   const result = await api.supabase
     .from("community_post_comments")
     .select("id, user_id, content, created_at")
@@ -65,26 +62,18 @@ export async function GET(request: Request, context: Context) {
 }
 export async function POST(request: Request, context: Context) {
   const api = await getApiContext();
-  if (!api.user)
-    return NextResponse.json(
-      { message: "Sign in to comment." },
-      { status: 401 },
-    );
+  if (!api.user) return errorResponse("Sign in to comment.", 401);
   const { postId } = await context.params;
   if (!uuid.safeParse(postId).success)
-    return NextResponse.json({ message: "Post not found." }, { status: 404 });
+    return errorResponse("Post not found.", 404);
   const parsed = communityCommentSchema.safeParse(
     await request.json().catch(() => null),
   );
   if (!parsed.success)
-    return NextResponse.json(
-      { message: parsed.error.issues[0].message },
-      { status: 400 },
-    );
+    return errorResponse(parsed.error.issues[0].message, 400);
   const post = await postExists(api, postId);
   if (post.error) return communityError(post.error);
-  if (!post.data)
-    return NextResponse.json({ message: "Post not found." }, { status: 404 });
+  if (!post.data) return errorResponse("Post not found.", 404);
   const result = await api.supabase
     .from("community_post_comments")
     .insert({

@@ -1,5 +1,6 @@
-import { NextResponse } from "next/server";
+import { errorResponse } from "@/app/api/_response";
 import { getApiContext } from "@/app/api/_shared";
+import { NextResponse } from "next/server";
 
 const allowedHosts = new Set([
   "google.com",
@@ -53,19 +54,12 @@ function isAllowedUrl(value: string) {
 
 export async function POST(request: Request) {
   const { user } = await getApiContext();
-  if (!user)
-    return NextResponse.json(
-      { message: "Sign in to use Maps links." },
-      { status: 401 },
-    );
+  if (!user) return errorResponse("Sign in to use Maps links.", 401);
   let body: unknown;
   try {
     body = await request.json();
   } catch {
-    return NextResponse.json(
-      { message: "Enter a valid Google Maps link." },
-      { status: 400 },
-    );
+    return errorResponse("Enter a valid Google Maps link.", 400);
   }
   const mapsUrl =
     body && typeof body === "object"
@@ -76,12 +70,9 @@ export async function POST(request: Request) {
     mapsUrl.length > 2048 ||
     !isAllowedUrl(mapsUrl)
   ) {
-    return NextResponse.json(
-      {
-        message:
-          "Paste a Google Maps link beginning with https://www.google.com/maps or https://maps.app.goo.gl.",
-      },
-      { status: 400 },
+    return errorResponse(
+      "Paste a Google Maps link beginning with https://www.google.com/maps or https://maps.app.goo.gl.",
+      400,
     );
   }
 
@@ -114,11 +105,8 @@ export async function POST(request: Request) {
     ? parseCoordinates(resolvedUrl)
     : null;
   if (coords) return NextResponse.json(coords);
-  return NextResponse.json(
-    {
-      message:
-        "Could not find coordinates in that link. In Google Maps, open the place, choose Share, then copy its link again.",
-    },
-    { status: 422 },
+  return errorResponse(
+    "Could not find coordinates in that link. In Google Maps, open the place, choose Share, then copy its link again.",
+    422,
   );
 }

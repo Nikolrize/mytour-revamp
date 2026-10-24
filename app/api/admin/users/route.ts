@@ -1,10 +1,11 @@
-import { adminAccountCreateSchema } from "@/lib/schemas";
+import { errorResponse } from "@/app/api/_response";
 import {
-  authorizeAccountManagement,
   accountAuthClient,
+  authorizeAccountManagement,
 } from "@/app/api/admin/_accounts";
-import { NextResponse } from "next/server";
 import { getAdminPage } from "@/app/api/admin/_pagination";
+import { adminAccountCreateSchema } from "@/lib/schemas";
+import { NextResponse } from "next/server";
 
 export async function GET(request: Request) {
   const result = await getAdminPage(request, "users");
@@ -22,24 +23,16 @@ export async function POST(request: Request) {
     await request.json().catch(() => null),
   );
   if (!parsed.success)
-    return NextResponse.json(
-      { message: parsed.error.issues[0].message },
-      { status: 400 },
-    );
+    return errorResponse(parsed.error.issues[0].message, 400);
   const service = accountAuthClient();
   if (!service)
-    return NextResponse.json(
-      {
-        message: "Account creation requires SUPABASE_SECRET_KEY on the server.",
-      },
-      { status: 503 },
+    return errorResponse(
+      "Account creation requires SUPABASE_SECRET_KEY on the server.",
+      503,
     );
   const values = parsed.data;
   if (values.role === "admin" && access.actorRole !== "master_admin")
-    return NextResponse.json(
-      { message: "Only master admins can create admin accounts." },
-      { status: 403 },
-    );
+    return errorResponse("Only master admins can create admin accounts.", 403);
   const created = await service.auth.admin.createUser({
     email: values.email,
     password: values.password,
@@ -50,9 +43,9 @@ export async function POST(request: Request) {
     },
   });
   if (created.error || !created.data.user)
-    return NextResponse.json(
-      { message: created.error?.message || "Could not create account." },
-      { status: 400 },
+    return errorResponse(
+      created.error?.message || "Could not create account.",
+      400,
     );
   // Role comes from the validated admin request, never from editable user metadata.
   const saved = await service.from("users").upsert(
@@ -65,13 +58,11 @@ export async function POST(request: Request) {
   );
   if (saved.error) {
     const cleanup = await service.auth.admin.deleteUser(created.data.user.id);
-    return NextResponse.json(
-      {
-        message: cleanup.error
-          ? "Account setup failed. A login may remain; review Authentication users before retrying."
-          : "Could not save the account profile. No login was retained.",
-      },
-      { status: 500 },
+    return errorResponse(
+      cleanup.error
+        ? "Account setup failed. A login may remain; review Authentication users before retrying."
+        : "Could not save the account profile. No login was retained.",
+      500,
     );
   }
   return NextResponse.json({ id: created.data.user.id }, { status: 201 });

@@ -1,12 +1,11 @@
-import { NextResponse } from "next/server";
+import { errorResponse } from "@/app/api/_response";
 import { getApiContext } from "@/app/api/_shared";
+import { NextResponse } from "next/server";
 
 type Context = { params: Promise<{ tripId: string; stopId: string }> };
 
 async function authorize(
-  supabase: Awaited<
-    ReturnType<typeof import("@/app/api/_shared").getApiContext>
-  >["supabase"],
+  supabase: Awaited<ReturnType<typeof getApiContext>>["supabase"],
   tripId: string,
   userId: string,
 ) {
@@ -21,45 +20,28 @@ async function authorize(
 
 export async function PATCH(request: Request, context: Context) {
   const { supabase, user } = await getApiContext();
-  if (!user)
-    return NextResponse.json(
-      { message: "Sign in to edit stops." },
-      { status: 401 },
-    );
+  if (!user) return errorResponse("Sign in to edit stops.", 401);
   const { tripId, stopId } = await context.params;
   const access = await authorize(supabase, tripId, user.id);
-  if (access.error)
-    return NextResponse.json(
-      { message: access.error.message },
-      { status: 500 },
-    );
+  if (access.error) return errorResponse(access.error.message, 500);
   if (!access.allowed)
-    return NextResponse.json(
-      { message: "Trip not found or you cannot edit it." },
-      { status: 404 },
-    );
+    return errorResponse("Trip not found or you cannot edit it.", 404);
   let input: unknown;
   try {
     input = await request.json();
   } catch {
-    return NextResponse.json(
-      { message: "Invalid request body." },
-      { status: 400 },
-    );
+    return errorResponse("Invalid request body.", 400);
   }
   if (!input || typeof input !== "object")
-    return NextResponse.json(
-      { message: "Invalid request body." },
-      { status: 400 },
-    );
+    return errorResponse("Invalid request body.", 400);
   const body = input as Record<string, unknown>;
   const updates: Record<string, string | number | null> = {};
   if (typeof body.title === "string") {
     const value = body.title.trim();
     if (!value || value.length > 160)
-      return NextResponse.json(
-        { message: "Stop name must be between 1 and 160 characters." },
-        { status: 400 },
+      return errorResponse(
+        "Stop name must be between 1 and 160 characters.",
+        400,
       );
     updates.title = value;
   }
@@ -103,10 +85,7 @@ export async function PATCH(request: Request, context: Context) {
   )
     updates.longitude = body.longitude;
   if (!Object.keys(updates).length)
-    return NextResponse.json(
-      { message: "No valid stop changes provided." },
-      { status: 400 },
-    );
+    return errorResponse("No valid stop changes provided.", 400);
   const { data, error } = await supabase
     .from("itinerary_stops")
     .update(updates)
@@ -114,10 +93,8 @@ export async function PATCH(request: Request, context: Context) {
     .eq("trip_id", tripId)
     .select("*")
     .maybeSingle();
-  if (error)
-    return NextResponse.json({ message: error.message }, { status: 400 });
-  if (!data)
-    return NextResponse.json({ message: "Stop not found." }, { status: 404 });
+  if (error) return errorResponse(error.message, 400);
+  if (!data) return errorResponse("Stop not found.", 404);
   await supabase
     .from("trips")
     .update({ updated_at: new Date().toISOString() })
@@ -128,23 +105,12 @@ export async function PATCH(request: Request, context: Context) {
 
 export async function DELETE(_request: Request, context: Context) {
   const { supabase, user } = await getApiContext();
-  if (!user)
-    return NextResponse.json(
-      { message: "Sign in to delete stops." },
-      { status: 401 },
-    );
+  if (!user) return errorResponse("Sign in to delete stops.", 401);
   const { tripId, stopId } = await context.params;
   const access = await authorize(supabase, tripId, user.id);
-  if (access.error)
-    return NextResponse.json(
-      { message: access.error.message },
-      { status: 500 },
-    );
+  if (access.error) return errorResponse(access.error.message, 500);
   if (!access.allowed)
-    return NextResponse.json(
-      { message: "Trip not found or you cannot edit it." },
-      { status: 404 },
-    );
+    return errorResponse("Trip not found or you cannot edit it.", 404);
   const { data, error } = await supabase
     .from("itinerary_stops")
     .delete()
@@ -152,10 +118,8 @@ export async function DELETE(_request: Request, context: Context) {
     .eq("trip_id", tripId)
     .select("id")
     .maybeSingle();
-  if (error)
-    return NextResponse.json({ message: error.message }, { status: 400 });
-  if (!data)
-    return NextResponse.json({ message: "Stop not found." }, { status: 404 });
+  if (error) return errorResponse(error.message, 400);
+  if (!data) return errorResponse("Stop not found.", 404);
   await supabase
     .from("trips")
     .update({ updated_at: new Date().toISOString() })

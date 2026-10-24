@@ -1,22 +1,18 @@
-import { NextResponse } from "next/server";
+import { errorResponse } from "@/app/api/_response";
 import { getApiContext } from "@/app/api/_shared";
 import { communityError, postExists, uuid } from "@/app/api/community/_shared";
+import { NextResponse } from "next/server";
 
 type Context = { params: Promise<{ postId: string }> };
 async function changeLike(context: Context, liked: boolean) {
   const api = await getApiContext();
-  if (!api.user)
-    return NextResponse.json(
-      { message: "Sign in to like a post." },
-      { status: 401 },
-    );
+  if (!api.user) return errorResponse("Sign in to like a post.", 401);
   const { postId } = await context.params;
   if (!uuid.safeParse(postId).success)
-    return NextResponse.json({ message: "Post not found." }, { status: 404 });
+    return errorResponse("Post not found.", 404);
   const post = await postExists(api, postId);
   if (post.error) return communityError(post.error);
-  if (!post.data)
-    return NextResponse.json({ message: "Post not found." }, { status: 404 });
+  if (!post.data) return errorResponse("Post not found.", 404);
   const result = liked
     ? await api.supabase
         .from("community_post_likes")

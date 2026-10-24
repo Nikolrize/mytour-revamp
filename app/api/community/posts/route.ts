@@ -1,12 +1,13 @@
-import { NextResponse } from "next/server";
+import { errorResponse } from "@/app/api/_response";
 import { getApiContext } from "@/app/api/_shared";
-import { communityPostSchema } from "@/lib/schemas";
 import {
   communityError,
   mapPosts,
   photoBucket,
   uuid,
 } from "@/app/api/community/_shared";
+import { communityPostSchema } from "@/lib/schemas";
+import { NextResponse } from "next/server";
 
 export async function GET(request: Request) {
   const context = await getApiContext();
@@ -22,12 +23,9 @@ export async function GET(request: Request) {
     !["all", "photos", "itinerary"].includes(kind) ||
     !["newest", "oldest"].includes(sort)
   )
-    return NextResponse.json(
-      { message: "Invalid community filters." },
-      { status: 400 },
-    );
+    return errorResponse("Invalid community filters.", 400);
   if (!Number.isInteger(page) || page < 1 || page > 10000)
-    return NextResponse.json({ message: "Invalid page." }, { status: 400 });
+    return errorResponse("Invalid page.", 400);
   // Match post text and author names before counting and selecting a page.
   const result = await context.supabase.rpc("get_community_post_page", {
     _page: page,
@@ -53,34 +51,21 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   const { supabase, user } = await getApiContext();
-  if (!user)
-    return NextResponse.json(
-      { message: "Sign in to share a post." },
-      { status: 401 },
-    );
+  if (!user) return errorResponse("Sign in to share a post.", 401);
   if (Number(request.headers.get("content-length")) > 21037056)
-    return NextResponse.json(
-      { message: "Photos must total 20 MB or less." },
-      { status: 413 },
-    );
+    return errorResponse("Photos must total 20 MB or less.", 413);
   let form: FormData;
   try {
     form = await request.formData();
   } catch {
-    return NextResponse.json(
-      { message: "Invalid post upload." },
-      { status: 400 },
-    );
+    return errorResponse("Invalid post upload.", 400);
   }
   const parsed = communityPostSchema.safeParse({
     content: form.get("content") ?? "",
     tripId: form.get("tripId") || "",
   });
   if (!parsed.success)
-    return NextResponse.json(
-      { message: parsed.error.issues[0].message },
-      { status: 400 },
-    );
+    return errorResponse(parsed.error.issues[0].message, 400);
   const entries = form.getAll("photos");
   const photos = entries.filter(
     (value): value is File => value instanceof File,
@@ -91,15 +76,12 @@ export async function POST(request: Request) {
     photos.some((file) => file.size > 2097152 || file.size === 0) ||
     photos.reduce((total, file) => total + file.size, 0) > 20971520
   )
-    return NextResponse.json(
-      { message: "Choose up to ten photos, 2 MB each and 20 MB in total." },
-      { status: 400 },
+    return errorResponse(
+      "Choose up to ten photos, 2 MB each and 20 MB in total.",
+      400,
     );
   if (!parsed.data.content && !photos.length)
-    return NextResponse.json(
-      { message: "Write something or add a photo." },
-      { status: 400 },
-    );
+    return errorResponse("Write something or add a photo.", 400);
   if (parsed.data.tripId) {
     const trip = await supabase
       .from("trips")
@@ -109,12 +91,9 @@ export async function POST(request: Request) {
       .maybeSingle();
     if (trip.error) return communityError(trip.error);
     if (!trip.data)
-      return NextResponse.json(
-        {
-          message:
-            "Publish the itinerary in Explore before attaching it to a post.",
-        },
-        { status: 400 },
+      return errorResponse(
+        "Publish the itinerary in Explore before attaching it to a post.",
+        400,
       );
   }
   // Validate actual image signatures before uploading any files.
@@ -138,9 +117,9 @@ export async function POST(request: Request) {
           ? "image/webp"
           : null;
     if (!type || file.type !== type)
-      return NextResponse.json(
-        { message: "Photos must be valid JPG, PNG, or WebP images." },
-        { status: 400 },
+      return errorResponse(
+        "Photos must be valid JPG, PNG, or WebP images.",
+        400,
       );
     validated.push({
       bytes,
@@ -156,12 +135,9 @@ export async function POST(request: Request) {
       .upload(path, photo.bytes, { contentType: photo.type, upsert: false });
     if (result.error) {
       if (paths.length) await supabase.storage.from(photoBucket).remove(paths);
-      return NextResponse.json(
-        {
-          message:
-            "Photo upload failed. Check the community storage migration, then try again.",
-        },
-        { status: 502 },
+      return errorResponse(
+        "Photo upload failed. Check the community storage migration, then try again.",
+        502,
       );
     }
     paths.push(path);

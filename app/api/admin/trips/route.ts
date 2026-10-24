@@ -1,6 +1,8 @@
-import { NextResponse } from "next/server";
+import { errorResponse } from "@/app/api/_response";
 import { mapTripsToItineraries, type TripRow } from "@/app/api/_shared";
 import { getAdminPage } from "@/app/api/admin/_pagination";
+import { NextResponse } from "next/server";
+
 export async function GET(request: Request) {
   const result = await getAdminPage(request, "trips");
   if (result.denied) return result.denied;
@@ -17,12 +19,9 @@ export async function GET(request: Request) {
       { headers: { "Cache-Control": "private, no-store" } },
     );
   } catch (cause) {
-    return NextResponse.json(
-      {
-        message:
-          cause instanceof Error ? cause.message : "Could not load trips.",
-      },
-      { status: 500 },
+    return errorResponse(
+      cause instanceof Error ? cause.message : "Could not load trips.",
+      500,
     );
   }
 }

@@ -1,23 +1,21 @@
-import { z } from "zod";
-import { canEditAccount } from "@/lib/account-permissions";
-import "server-only";
-import { createClient } from "@supabase/supabase-js";
-import { NextResponse } from "next/server";
+import { errorResponse } from "@/app/api/_response";
 import { getApiContext } from "@/app/api/_shared";
+import { canEditAccount } from "@/lib/account-permissions";
+import type { AccountRole } from "@/lib/type";
+import { createClient } from "@supabase/supabase-js";
+import "server-only";
+import { z } from "zod";
 
 export async function authorizeAccountManagement(targetId?: string) {
   const context = await getApiContext();
   const base = {
     ...context,
-    actorRole: null as import("@/lib/account-permissions").AccountRole | null,
+    actorRole: null as AccountRole | null,
   };
   if (!context.user)
     return {
       ...base,
-      denied: NextResponse.json(
-        { message: "Sign in required." },
-        { status: 401 },
-      ),
+      denied: errorResponse("Sign in required.", 401),
     };
   const actor = await context.supabase
     .from("users")
@@ -27,10 +25,7 @@ export async function authorizeAccountManagement(targetId?: string) {
   if (actor.error)
     return {
       ...base,
-      denied: NextResponse.json(
-        { message: "Could not verify administrator permissions." },
-        { status: 503 },
-      ),
+      denied: errorResponse("Could not verify administrator permissions.", 503),
     };
   if (
     actor.data?.status !== "active" ||
@@ -38,21 +33,14 @@ export async function authorizeAccountManagement(targetId?: string) {
   )
     return {
       ...base,
-      denied: NextResponse.json(
-        { message: "Admin access required." },
-        { status: 403 },
-      ),
+      denied: errorResponse("Admin access required.", 403),
     };
-  const actorRole = actor.data
-    .role as import("@/lib/account-permissions").AccountRole;
+  const actorRole = actor.data.role as AccountRole;
   if (targetId) {
     if (!z.string().uuid().safeParse(targetId).success)
       return {
         ...base,
-        denied: NextResponse.json(
-          { message: "Invalid user ID." },
-          { status: 400 },
-        ),
+        denied: errorResponse("Invalid user ID.", 400),
       };
     const target = await context.supabase
       .from("users")
@@ -62,18 +50,12 @@ export async function authorizeAccountManagement(targetId?: string) {
     if (target.error)
       return {
         ...base,
-        denied: NextResponse.json(
-          { message: "Could not load the target account." },
-          { status: 500 },
-        ),
+        denied: errorResponse("Could not load the target account.", 500),
       };
     if (!target.data)
       return {
         ...base,
-        denied: NextResponse.json(
-          { message: "Account not found." },
-          { status: 404 },
-        ),
+        denied: errorResponse("Account not found.", 404),
       };
     if (
       !canEditAccount(
@@ -85,9 +67,9 @@ export async function authorizeAccountManagement(targetId?: string) {
     )
       return {
         ...base,
-        denied: NextResponse.json(
-          { message: "Only master admins can manage other admin accounts." },
-          { status: 403 },
+        denied: errorResponse(
+          "Only master admins can manage other admin accounts.",
+          403,
         ),
       };
   }

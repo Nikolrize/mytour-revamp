@@ -1,24 +1,19 @@
+import { errorResponse } from "@/app/api/_response";
 import { userIsAdmin } from "@/app/api/_shared";
+import { createClient } from "@/utils/supabase/server";
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
-import { createClient } from "@/utils/supabase/server";
 
 export async function POST(request: Request) {
   let body: unknown;
   try {
     body = await request.json();
   } catch {
-    return NextResponse.json(
-      { message: "Invalid request body." },
-      { status: 400 },
-    );
+    return errorResponse("Invalid request body.", 400);
   }
 
   if (!body || typeof body !== "object") {
-    return NextResponse.json(
-      { message: "Invalid request body." },
-      { status: 400 },
-    );
+    return errorResponse("Invalid request body.", 400);
   }
 
   const input = body as Record<string, unknown>;
@@ -26,10 +21,7 @@ export async function POST(request: Request) {
   const password = typeof input.password === "string" ? input.password : "";
 
   if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || !password) {
-    return NextResponse.json(
-      { message: "Enter a valid email address and password." },
-      { status: 400 },
-    );
+    return errorResponse("Enter a valid email address and password.", 400);
   }
 
   const supabase = createClient(await cookies());
@@ -39,14 +31,11 @@ export async function POST(request: Request) {
   });
 
   if (error) {
-    return NextResponse.json(
-      {
-        message:
-          error.code === "user_banned" || error.message === "User is banned"
-            ? "Your account is deactivated by an admin"
-            : error.message,
-      },
-      { status: 401 },
+    return errorResponse(
+      error.code === "user_banned" || error.message === "User is banned"
+        ? "Your account is deactivated by an admin"
+        : error.message,
+      401,
     );
   }
 
@@ -58,13 +47,11 @@ export async function POST(request: Request) {
       .maybeSingle();
     if (account.error || account.data?.status === "inactive") {
       await supabase.auth.signOut({ scope: "local" });
-      return NextResponse.json(
-        {
-          message: account.error
-            ? "Could not verify account access."
-            : "Your account is deactivated by an admin",
-        },
-        { status: account.error ? 503 : 403 },
+      return errorResponse(
+        account.error
+          ? "Could not verify account access."
+          : "Your account is deactivated by an admin",
+        account.error ? 503 : 403,
       );
     }
   }

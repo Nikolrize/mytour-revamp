@@ -1,15 +1,12 @@
-import { NextResponse } from "next/server";
+import { errorResponse } from "@/app/api/_response";
 import { getApiContext, userIsAdmin } from "@/app/api/_shared";
+import { NextResponse } from "next/server";
 
 export async function GET() {
   const { supabase, user } = await getApiContext();
-  if (!user)
-    return NextResponse.json({ message: "Sign in required." }, { status: 401 });
+  if (!user) return errorResponse("Sign in required.", 401);
   if (!(await userIsAdmin(supabase, user.id)))
-    return NextResponse.json(
-      { message: "Admin access required." },
-      { status: 403 },
-    );
+    return errorResponse("Admin access required.", 403);
   const [users, trips, posts, reports, postReports] = await Promise.all([
     supabase.from("users").select("id", { count: "exact", head: true }),
     supabase
@@ -34,8 +31,7 @@ export async function GET() {
     posts.error ||
     reports.error ||
     postReports.error;
-  if (issue)
-    return NextResponse.json({ message: issue.message }, { status: 500 });
+  if (issue) return errorResponse(issue.message, 500);
   return NextResponse.json({
     users: users.count ?? 0,
     publicTrips: trips.count ?? 0,

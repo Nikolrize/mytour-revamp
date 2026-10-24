@@ -1,31 +1,23 @@
-import { getTripInterests } from "@/lib/trip-interests";
-import { NextResponse } from "next/server";
+import { errorResponse } from "@/app/api/_response";
 import { getApiContext } from "@/app/api/_shared";
 import { POST as createTrip } from "@/app/api/trips/route";
+import { getTripInterests } from "@/lib/trip-interests";
 
 export async function POST(
   request: Request,
   context: { params: Promise<{ tripId: string }> },
 ) {
   const { supabase, user } = await getApiContext();
-  if (!user)
-    return NextResponse.json(
-      { message: "Sign in to copy this trip." },
-      { status: 401 },
-    );
+  if (!user) return errorResponse("Sign in to copy this trip.", 401);
   const { tripId } = await context.params;
   const { data: trip, error } = await supabase
     .from("trips")
     .select("*")
     .eq("id", tripId)
     .maybeSingle();
-  if (error)
-    return NextResponse.json(
-      { message: "Could not load this trip." },
-      { status: 500 },
-    );
+  if (error) return errorResponse("Could not load this trip.", 500);
   if (!trip || (!trip.is_public && trip.user_id !== user.id))
-    return NextResponse.json({ message: "Trip not found." }, { status: 404 });
+    return errorResponse("Trip not found.", 404);
   const [links, stops] = await Promise.all([
     supabase.from("trip_states").select("state_id").eq("trip_id", tripId),
     supabase
@@ -35,10 +27,7 @@ export async function POST(
       .order("position"),
   ]);
   if (links.error || stops.error)
-    return NextResponse.json(
-      { message: "Could not copy this itinerary." },
-      { status: 500 },
-    );
+    return errorResponse("Could not copy this itinerary.", 500);
   const { data: states, error: stateError } = await supabase
     .from("states")
     .select("name")
@@ -46,11 +35,7 @@ export async function POST(
       "id",
       (links.data ?? []).map((link) => link.state_id),
     );
-  if (stateError)
-    return NextResponse.json(
-      { message: "Could not load trip states." },
-      { status: 500 },
-    );
+  if (stateError) return errorResponse("Could not load trip states.", 500);
   // Reuse the standard creation path: the copy belongs to the current user and is private.
   return createTrip(
     new Request(request.url, {

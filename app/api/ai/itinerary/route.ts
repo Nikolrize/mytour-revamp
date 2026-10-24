@@ -1,41 +1,29 @@
-import { NextResponse } from "next/server";
+import { errorResponse } from "@/app/api/_response";
 import { getApiContext } from "@/app/api/_shared";
 import {
   generateItinerary,
   ItineraryServiceError,
-  generatedStopsSchema,
 } from "@/app/api/ai/itinerary/service";
+import { generatedStopsSchema } from "@/lib/schemas";
+import { NextResponse } from "next/server";
 
 export async function POST(request: Request) {
   const { supabase, user } = await getApiContext();
-  if (!user)
-    return NextResponse.json(
-      { message: "Sign in to generate a trip." },
-      { status: 401 },
-    );
+  if (!user) return errorResponse("Sign in to generate a trip.", 401);
   if (!process.env.GEMINI_API_KEY && !process.env.GROQ_API_KEY)
-    return NextResponse.json(
-      {
-        message:
-          "AI planning is not configured. Add GEMINI_API_KEY or GROQ_API_KEY to the server environment.",
-      },
-      { status: 503 },
+    return errorResponse(
+      "AI planning is not configured. Add GEMINI_API_KEY or GROQ_API_KEY to the server environment.",
+      503,
     );
 
   let input: unknown;
   try {
     input = await request.json();
   } catch {
-    return NextResponse.json(
-      { message: "Invalid request body." },
-      { status: 400 },
-    );
+    return errorResponse("Invalid request body.", 400);
   }
   if (!input || typeof input !== "object")
-    return NextResponse.json(
-      { message: "Invalid request body." },
-      { status: 400 },
-    );
+    return errorResponse("Invalid request body.", 400);
   const body = input as Record<string, unknown>;
   const states = Array.isArray(body.states)
     ? [
@@ -54,15 +42,9 @@ export async function POST(request: Request) {
     : [];
   const days = Number.isInteger(body.days) ? Number(body.days) : 3;
   if (!states.length || states.length > 5)
-    return NextResponse.json(
-      { message: "Choose between one and five states." },
-      { status: 400 },
-    );
+    return errorResponse("Choose between one and five states.", 400);
   if (days < 1 || days > 14)
-    return NextResponse.json(
-      { message: "AI itineraries can cover up to 14 days." },
-      { status: 400 },
-    );
+    return errorResponse("AI itineraries can cover up to 14 days.", 400);
 
   for (const date of [body.startDate, body.endDate]) {
     if (
@@ -72,18 +54,14 @@ export async function POST(request: Request) {
         !Number.isFinite(Date.parse(date + "T00:00:00Z")) ||
         new Date(date + "T00:00:00Z").toISOString().slice(0, 10) !== date)
     ) {
-      return NextResponse.json(
-        { message: "Choose a valid trip date." },
-        { status: 400 },
-      );
+      return errorResponse("Choose a valid trip date.", 400);
     }
   }
 
   const { data: allStates, error: stateError } = await supabase
     .from("states")
     .select("id, name");
-  if (stateError)
-    return NextResponse.json({ message: stateError.message }, { status: 500 });
+  if (stateError) return errorResponse(stateError.message, 500);
   const normalizeState = (value: string) => {
     const normalized = value.trim().toLocaleLowerCase().replace(/\s+/g, " ");
     return normalized === "pulau pinang"
@@ -95,11 +73,9 @@ export async function POST(request: Request) {
   );
   const stateRows = states.map((name) => stateByName.get(normalizeState(name)));
   if (stateRows.some((state) => !state))
-    return NextResponse.json(
-      {
-        message: `State not found in the database: ${states[stateRows.findIndex((state) => !state)]}. Refresh and choose an available state.`,
-      },
-      { status: 400 },
+    return errorResponse(
+      `State not found in the database: ${states[stateRows.findIndex((state) => !state)]}. Refresh and choose an available state.`,
+      400,
     );
   const { data: destinations, error: destinationError } = await supabase
     .from("destinations")
@@ -111,11 +87,7 @@ export async function POST(request: Request) {
       stateRows.map((state) => state!.id),
     )
     .limit(250);
-  if (destinationError)
-    return NextResponse.json(
-      { message: destinationError.message },
-      { status: 500 },
-    );
+  if (destinationError) return errorResponse(destinationError.message, 500);
   const hasCatalogDestinations = Boolean(destinations?.length);
 
   const prompt = [
@@ -195,15 +167,12 @@ export async function POST(request: Request) {
     return NextResponse.json({ stops });
   } catch (error) {
     if (error instanceof ItineraryServiceError) {
-      return NextResponse.json(
-        { message: error.message },
-        { status: error.status },
-      );
+      return errorResponse(error.message, error.status);
     }
     console.error("AI itinerary validation failed");
-    return NextResponse.json(
-      { message: "Unable to generate a valid itinerary. Please try again." },
-      { status: 502 },
+    return errorResponse(
+      "Unable to generate a valid itinerary. Please try again.",
+      502,
     );
   }
 }
