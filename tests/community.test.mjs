@@ -19,8 +19,11 @@ const next = {
   },
 };
 
-function load(file, mocks = {}) {
+function load(file, mocks = {}, modules = new Map()) {
+  const absolutePath = path.resolve(root, file);
+  if (modules.has(absolutePath)) return modules.get(absolutePath).exports;
   const loadedModule = { exports: {} };
+  modules.set(absolutePath, loadedModule);
   const code = ts.transpileModule(
     fs.readFileSync(path.join(root, file), "utf8"),
     {
@@ -42,8 +45,24 @@ function load(file, mocks = {}) {
     crypto: webcrypto,
     console,
     process,
-    require: (name) =>
-      mocks[name] ?? (name === "next/server" ? next : nodeRequire(name)),
+    require: (name) => {
+      if (Object.hasOwn(mocks, name)) return mocks[name];
+      if (name === "next/server") return next;
+      if (name.startsWith("@/")) {
+        const modulePath = name.slice(2);
+        const localFile = [
+          modulePath,
+          modulePath + ".ts",
+          modulePath + ".tsx",
+        ].find(
+          (candidate) =>
+            fs.existsSync(path.join(root, candidate)) &&
+            fs.statSync(path.join(root, candidate)).isFile(),
+        );
+        if (localFile) return load(localFile, mocks, modules);
+      }
+      return nodeRequire(name);
+    },
   });
   return loadedModule.exports;
 }

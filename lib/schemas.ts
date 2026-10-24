@@ -1,4 +1,10 @@
+import { tripInterestOptions } from "@/lib/data";
 import { z } from "zod";
+
+const newPasswordSchema = z
+  .string()
+  .min(8, "Use at least 8 characters.")
+  .max(128);
 
 export const tripPlanSchema = z
   .object({
@@ -202,7 +208,7 @@ export const adminAccountCreateSchema = z
   .object({
     displayName: z.string().trim().min(1, "Enter a name.").max(60),
     email: z.string().trim().email("Enter a valid email."),
-    password: z.string().min(8, "Use at least 8 characters.").max(128),
+    password: newPasswordSchema,
     confirmPassword: z.string().min(1, "Confirm the password.").max(128),
     role: z.enum(["admin", "client"]),
   })
@@ -213,10 +219,7 @@ export const adminAccountCreateSchema = z
 export const adminAccountEditSchema = z
   .object({
     email: z.string().trim().email("Enter a valid email."),
-    password: z.union([
-      z.literal(""),
-      z.string().min(8, "Use at least 8 characters.").max(128),
-    ]),
+    password: z.union([z.literal(""), newPasswordSchema]),
     confirmPassword: z.string().max(128),
     displayName: z.string().trim().min(1, "Enter a name.").max(60),
   })
@@ -232,10 +235,75 @@ export const forgotPasswordSchema = z.object({
 });
 export const resetPasswordSchema = z
   .object({
-    password: z.string().min(8, "Use at least 8 characters.").max(128),
+    password: newPasswordSchema,
     confirmPassword: z.string().max(128),
   })
   .refine((values) => values.password === values.confirmPassword, {
     path: ["confirmPassword"],
     message: "Passwords do not match.",
   });
+
+export const geocodeRequestSchema = z.object({
+  places: z
+    .array(
+      z.object({
+        name: z.string().trim().min(1).max(160),
+        area: z.string().trim().max(500),
+      }),
+    )
+    .min(1)
+    .max(10),
+});
+
+export const adminPaginationSchema = z.object({
+  page: z.coerce.number().int().min(1).max(100000).default(1),
+  pageSize: z.coerce.number().int().min(1).max(12).default(12),
+  search: z.string().trim().max(200).default(""),
+  role: z.enum(["all", "admin", "client"]).default("all"),
+  status: z
+    .enum(["all", "active", "inactive", "flagged", "reviewed"])
+    .default("all"),
+  visibility: z.enum(["all", "published", "private"]).default("all"),
+  phase: z.enum(["all", "planning", "ongoing", "completed"]).default("all"),
+  type: z.enum(["all", "trip", "post"]).default("all"),
+  accountRole: z
+    .enum(["all", "client", "admin", "master_admin"])
+    .default("all"),
+  sort: z.enum(["latest", "oldest"]).default("latest"),
+});
+
+const clock = z.string().regex(/^(?:[01]\d|2[0-3]):[0-5]\d$/);
+export const generatedStopsSchema = z
+  .array(
+    z
+      .object({
+        destinationId: z.string().default(""),
+        title: z.string().trim().min(1).max(160),
+        state: z.string().trim().min(1),
+        day: z.number().int().min(1).max(14),
+        startTime: clock,
+        endTime: clock,
+        notes: z.string().max(1000),
+      })
+      .refine((stop) => stop.endTime > stop.startTime, "Invalid time range"),
+  )
+  .min(1)
+  .max(56);
+
+export const tripPageQuerySchema = z.object({
+  scope: z.enum(["public", "mine", "saved", "all"]),
+  page: z.coerce.number().int().min(1).max(100000),
+  pageSize: z.coerce.number().int().min(1).max(12),
+  search: z.string().trim().max(200),
+  state: z.string().max(80),
+  tags: z.array(z.enum(tripInterestOptions)).max(tripInterestOptions.length),
+  sort: z.enum(["latest", "saved", "rating"]),
+  status: z.enum(["all", "Planning", "Ongoing", "Completed"]),
+  publicOnly: z.enum(["true", "false"]),
+});
+
+export const publicProfileQuerySchema = z.object({
+  userId: z.guid(),
+  page: z.coerce.number().int().min(1).max(100000),
+  kind: z.enum(["trips", "posts"]),
+});
