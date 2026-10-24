@@ -15,9 +15,7 @@ export function SiteFooter() {
             className="h-8 w-auto"
           />
         </Link>
-        <p>
-          Made for the long way round. Malaysia, with a little more meaning.
-        </p>
+        <p>Discover Malaysia. Plan your journey. Share your story.</p>
         <CurrentYear />
       </div>
     </footer>
