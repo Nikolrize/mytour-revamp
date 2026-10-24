@@ -1,3 +1,4 @@
+import { connection } from "next/server";
 import { stateImages } from "@/lib/data";
 import { getTripStatus, getMalaysiaDate } from "@/lib/trip-status";
 import { getTripInterests } from "@/lib/trip-interests";
@@ -24,8 +25,23 @@ export type TripRow = {
 };
 
 export async function getApiContext() {
+  // Authenticated account checks must run for a real request, not during prerendering.
+  await connection();
   const supabase = createClient(await cookies());
   const { data, error } = await supabase.auth.getUser();
+  if (data.user) {
+    const account = await supabase
+      .from("users")
+      .select("status")
+      .eq("id", data.user.id)
+      .maybeSingle();
+    if (account.error || account.data?.status === "inactive")
+      return {
+        supabase,
+        user: null,
+        authError: account.error || new Error("Account is inactive."),
+      };
+  }
   return { supabase, user: data.user, authError: error };
 }
 
@@ -34,12 +50,16 @@ export async function userIsAdmin(
   userId: string,
 ) {
   const { data, error } = await supabase
-    .from("user_roles")
-    .select("role")
-    .eq("user_id", userId);
+    .from("users")
+    .select("role, status")
+    .eq("id", userId)
+    .maybeSingle();
 
-  if (error) return false;
-  return data.some((row) => row.role === "admin");
+  if (error) throw new Error("Account role lookup: " + error.message);
+  return (
+    (data?.role === "admin" || data?.role === "master_admin") &&
+    data?.status === "active"
+  );
 }
 
 export async function removeIncompleteTrip(
@@ -72,7 +92,7 @@ export async function mapTripsToItineraries(
         .select("trip_id, state_id")
         .in("trip_id", tripIds),
       supabase
-        .from("profiles")
+        .from("users")
         .select("id, display_name, avatar_url")
         .in("id", authorIds),
       supabase
@@ -82,10 +102,22 @@ export async function mapTripsToItineraries(
       supabase.rpc("get_public_trip_save_counts", { _trip_ids: tripIds }),
     ]);
 
-  if (stopResult.error) throw new Error(stopResult.error.message);
-  if (stateLinkResult.error) throw new Error(stateLinkResult.error.message);
-  if (profileResult.error) throw new Error(profileResult.error.message);
-  if (ratingResult.error) throw new Error(ratingResult.error.message);
+  if (stopResult.error)
+    throw new Error(
+      "Could not load itinerary stops: " + stopResult.error.message,
+    );
+  if (stateLinkResult.error)
+    throw new Error(
+      "Could not load trip states: " + stateLinkResult.error.message,
+    );
+  if (profileResult.error)
+    throw new Error(
+      "Could not load trip authors: " + profileResult.error.message,
+    );
+  if (ratingResult.error)
+    throw new Error(
+      "Could not load trip ratings: " + ratingResult.error.message,
+    );
   // Trip pages remain available if this optional aggregate RPC has not been
   // installed in Supabase yet. Save counts show as zero until it is migrated.
   const missingSaveCountFunction =
@@ -115,8 +147,12 @@ export async function mapTripsToItineraries(
       : Promise.resolve({ data: [], error: null }),
   ]);
 
-  if (destinationResult.error) throw new Error(destinationResult.error.message);
-  if (stateResult.error) throw new Error(stateResult.error.message);
+  if (destinationResult.error)
+    throw new Error(
+      "Could not load destinations: " + destinationResult.error.message,
+    );
+  if (stateResult.error)
+    throw new Error("Could not load states: " + stateResult.error.message);
 
   const stopsByTrip = new Map<string, typeof stopResult.data>();
   for (const stop of stopResult.data ?? []) {

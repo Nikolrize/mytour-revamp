@@ -5,10 +5,10 @@ import Link from "next/link";
 import { useProfile } from "@/hooks/use-profile";
 import { getInitials } from "@/lib/utils";
 import { useSignOut } from "@/hooks/use-auth";
-import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
 import { usePathname } from "next/navigation";
 import {
+  LogOut,
   LayoutDashboard,
   Map,
   MessageSquareText,
@@ -35,9 +35,9 @@ import {
 const links = [
   { label: "Dashboard", href: "/admin", icon: LayoutDashboard },
   { label: "Manage users", href: "/admin/users", icon: Users },
-  { label: "Community posts", href: "/admin/posts", icon: MessageSquareText },
-  { label: "Trip reports", href: "/admin/reports", icon: Flag },
   { label: "Manage trips", href: "/admin/trips", icon: Map },
+  { label: "Community posts", href: "/admin/posts", icon: MessageSquareText },
+  { label: "Reports", href: "/admin/reports", icon: Flag },
 ];
 
 export function AdminShell({ children }: { children: React.ReactNode }) {
@@ -109,13 +109,9 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
             </SidebarGroupContent>
           </SidebarGroup>
         </SidebarContent>
-        <SidebarFooter className="border-t border-brand-line p-3">
-          <Link
-            href="/admin/profile"
-            aria-current={pathname === "/admin/profile" ? "page" : undefined}
-            className={`flex items-center gap-3 rounded-xl p-2.5 transition-colors hover:bg-sidebar-accent ${pathname === "/admin/profile" ? "bg-sidebar-accent" : "bg-brand-surface-muted"}`}
-          >
-            <span className="grid size-9 shrink-0 place-items-center rounded-full bg-brand-blue text-xs font-semibold text-white">
+        <SidebarFooter className="border-t border-brand-line p-3 group-data-[collapsible=icon]:p-2">
+          <div className="flex min-w-0 items-center gap-3 rounded-xl bg-brand-surface-muted p-2.5 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:p-0">
+            <span className="grid size-9 shrink-0 place-items-center rounded-full bg-brand-blue text-xs font-semibold text-white group-data-[collapsible=icon]:size-8">
               {getInitials(profile?.display_name || "Admin")}
             </span>
             <span className="min-w-0 group-data-[collapsible=icon]:hidden">
@@ -123,18 +119,24 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
                 {profile?.display_name || "Admin"}
               </span>
               <span className="block text-xs text-muted-foreground">
-                Administrator
+                {profile?.role === "master_admin" ? "Master admin" : "Admin"}
               </span>
             </span>
-          </Link>
-          <Button
-            variant="ghost"
-            disabled={signOut.isPending}
-            onClick={() => signOut.mutate()}
-            className="justify-start"
-          >
-            {signOut.isPending ? "Signing out…" : "Sign out"}
-          </Button>
+          </div>
+          <SidebarMenu>
+            <SidebarMenuItem>
+              <SidebarMenuButton
+                tooltip={signOut.isPending ? "Signing out…" : "Sign out"}
+                aria-label={signOut.isPending ? "Signing out…" : "Sign out"}
+                disabled={signOut.isPending}
+                onClick={() => signOut.mutate()}
+                className="rounded-xl"
+              >
+                <LogOut />
+                <span>{signOut.isPending ? "Signing out…" : "Sign out"}</span>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          </SidebarMenu>
           {signOut.error && (
             <p role="alert" className="text-xs text-destructive">
               {signOut.error.message}
@@ -159,7 +161,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
             href="/"
             className="text-sm font-medium text-brand-blue hover:underline"
           >
-            View client site ↗
+            Visit client homepage ↗
           </Link>
         </header>
         <main className="mx-auto flex w-full max-w-[1480px] flex-col gap-6 px-[4vw] py-[3vh] sm:gap-8 sm:px-[3vw] sm:py-[4vh]">

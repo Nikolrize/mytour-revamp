@@ -39,12 +39,38 @@ export async function POST(request: Request) {
   });
 
   if (error) {
-    return NextResponse.json({ message: error.message }, { status: 401 });
+    return NextResponse.json(
+      {
+        message:
+          error.code === "user_banned" || error.message === "User is banned"
+            ? "Your account is deactivated by an admin"
+            : error.message,
+      },
+      { status: 401 },
+    );
   }
 
+  if (data.user) {
+    const account = await supabase
+      .from("users")
+      .select("status")
+      .eq("id", data.user.id)
+      .maybeSingle();
+    if (account.error || account.data?.status === "inactive") {
+      await supabase.auth.signOut({ scope: "local" });
+      return NextResponse.json(
+        {
+          message: account.error
+            ? "Could not verify account access."
+            : "Your account is deactivated by an admin",
+        },
+        { status: account.error ? 503 : 403 },
+      );
+    }
+  }
   const isAdmin = data.user ? await userIsAdmin(supabase, data.user.id) : false;
   return NextResponse.json({
     message: "Signed in successfully.",
-    redirectTo: isAdmin ? "/admin" : "/trips",
+    redirectTo: isAdmin ? "/admin" : "/",
   });
 }

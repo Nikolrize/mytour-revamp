@@ -6,7 +6,7 @@ import { getApiContext, userIsAdmin } from "@/app/api/_shared";
 async function AdminAccess({ children }: { children: React.ReactNode }) {
   const { supabase, user } = await getApiContext();
   if (!user) redirect("/login");
-  if (!(await userIsAdmin(supabase, user.id))) redirect("/trips");
+  if (!(await userIsAdmin(supabase, user.id))) redirect("/");
   return <AdminShell>{children}</AdminShell>;
 }
 

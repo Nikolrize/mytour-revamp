@@ -16,7 +16,13 @@ export default function ClientLayout({ children }: LayoutProps<"/">) {
         <SiteHeader />
       </Suspense>
       <main className="mx-auto flex w-full max-w-[1440px] flex-1 flex-col px-[4vw] sm:px-[3.5vw] lg:px-[3.3vw]">
-        {children}
+        <Suspense
+          fallback={
+            <p className="py-8 text-sm text-muted-foreground">Loading…</p>
+          }
+        >
+          {children}
+        </Suspense>
       </main>
       <SiteFooter />
     </>

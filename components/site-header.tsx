@@ -4,7 +4,7 @@ import { NewPlanMenu } from "@/components/new-plan-menu";
 
 import Image from "next/image";
 import Link from "next/link";
-import { Menu, UserRound, LogOut } from "lucide-react";
+import { Menu, UserRound, LogOut, LayoutDashboard } from "lucide-react";
 import { useRouter, usePathname } from "next/navigation";
 import { useSignOut } from "@/hooks/use-auth";
 import {
@@ -43,6 +43,10 @@ export function SiteHeader() {
   });
   const { profileQuery } = useProfile();
   const profile = profileQuery.data?.profile;
+  const isAdmin = profile?.role === "admin" || profile?.role === "master_admin";
+  const visibleNavigation = navigation.filter(
+    (item) => item.href !== "/trips" || (Boolean(profile) && !isAdmin),
+  );
   const initials = (profile?.display_name || "Traveller")
     .split(/\s+/)
     .filter(Boolean)
@@ -69,7 +73,7 @@ export function SiteHeader() {
           className="hidden items-center gap-5 lg:gap-8 text-[13px] font-medium text-muted-foreground md:flex"
           aria-label="Main navigation"
         >
-          {navigation.map((item) => (
+          {visibleNavigation.map((item) => (
             <Link
               key={item.href}
               href={item.href}
@@ -105,8 +109,15 @@ export function SiteHeader() {
                 sideOffset={8}
                 className="min-w-44"
               >
-                <DropdownMenuItem render={<Link href="/profile" />}>
-                  <UserRound className="size-4" /> Profile
+                <DropdownMenuItem
+                  render={<Link href={isAdmin ? "/admin" : "/profile"} />}
+                >
+                  {isAdmin ? (
+                    <LayoutDashboard className="size-4" />
+                  ) : (
+                    <UserRound className="size-4" />
+                  )}{" "}
+                  {isAdmin ? "Dashboard" : "Profile"}
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
@@ -171,8 +182,9 @@ export function SiteHeader() {
                 className="flex flex-col gap-1 px-4"
                 aria-label="Mobile navigation"
               >
-                {navigation.map((item) => (
+                {visibleNavigation.map((item) => (
                   <SheetClose
+                    nativeButton={false}
                     key={item.href}
                     render={
                       <Link
@@ -186,6 +198,7 @@ export function SiteHeader() {
                 ))}
                 {!profile && !profileQuery.isPending && (
                   <SheetClose
+                    nativeButton={false}
                     render={
                       <Link
                         href="/login"

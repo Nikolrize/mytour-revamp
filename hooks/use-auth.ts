@@ -44,3 +44,14 @@ export function useSignOut(onSuccess: () => void) {
     },
   });
 }
+
+// Password reset requests are reviewed by an administrator.
+export function usePasswordResetRequest() {
+  return useMutation({
+    mutationFn: (values: { email: string }) =>
+      apiRequest<{ message: string }>("/api/auth/forgot-password", {
+        method: "POST",
+        body: JSON.stringify(values),
+      }),
+  });
+}

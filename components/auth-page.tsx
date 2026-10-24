@@ -13,7 +13,6 @@ import {
   EyeOff,
   LockKeyhole,
   Mail,
-  MapPin,
   UserRound,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -79,9 +78,6 @@ export function AuthPage({ mode }: AuthPageProps) {
                 className="h-8 w-auto"
               />
             </Link>
-            <Badge className="w-fit rounded-full border border-white/25 bg-white/10 px-3 py-1 text-white backdrop-blur hover:bg-white/10">
-              <MapPin className="size-3.5" /> MADE FOR MALAYSIA
-            </Badge>
           </div>
           <div className="relative flex flex-col gap-5">
             <h1 className="max-w-md text-4xl font-medium leading-[1.08] tracking-[-0.06em] xl:text-5xl">
@@ -92,31 +88,6 @@ export function AuthPage({ mode }: AuthPageProps) {
               Collect the little discoveries, local favourites, and routes
               you&apos;ll remember long after the trip.
             </p>
-            <div className="flex items-center gap-3 border-t border-white/20 pt-5">
-              <div className="flex -space-x-2">
-                {[
-                  "photo-1534528741775-53994a69daeb",
-                  "photo-1500648767791-00dcc994a43e",
-                  "photo-1531123897727-8f129e1688ce",
-                ].map((photo) => (
-                  <span
-                    key={photo}
-                    className="size-8 rounded-full border-2 border-brand-blue-deep bg-cover bg-center"
-                    style={{
-                      backgroundImage: `url(https://images.unsplash.com/${photo}?auto=format&fit=crop&w=80&q=75)`,
-                    }}
-                    aria-hidden="true"
-                  />
-                ))}
-              </div>
-              <p className="text-xs text-white/75">
-                <strong className="text-white">
-                  Made for curious travellers
-                </strong>
-                <br />
-                One thoughtful trip at a time.
-              </p>
-            </div>
           </div>
         </section>
 
@@ -302,9 +273,12 @@ export function AuthPage({ mode }: AuthPageProps) {
                     />{" "}
                     Remember me
                   </label>
-                  <span className="text-xs text-brand-blue">
+                  <Link
+                    href="/forgot-password"
+                    className="text-xs text-brand-blue hover:underline"
+                  >
                     Forgot password?
-                  </span>
+                  </Link>
                 </div>
               )}
 
@@ -312,7 +286,7 @@ export function AuthPage({ mode }: AuthPageProps) {
                 <p
                   role="status"
                   aria-live="polite"
-                  className="rounded-xl border border-brand-blue-soft bg-brand-blue-soft px-3 py-2.5 text-sm text-brand-blue"
+                  className="rounded-xl border border-destructive/30 bg-destructive/10 px-3 py-2.5 text-sm text-destructive"
                 >
                   {authMutation.error.message}
                 </p>
@@ -331,11 +305,6 @@ export function AuthPage({ mode }: AuthPageProps) {
                     : "Sign in"}{" "}
                 {!authMutation.isPending && <ArrowRight className="size-4" />}
               </Button>
-              <p className="text-center text-xs leading-5 text-muted-foreground">
-                {isSignup
-                  ? "Your account will let you save itineraries and share routes."
-                  : "Your saved trips and routes are waiting for you."}
-              </p>
             </form>
 
             <p className="text-center text-sm text-muted-foreground">

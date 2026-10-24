@@ -9,8 +9,8 @@ export async function GET() {
       { status: 401 },
     );
   const { data, error } = await supabase
-    .from("profiles")
-    .select("id, display_name, avatar_url, bio, created_at, updated_at")
+    .from("users")
+    .select("id, display_name, avatar_url, bio, role, created_at, updated_at")
     .eq("id", user.id)
     .maybeSingle();
   if (error)
@@ -81,17 +81,18 @@ export async function PATCH(request: Request) {
     bio,
     updated_at: new Date().toISOString(),
   };
-  const columns = "id, display_name, avatar_url, bio, created_at, updated_at";
+  const columns =
+    "id, display_name, avatar_url, bio, role, created_at, updated_at";
   // Update only editable columns; the profile ID never changes.
   let result = await supabase
-    .from("profiles")
+    .from("users")
     .update(changes)
     .eq("id", user.id)
     .select(columns)
     .maybeSingle();
   if (!result.error && !result.data) {
     result = await supabase
-      .from("profiles")
+      .from("users")
       .insert({ id: user.id, ...changes })
       .select(columns)
       .single();
@@ -102,7 +103,7 @@ export async function PATCH(request: Request) {
       {
         message:
           error.code === "42501"
-            ? "Profile permissions need a database update. Run 20261024_fix_profile_permissions.sql in Supabase."
+            ? "Account permissions need a database update. Check the grants and own-row policies on public.users."
             : error.message,
       },
       { status: 400 },

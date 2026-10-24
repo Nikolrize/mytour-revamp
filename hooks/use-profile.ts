@@ -9,6 +9,7 @@ export type ProfileValues = z.infer<typeof profileSchema>;
 export type ProfileRecord = {
   id?: string;
   display_name: string;
+  role?: "client" | "admin" | "master_admin";
   avatar_url: string | null;
   bio: string | null;
   created_at: string;
