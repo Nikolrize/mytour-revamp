@@ -1,47 +1,36 @@
 "use client";
+
+import { apiRequest } from "@/lib/api";
+import { refreshAccountQueries } from "@/lib/query-cache";
+import { queryKeys } from "@/lib/query-keys";
+import type {
+  AccountEmailResponse,
+  AdminAccountCreateValues,
+  EditManagedAccountValues,
+  ManagedAccountPageOptions,
+  ManagedAccountsData,
+  PaginationMeta,
+  UpdateAccountStatusValues,
+} from "@/lib/type";
 import {
   keepPreviousData,
   useMutation,
   useQuery,
   useQueryClient,
 } from "@tanstack/react-query";
-import type { z } from "zod";
-import { apiRequest } from "@/lib/api";
-import type { ManagedAccount, PaginationMeta } from "@/lib/type";
-import type {
-  adminAccountCreateSchema,
-  adminAccountEditSchema,
-} from "@/lib/schemas";
 
 export function useManagedAccounts(
-  options: {
-    page?: number;
-    pageSize?: number;
-    search?: string;
-    role?: string;
-    status?: string;
-    accountRole?: string;
-    sort?: string;
-  } = {},
+  options: ManagedAccountPageOptions = {},
   enabled = false,
 ) {
   const client = useQueryClient();
-  const refresh = () =>
-    Promise.all([
-      client.invalidateQueries({ queryKey: ["admin", "users"] }),
-      client.invalidateQueries({ queryKey: ["admin", "password-requests"] }),
-      client.invalidateQueries({ queryKey: ["admin-account"] }),
-      client.invalidateQueries({ queryKey: ["admin", "overview"] }),
-      client.invalidateQueries({ queryKey: ["profile"] }),
-      client.invalidateQueries({ queryKey: ["trips"] }),
-      client.invalidateQueries({ queryKey: ["community-posts"] }),
-    ]);
+  const refresh = () => refreshAccountQueries(client);
   const query = useQuery({
-    queryKey: ["admin", "users", options],
+    queryKey: queryKeys.admin.users(options),
     enabled,
     placeholderData: keepPreviousData,
     queryFn: ({ signal }) =>
-      apiRequest<PaginationMeta & { users: ManagedAccount[] }>(
+      apiRequest<PaginationMeta & ManagedAccountsData>(
         "/api/admin/users?" +
           new URLSearchParams(
             Object.entries(options).map(([key, value]) => [key, String(value)]),
@@ -50,7 +39,7 @@ export function useManagedAccounts(
       ),
   });
   const create = useMutation({
-    mutationFn: (values: z.infer<typeof adminAccountCreateSchema>) =>
+    mutationFn: (values: AdminAccountCreateValues) =>
       apiRequest("/api/admin/users", {
         method: "POST",
         body: JSON.stringify(values),
@@ -58,13 +47,7 @@ export function useManagedAccounts(
     onSuccess: refresh,
   });
   const edit = useMutation({
-    mutationFn: ({
-      id,
-      values,
-    }: {
-      id: string;
-      values: z.infer<typeof adminAccountEditSchema>;
-    }) =>
+    mutationFn: ({ id, values }: EditManagedAccountValues) =>
       apiRequest("/api/admin/users/" + id, {
         method: "PATCH",
         body: JSON.stringify(values),
@@ -77,13 +60,7 @@ export function useManagedAccounts(
     onSuccess: refresh,
   });
   const setStatus = useMutation({
-    mutationFn: ({
-      id,
-      status,
-    }: {
-      id: string;
-      status: "active" | "inactive";
-    }) =>
+    mutationFn: ({ id, status }: UpdateAccountStatusValues) =>
       apiRequest("/api/admin/users/" + id + "/status", {
         method: "PATCH",
         body: JSON.stringify({ status }),
@@ -96,9 +73,10 @@ export function useManagedAccounts(
 
 export function useManagedAccount(id: string, enabled: boolean) {
   return useQuery({
-    queryKey: ["admin-account", id],
+    queryKey: queryKeys.admin.account(id),
     enabled,
-    queryFn: () => apiRequest<{ email: string }>("/api/admin/users/" + id),
+    queryFn: ({ signal }) =>
+      apiRequest<AccountEmailResponse>("/api/admin/users/" + id, { signal }),
     staleTime: 0,
     retry: false,
   });

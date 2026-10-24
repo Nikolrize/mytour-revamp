@@ -1,25 +1,37 @@
 "use client";
 
+import { apiRequest } from "@/lib/api";
+import {
+  refreshModerationQueries,
+  refreshTripQueries,
+  removeTripQueries,
+} from "@/lib/query-cache";
+import { queryKeys } from "@/lib/query-keys";
+import type {
+  AdminOverviewResponse,
+  AdminRecordActionValues,
+  AdminRecordCollections,
+  AdminRecordKind,
+  AdminReportResponse,
+  PaginationMeta,
+} from "@/lib/type";
 import {
   keepPreviousData,
   useMutation,
   useQuery,
   useQueryClient,
 } from "@tanstack/react-query";
-import type { PaginationMeta, AdminReportDetail } from "@/lib/type";
-import { apiRequest } from "@/lib/api";
-
-export type AdminKind = "users" | "trips" | "reports";
 
 export function useAdminOverview() {
   return useQuery({
-    queryKey: ["admin", "overview"],
-    queryFn: () => apiRequest<Record<string, number>>("/api/admin/overview"),
+    queryKey: queryKeys.admin.overview,
+    queryFn: ({ signal }) =>
+      apiRequest<AdminOverviewResponse>("/api/admin/overview", { signal }),
   });
 }
 
 export function useAdminRecords(
-  kind: AdminKind,
+  kind: AdminRecordKind,
   page = 1,
   search = "",
   pageSize = 12,
@@ -27,15 +39,9 @@ export function useAdminRecords(
 ) {
   const queryClient = useQueryClient();
   const query = useQuery({
-    queryKey: ["admin", kind, { page, search, pageSize, filters }],
+    queryKey: queryKeys.admin.page(kind, { page, search, pageSize, filters }),
     queryFn: ({ signal }) =>
-      apiRequest<
-        PaginationMeta & {
-          users?: Record<string, unknown>[];
-          trips?: Record<string, unknown>[];
-          reports?: Record<string, unknown>[];
-        }
-      >(
+      apiRequest<PaginationMeta & AdminRecordCollections>(
         "/api/admin/" +
           kind +
           "?" +
@@ -50,44 +56,31 @@ export function useAdminRecords(
     placeholderData: keepPreviousData,
   });
   const action = useMutation({
-    mutationFn: async ({ item }: { item?: Record<string, unknown> }) => {
-      if (!item) throw new Error("Could not find the selected record.");
-      if (kind === "trips")
-        return apiRequest(`/api/admin/trips/${String(item.slug)}`, {
+    mutationFn: ({ item }: AdminRecordActionValues) => {
+      if ("slug" in item)
+        return apiRequest(`/api/admin/trips/${item.slug}`, {
           method: "PATCH",
-          body: JSON.stringify({ isPublic: !Boolean(item.isPublic) }),
+          body: JSON.stringify({ isPublic: !item.isPublic }),
         });
-      if (kind === "reports")
-        return apiRequest(`/api/admin/reports/${String(item.id)}`, {
-          method: "PATCH",
-          body: JSON.stringify({
-            status: item.status === "open" ? "resolved" : "open",
-            targetType: item.targetType ?? "trip",
-          }),
-        });
-      throw new Error("This item has no available action.");
+      return apiRequest(`/api/admin/reports/${item.id}`, {
+        method: "PATCH",
+        body: JSON.stringify({
+          status: item.status === "open" ? "resolved" : "open",
+          targetType: item.targetType,
+        }),
+      });
     },
-    onSuccess: async () =>
-      Promise.all([
-        queryClient.invalidateQueries({ queryKey: ["admin", kind] }),
-        queryClient.invalidateQueries({ queryKey: ["admin", "report-detail"] }),
-        queryClient.invalidateQueries({ queryKey: ["admin", "overview"] }),
-        queryClient.invalidateQueries({ queryKey: ["trips"] }),
-        queryClient.invalidateQueries({ queryKey: ["community-posts"] }),
-        queryClient.invalidateQueries({ queryKey: ["profile"] }),
-      ]),
+    onSuccess: async (_, { item }) => {
+      if ("slug" in item) await refreshTripQueries(queryClient, item.slug);
+      else await refreshModerationQueries(queryClient);
+    },
   });
   const remove = useMutation({
     mutationFn: (id: string) =>
       apiRequest(`/api/admin/trips/${id}`, { method: "DELETE" }),
-    onSuccess: async () => {
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ["admin"] }),
-        queryClient.invalidateQueries({ queryKey: ["trips"] }),
-        queryClient.invalidateQueries({ queryKey: ["trip"] }),
-        queryClient.invalidateQueries({ queryKey: ["community-posts"] }),
-        queryClient.invalidateQueries({ queryKey: ["profile"] }),
-      ]);
+    onSuccess: async (_, id) => {
+      removeTripQueries(queryClient, id);
+      await refreshTripQueries(queryClient);
     },
   });
   return { query, action, remove };
@@ -99,10 +92,10 @@ export function useAdminReportDetail(
   enabled: boolean,
 ) {
   return useQuery({
-    queryKey: ["admin", "report-detail", targetType, id],
+    queryKey: queryKeys.admin.report(targetType, id),
     enabled: enabled && Boolean(id),
     queryFn: ({ signal }) =>
-      apiRequest<{ report: AdminReportDetail }>(
+      apiRequest<AdminReportResponse>(
         "/api/admin/reports/" +
           encodeURIComponent(id) +
           "?targetType=" +

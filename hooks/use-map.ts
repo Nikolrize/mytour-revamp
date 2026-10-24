@@ -1,10 +1,16 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/api";
-import type { ItineraryStop } from "@/lib/type";
+import { queryKeys } from "@/lib/query-keys";
+import type {
+  Coordinates,
+  GeocodeResponse,
+  ItineraryStop,
+  LocatedStop,
+  RoadRouteResponse,
+} from "@/lib/type";
+import { useQuery } from "@tanstack/react-query";
 
-type Coordinates = { latitude: number; longitude: number };
 export function useMapStops(stops: ItineraryStop[]) {
   const places = stops
     .filter(
@@ -13,14 +19,13 @@ export function useMapStops(stops: ItineraryStop[]) {
     )
     .map((stop) => ({ name: stop.place, area: stop.area || "" }));
   const lookup = useQuery({
-    queryKey: ["map-places", places],
+    queryKey: queryKeys.maps.places(places),
     enabled: places.length > 0,
-    queryFn: async () => {
+    queryFn: async ({ signal }) => {
       const coordinates: (Coordinates | null)[] = [];
       for (let i = 0; i < places.length; i += 10) {
-        const result = await apiRequest<{
-          coordinates: (Coordinates | null)[];
-        }>("/api/maps/geocode", {
+        const result = await apiRequest<GeocodeResponse>("/api/maps/geocode", {
+          signal,
           method: "POST",
           body: JSON.stringify({ places: places.slice(i, i + 10) }),
         });
@@ -50,17 +55,19 @@ export function useMapStops(stops: ItineraryStop[]) {
 export function useMapRoute(stops: ItineraryStop[]) {
   const coordinates = stops
     .filter(
-      (stop) =>
-        Number.isFinite(stop.latitude) && Number.isFinite(stop.longitude),
+      (stop): stop is LocatedStop =>
+        typeof stop.latitude === "number" &&
+        Number.isFinite(stop.latitude) &&
+        typeof stop.longitude === "number" &&
+        Number.isFinite(stop.longitude),
     )
-    .map((stop) => ({ latitude: stop.latitude!, longitude: stop.longitude! }));
+    .map((stop) => ({ latitude: stop.latitude, longitude: stop.longitude }));
   return useQuery({
-    queryKey: ["map-route", coordinates],
+    queryKey: queryKeys.maps.route(coordinates),
     enabled: coordinates.length > 1,
-    queryFn: () =>
-      apiRequest<{
-        coordinates: [number, number][];
-      }>("/api/maps/route", {
+    queryFn: ({ signal }) =>
+      apiRequest<RoadRouteResponse>("/api/maps/route", {
+        signal,
         method: "POST",
         body: JSON.stringify({ coordinates }),
       }),

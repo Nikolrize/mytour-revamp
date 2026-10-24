@@ -1,39 +1,46 @@
 "use client";
 
-import {
-  useInfiniteQuery,
-  useQuery,
-  keepPreviousData,
-  useMutation,
-  useQueryClient,
-} from "@tanstack/react-query";
 import { apiRequest } from "@/lib/api";
+import {
+  refreshCommunityQueries,
+  refreshModerationQueries,
+} from "@/lib/query-cache";
+import { queryKeys } from "@/lib/query-keys";
 import type {
-  CommunityPost,
-  CommunityComment,
+  CommunityCommentsData,
+  CommunityPageOptions,
+  CommunityPostsData,
+  ContentReportValues,
+  CreateCommunityPostValues,
+  CreatedRecordResponse,
+  CursorPage,
   PaginationMeta,
 } from "@/lib/type";
-import type { z } from "zod";
-import type { communityPostSchema, contentReportSchema } from "@/lib/schemas";
+import {
+  keepPreviousData,
+  useInfiniteQuery,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
 
-type Page<T> = { nextPage: number | null } & T;
 export function useCommunityPosts({
   search = "",
   kind = "all",
   sort = "newest",
   postId = "",
   page = 1,
-}: {
-  search?: string;
-  kind?: string;
-  sort?: string;
-  postId?: string;
-  page?: number;
-} = {}) {
+}: CommunityPageOptions = {}) {
   return useQuery({
-    queryKey: ["community-posts", { search, kind, sort, postId, page }],
+    queryKey: queryKeys.communityPosts.page({
+      search,
+      kind,
+      sort,
+      postId,
+      page,
+    }),
     queryFn: ({ signal }) =>
-      apiRequest<PaginationMeta & { posts: CommunityPost[] }>(
+      apiRequest<PaginationMeta & CommunityPostsData>(
         "/api/community/posts?" +
           new URLSearchParams({
             page: String(page),
@@ -50,38 +57,22 @@ export function useCommunityPosts({
 export function useCreateCommunityPost() {
   const client = useQueryClient();
   return useMutation({
-    mutationFn: ({
-      values,
-      photos,
-    }: {
-      values: z.output<typeof communityPostSchema>;
-      photos: File[];
-    }) => {
+    mutationFn: ({ values, photos }: CreateCommunityPostValues) => {
       const body = new FormData();
       body.set("content", values.content);
       body.set("tripId", values.tripId);
       photos.forEach((photo) => body.append("photos", photo));
-      return apiRequest<{ id: string }>("/api/community/posts", {
+      return apiRequest<CreatedRecordResponse>("/api/community/posts", {
         method: "POST",
         body,
       });
     },
-    onSuccess: () =>
-      Promise.all([
-        client.invalidateQueries({ queryKey: ["public-profile"] }),
-        client.invalidateQueries({ queryKey: ["community-posts"] }),
-        client.invalidateQueries({ queryKey: ["admin", "overview"] }),
-      ]),
+    onSuccess: () => refreshCommunityQueries(client),
   });
 }
 export function useCommunityPostActions(postId: string) {
   const client = useQueryClient();
-  const refresh = () =>
-    Promise.all([
-      client.invalidateQueries({ queryKey: ["public-profile"] }),
-        client.invalidateQueries({ queryKey: ["community-posts"] }),
-      client.invalidateQueries({ queryKey: ["admin", "overview"] }),
-    ]);
+  const refresh = () => refreshCommunityQueries(client);
   const like = useMutation({
     mutationFn: (liked: boolean) =>
       apiRequest(`/api/community/posts/${postId}/like`, {
@@ -93,31 +84,28 @@ export function useCommunityPostActions(postId: string) {
     mutationFn: () =>
       apiRequest(`/api/community/posts/${postId}`, { method: "DELETE" }),
     onSuccess: async () => {
-      client.removeQueries({ queryKey: ["community-comments", postId] });
+      client.removeQueries({
+        queryKey: queryKeys.communityComments.forPost(postId),
+      });
       await refresh();
-      await client.invalidateQueries({ queryKey: ["admin", "reports"] });
     },
   });
   return { like, remove };
 }
 export function useCommunityComments(postId: string) {
   const client = useQueryClient();
-  const queryKey = ["community-comments", postId];
+  const queryKey = queryKeys.communityComments.forPost(postId);
   const query = useInfiniteQuery({
     queryKey,
     initialPageParam: 0,
-    queryFn: ({ pageParam }) =>
-      apiRequest<Page<{ comments: CommunityComment[] }>>(
+    queryFn: ({ pageParam, signal }) =>
+      apiRequest<CursorPage<CommunityCommentsData>>(
         `/api/community/posts/${postId}/comments?page=${pageParam}`,
+        { signal },
       ),
     getNextPageParam: (page) => page.nextPage ?? undefined,
   });
-  const refresh = () =>
-    Promise.all([
-      client.invalidateQueries({ queryKey }),
-      client.invalidateQueries({ queryKey: ["public-profile"] }),
-        client.invalidateQueries({ queryKey: ["community-posts"] }),
-    ]);
+  const refresh = () => refreshCommunityQueries(client, postId);
   const create = useMutation({
     mutationFn: (content: string) =>
       apiRequest(`/api/community/posts/${postId}/comments`, {
@@ -139,15 +127,11 @@ export function useCommunityComments(postId: string) {
 export function useReportCommunityPost(postId: string) {
   const client = useQueryClient();
   return useMutation({
-    mutationFn: (values: z.infer<typeof contentReportSchema>) =>
+    mutationFn: (values: ContentReportValues) =>
       apiRequest("/api/community/posts/" + postId + "/report", {
         method: "POST",
         body: JSON.stringify(values),
       }),
-    onSuccess: () =>
-      Promise.all([
-        client.invalidateQueries({ queryKey: ["admin", "reports"] }),
-        client.invalidateQueries({ queryKey: ["admin", "overview"] }),
-      ]),
+    onSuccess: () => refreshModerationQueries(client),
   });
 }

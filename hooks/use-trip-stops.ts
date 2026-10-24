@@ -1,40 +1,28 @@
 "use client";
 
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/api";
-
-export type StopValues = {
-  title: string;
-  description: string;
-  day: number;
-  startTime: string;
-  endTime: string;
-  mapsUrl: string;
-};
+import { refreshTripStops } from "@/lib/query-cache";
+import { queryKeys } from "@/lib/query-keys";
+import type {
+  Coordinates,
+  EditTripStopValues,
+  StopValues,
+  TripStopsResponse,
+} from "@/lib/type";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 export function useTripStops(tripId: string, fetchStops = true) {
   const queryClient = useQueryClient();
   const query = useQuery({
-    queryKey: ["trip-stops", tripId],
-    queryFn: () =>
-      apiRequest<{ stops: Record<string, unknown>[] }>(
-        `/api/trips/${tripId}/stops`,
-      ),
+    queryKey: queryKeys.tripStops.detail(tripId),
+    queryFn: ({ signal }) =>
+      apiRequest<TripStopsResponse>(`/api/trips/${tripId}/stops`, { signal }),
     enabled: Boolean(tripId) && fetchStops,
   });
-  const refresh = async () =>
-    Promise.all([
-      queryClient.invalidateQueries({ queryKey: ["trip-stops", tripId] }),
-      queryClient.invalidateQueries({ queryKey: ["trip", tripId] }),
-      queryClient.invalidateQueries({ queryKey: ["trips"] }),
-      queryClient.invalidateQueries({ queryKey: ["community-posts"] }),
-    ]);
+  const refresh = () => refreshTripStops(queryClient, tripId);
   const create = useMutation({
     mutationFn: async ({ mapsUrl, ...values }: StopValues) => {
-      const coordinates = await apiRequest<{
-        latitude: number;
-        longitude: number;
-      }>("/api/maps/resolve", {
+      const coordinates = await apiRequest<Coordinates>("/api/maps/resolve", {
         method: "POST",
         body: JSON.stringify({ mapsUrl }),
       });
@@ -51,15 +39,7 @@ export function useTripStops(tripId: string, fetchStops = true) {
     onSuccess: refresh,
   });
   const update = useMutation({
-    mutationFn: async ({
-      stopId,
-      values,
-    }: {
-      stopId: string;
-      values: import("zod").z.infer<
-        typeof import("@/lib/schemas").editStopSchema
-      >;
-    }) => {
+    mutationFn: async ({ stopId, values }: EditTripStopValues) => {
       return apiRequest(`/api/trips/${tripId}/stops/${stopId}`, {
         method: "PATCH",
         body: JSON.stringify({
@@ -73,3 +53,5 @@ export function useTripStops(tripId: string, fetchStops = true) {
   });
   return { query, create, remove, update };
 }
+
+export type { StopValues } from "@/lib/type";

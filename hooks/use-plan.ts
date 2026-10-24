@@ -1,38 +1,31 @@
 "use client";
 
+import { apiRequest } from "@/lib/api";
+import { refreshTripQueries } from "@/lib/query-cache";
+import { queryKeys } from "@/lib/query-keys";
+import type {
+  Coordinates,
+  CreateTripValues,
+  CreatedRecordResponse,
+  GeneratedStop,
+  GeneratedStopsResponse,
+  StatesResponse,
+  StopValues,
+  TripPlanValues,
+} from "@/lib/type";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
-import type { z } from "zod";
-import { apiRequest } from "@/lib/api";
-import type { StopValues } from "@/hooks/use-trip-stops";
-import { tripPlanSchema } from "@/lib/schemas";
-
-export type TripPlanValues = z.infer<typeof tripPlanSchema>;
-export type GeneratedStop = {
-  destinationId?: string;
-  title: string;
-  description: string;
-  day: number;
-  date: string | null;
-  startTime: string;
-  endTime: string;
-  latitude: number | null;
-  longitude: number | null;
-  area: string;
-};
 
 export function usePlan(onCreated: (id: string) => void) {
   const queryClient = useQueryClient();
   const statesQuery = useQuery({
-    queryKey: ["states"],
-    queryFn: () =>
-      apiRequest<{ states: { id: number; name: string; code: string }[] }>(
-        "/api/states",
-      ),
+    queryKey: queryKeys.states,
+    queryFn: ({ signal }) =>
+      apiRequest<StatesResponse>("/api/states", { signal }),
   });
   const generateItinerary = useMutation({
     mutationFn: (values: TripPlanValues) =>
-      apiRequest<{ stops: GeneratedStop[] }>("/api/ai/itinerary", {
+      apiRequest<GeneratedStopsResponse>("/api/ai/itinerary", {
         method: "POST",
         body: JSON.stringify({
           title: values.title,
@@ -61,14 +54,8 @@ export function usePlan(onCreated: (id: string) => void) {
       }),
   });
   const createTrip = useMutation({
-    mutationFn: ({
-      values,
-      stops,
-    }: {
-      values: TripPlanValues;
-      stops: GeneratedStop[];
-    }) =>
-      apiRequest<{ id: string }>("/api/trips", {
+    mutationFn: ({ values, stops }: CreateTripValues) =>
+      apiRequest<CreatedRecordResponse>("/api/trips", {
         method: "POST",
         body: JSON.stringify({
           title: values.title,
@@ -85,16 +72,13 @@ export function usePlan(onCreated: (id: string) => void) {
         }),
       }),
     onSuccess: async ({ id }) => {
-      await queryClient.invalidateQueries({ queryKey: ["trips"] });
+      await refreshTripQueries(queryClient);
       onCreated(id);
     },
   });
   const resolveStop = useMutation({
     mutationFn: async (values: StopValues): Promise<GeneratedStop> => {
-      const coordinates = await apiRequest<{
-        latitude: number;
-        longitude: number;
-      }>("/api/maps/resolve", {
+      const coordinates = await apiRequest<Coordinates>("/api/maps/resolve", {
         method: "POST",
         body: JSON.stringify({ mapsUrl: values.mapsUrl }),
       });
@@ -112,3 +96,5 @@ export function usePlan(onCreated: (id: string) => void) {
   });
   return { statesQuery, generateItinerary, createTrip, resolveStop };
 }
+
+export type { GeneratedStop } from "@/lib/type";

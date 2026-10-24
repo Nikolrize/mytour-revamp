@@ -1,10 +1,10 @@
 "use client";
 
 import { MetricsLoadingSkeleton } from "@/components/loading-skeletons";
-
-import { Flag, Map, MessageSquareText, Users } from "lucide-react";
 import { MetricCard } from "@/components/metric-card";
+import { FieldError } from "@/components/ui/field";
 import { useAdminOverview } from "@/hooks/use-admin";
+import { Flag, Map, MessageSquareText, Users } from "lucide-react";
 
 const definitions = [
   {
@@ -35,7 +35,7 @@ const definitions = [
 
 export function AdminOverviewMetrics() {
   const query = useAdminOverview();
-  const counts = query.data ?? {};
+  const counts = query.data;
   if (query.isPending) return <MetricsLoadingSkeleton />;
   return (
     <section className="flex flex-col gap-2" aria-label="Platform metrics">
@@ -44,7 +44,7 @@ export function AdminOverviewMetrics() {
           <MetricCard
             key={key}
             label={label}
-            value={counts[key] ?? "—"}
+            value={counts?.[key] ?? "—"}
             detail="Live Supabase count"
             icon={icon}
             iconTone={tone}
@@ -52,9 +52,9 @@ export function AdminOverviewMetrics() {
         ))}
       </div>
       {query.error && (
-        <p role="alert" className="text-sm text-destructive">
+        <FieldError role="alert" className="text-sm text-destructive">
           {query.error.message}
-        </p>
+        </FieldError>
       )}
     </section>
   );

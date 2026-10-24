@@ -1,13 +1,19 @@
 "use client";
 
+import { apiRequest } from "@/lib/api";
+import { queryKeys } from "@/lib/query-keys";
+import type {
+  MessageResponse,
+  PaginationMeta,
+  PasswordRequestsData,
+  ResolvePasswordRequestValues,
+} from "@/lib/type";
 import {
   keepPreviousData,
   useMutation,
   useQuery,
   useQueryClient,
 } from "@tanstack/react-query";
-import { apiRequest } from "@/lib/api";
-import type { PasswordResetRequest, PaginationMeta } from "@/lib/type";
 
 export function usePasswordRequests(
   page = 1,
@@ -16,11 +22,11 @@ export function usePasswordRequests(
 ) {
   const client = useQueryClient();
   const query = useQuery({
-    queryKey: ["admin", "password-requests", page, filters],
+    queryKey: queryKeys.admin.passwordRequestPage(page, filters),
     enabled,
     placeholderData: keepPreviousData,
     queryFn: ({ signal }) =>
-      apiRequest<PaginationMeta & { requests: PasswordResetRequest[] }>(
+      apiRequest<PaginationMeta & PasswordRequestsData>(
         "/api/admin/password-requests?" +
           new URLSearchParams({ page: String(page), ...filters }),
         { signal },
@@ -32,17 +38,13 @@ export function usePasswordRequests(
       id,
       password,
       confirmPassword,
-    }: {
-      id: string;
-      password: string;
-      confirmPassword: string;
-    }) =>
-      apiRequest<{ message: string }>("/api/admin/password-requests/" + id, {
+    }: ResolvePasswordRequestValues) =>
+      apiRequest<MessageResponse>("/api/admin/password-requests/" + id, {
         method: "PATCH",
         body: JSON.stringify({ password, confirmPassword }),
       }),
     onSuccess: () =>
-      client.invalidateQueries({ queryKey: ["admin", "password-requests"] }),
+      client.invalidateQueries({ queryKey: queryKeys.admin.passwordRequests }),
   });
   return { query, reset };
 }

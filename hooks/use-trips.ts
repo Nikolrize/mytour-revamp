@@ -1,13 +1,26 @@
 "use client";
 
+import { apiRequest } from "@/lib/api";
+import {
+  refreshModerationQueries,
+  refreshTripQueries,
+  removeTripQueries,
+} from "@/lib/query-cache";
+import { queryKeys } from "@/lib/query-keys";
+import type {
+  ContentReportValues,
+  CreatedRecordResponse,
+  TripDetailsValues,
+  TripPageOptions,
+  TripPageResponse,
+  TripSaveResponse,
+} from "@/lib/type";
 import {
   keepPreviousData,
   useMutation,
   useQuery,
   useQueryClient,
 } from "@tanstack/react-query";
-import { apiRequest } from "@/lib/api";
-import type { TripPageOptions, TripPageResponse } from "@/lib/type";
 
 // A query key per page/filter combination keeps pages cached independently.
 export function useTripPage(options: TripPageOptions = {}, enabled = true) {
@@ -33,7 +46,7 @@ export function useTripPage(options: TripPageOptions = {}, enabled = true) {
     publicOnly,
   };
   return useQuery({
-    queryKey: ["trips", scope, filters],
+    queryKey: queryKeys.trips.page(scope, filters),
     enabled,
     queryFn: ({ signal }) => {
       const params = new URLSearchParams({
@@ -60,34 +73,26 @@ export function useMyTrips(enabled = true, options: TripPageOptions = {}) {
 export function usePublicTrips(options: TripPageOptions = {}) {
   return useTripPage({ ...options, scope: "public" });
 }
-export function useSavedTrips(enabled = true, options: TripPageOptions = {}) {
-  return useTripPage({ ...options, scope: "saved" }, enabled);
-}
 
 // Read one saved flag instead of downloading the complete Saved collection.
 export function useSaveTrip(tripId: string, enabled = true) {
   const queryClient = useQueryClient();
-  const key = ["trip-save-status", tripId];
+  const key = queryKeys.tripSaves.detail(tripId);
   const savedStatus = useQuery({
     queryKey: key,
     enabled,
     queryFn: ({ signal }) =>
-      apiRequest<{ saved: boolean }>(`/api/trips/${tripId}/save`, { signal }),
+      apiRequest<TripSaveResponse>(`/api/trips/${tripId}/save`, { signal }),
   });
   const isSaved = savedStatus.data?.saved ?? false;
   const toggleSave = useMutation({
     mutationFn: () =>
-      apiRequest<{ saved: boolean }>(`/api/trips/${tripId}/save`, {
+      apiRequest<TripSaveResponse>(`/api/trips/${tripId}/save`, {
         method: isSaved ? "DELETE" : "POST",
       }),
     onSuccess: async (result) => {
       queryClient.setQueryData(key, result);
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ["trips"] }),
-        queryClient.invalidateQueries({ queryKey: ["trip", tripId] }),
-        queryClient.invalidateQueries({ queryKey: ["public-profile"] }),
-        queryClient.invalidateQueries({ queryKey: ["community-posts"] }),
-      ]);
+      await refreshTripQueries(queryClient, tripId);
     },
   });
   return { isSaved, toggleSave, savedStatus };
@@ -101,40 +106,22 @@ export function useUpdateTripVisibility(tripId: string) {
         method: "PATCH",
         body: JSON.stringify({ isPublic }),
       }),
-    onSuccess: async () =>
-      Promise.all([
-        queryClient.invalidateQueries({ queryKey: ["trip", tripId] }),
-        queryClient.invalidateQueries({ queryKey: ["trips"] }),
-        queryClient.invalidateQueries({ queryKey: ["public-profile"] }),
-        queryClient.invalidateQueries({ queryKey: ["community-posts"] }),
-      ]),
+    onSuccess: async () => refreshTripQueries(queryClient, tripId),
   });
 }
 
 export function useTripActions(tripId: string) {
   const queryClient = useQueryClient();
-  const refresh = async () => {
-    await Promise.all([
-      queryClient.invalidateQueries({ queryKey: ["trip", tripId] }),
-      queryClient.invalidateQueries({ queryKey: ["trips"] }),
-      queryClient.invalidateQueries({ queryKey: ["public-profile"] }),
-        queryClient.invalidateQueries({ queryKey: ["community-posts"] }),
-      queryClient.invalidateQueries({ queryKey: ["admin"] }),
-    ]);
-  };
+  const refresh = () => refreshTripQueries(queryClient, tripId);
   const copy = useMutation({
     mutationFn: () =>
-      apiRequest<{ id: string }>(`/api/trips/${tripId}/copy`, {
+      apiRequest<CreatedRecordResponse>(`/api/trips/${tripId}/copy`, {
         method: "POST",
       }),
     onSuccess: refresh,
   });
   const update = useMutation({
-    mutationFn: (
-      values: import("zod").z.infer<
-        typeof import("@/lib/schemas").tripDetailsSchema
-      >,
-    ) =>
+    mutationFn: (values: TripDetailsValues) =>
       apiRequest(`/api/trips/${tripId}`, {
         method: "PATCH",
         body: JSON.stringify(values),
@@ -144,24 +131,17 @@ export function useTripActions(tripId: string) {
   const remove = useMutation({
     mutationFn: () => apiRequest(`/api/trips/${tripId}`, { method: "DELETE" }),
     onSuccess: async () => {
-      queryClient.removeQueries({ queryKey: ["trip", tripId] });
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ["trips"] }),
-        queryClient.invalidateQueries({ queryKey: ["public-profile"] }),
-        queryClient.invalidateQueries({ queryKey: ["community-posts"] }),
-      ]);
+      removeTripQueries(queryClient, tripId);
+      await refreshTripQueries(queryClient);
     },
   });
   const report = useMutation({
-    mutationFn: (
-      values: import("zod").z.infer<
-        typeof import("@/lib/schemas").tripReportSchema
-      >,
-    ) =>
+    mutationFn: (values: ContentReportValues) =>
       apiRequest(`/api/trips/${tripId}/report`, {
         method: "POST",
         body: JSON.stringify(values),
       }),
+    onSuccess: () => refreshModerationQueries(queryClient),
   });
   return { copy, update, remove, report };
 }

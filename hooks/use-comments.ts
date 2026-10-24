@@ -1,41 +1,43 @@
 "use client";
 
+import { apiRequest } from "@/lib/api";
+import { invalidateQueryKeys, refreshTripQueries } from "@/lib/query-cache";
+import { queryKeys } from "@/lib/query-keys";
+import type {
+  CommentValues,
+  PaginationMeta,
+  TripCommentResponse,
+  TripCommentsData,
+} from "@/lib/type";
 import {
   keepPreviousData,
   useMutation,
   useQuery,
   useQueryClient,
 } from "@tanstack/react-query";
-import type { z } from "zod";
-import { apiRequest } from "@/lib/api";
-import { commentSchema } from "@/lib/schemas";
-import type { TripComment, PaginationMeta } from "@/lib/type";
-
-export type CommentValues = z.infer<typeof commentSchema>;
 
 export function useTripComments(tripSlug: string, page = 1) {
   const queryClient = useQueryClient();
-  const queryKey = ["trip-comments", tripSlug];
+  const queryKey = queryKeys.tripComments.forTrip(tripSlug);
   const commentsQuery = useQuery({
-    queryKey: [...queryKey, page],
+    queryKey: queryKeys.tripComments.page(tripSlug, page),
     placeholderData: keepPreviousData,
     queryFn: ({ signal }) =>
-      apiRequest<PaginationMeta & { comments: TripComment[] }>(
+      apiRequest<PaginationMeta & TripCommentsData>(
         `/api/trips/${tripSlug}/comments?page=${page}`,
         { signal },
       ),
   });
   const postComment = useMutation({
     mutationFn: (values: CommentValues) =>
-      apiRequest<{ comment: TripComment }>(`/api/trips/${tripSlug}/comments`, {
+      apiRequest<TripCommentResponse>(`/api/trips/${tripSlug}/comments`, {
         method: "POST",
         body: JSON.stringify(values),
       }),
     onSuccess: async () => {
       await Promise.all([
-        queryClient.invalidateQueries({ queryKey }),
-        queryClient.invalidateQueries({ queryKey: ["trips"] }),
-        queryClient.invalidateQueries({ queryKey: ["trip", tripSlug] }),
+        refreshTripQueries(queryClient, tripSlug),
+        invalidateQueryKeys(queryClient, [queryKey]),
       ]);
     },
   });

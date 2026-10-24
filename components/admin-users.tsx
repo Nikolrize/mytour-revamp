@@ -1,44 +1,37 @@
 "use client";
 
-import { TableLoadingSkeleton } from "@/components/loading-skeletons";
-
-import { AdminTableFilters } from "@/components/admin-table-filters";
-import { AdminPasswordRequests } from "@/components/admin-password-requests";
-import { canEditAccount, canManageAccount } from "@/lib/account-permissions";
-import { useState } from "react";
-import { ItineraryPagination } from "@/components/itinerary-pagination";
-import { SearchField } from "@/components/search-field";
-import { Trash2, UserRoundX, UserRoundCheck } from "lucide-react";
-import { useManagedAccounts } from "@/hooks/use-managed-accounts";
-import { useProfile } from "@/hooks/use-profile";
 import {
   AddAccountDialog,
   EditAccountDialog,
 } from "@/components/admin-account-dialog";
+import { AdminPasswordRequests } from "@/components/admin-password-requests";
+import { AdminTableFilters } from "@/components/admin-table-filters";
 import { ConfirmAction } from "@/components/confirm-action";
+import { ItineraryPagination } from "@/components/itinerary-pagination";
+import { TableLoadingSkeleton } from "@/components/loading-skeletons";
+import { SearchField } from "@/components/search-field";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import { FieldError } from "@/components/ui/field";
 import { Label } from "@/components/ui/label";
-import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import {
   Table,
-  TableHeader,
-  TableHead,
   TableBody,
-  TableRow,
   TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
   TableText,
 } from "@/components/ui/table";
+import { useManagedAccounts } from "@/hooks/use-managed-accounts";
+import { useProfile } from "@/hooks/use-profile";
+import { canEditAccount, canManageAccount } from "@/lib/account-permissions";
+import type { AccountTableProps, AdminUsersProps } from "@/lib/type";
 import { getInitials } from "@/lib/utils";
+import { Trash2, UserRoundCheck, UserRoundX } from "lucide-react";
+import { useState } from "react";
 
-function AccountTable({
-  role,
-  search,
-  compact,
-}: {
-  role: "admin" | "client";
-  search: string;
-  compact: boolean;
-}) {
+function AccountTable({ role, search, compact }: AccountTableProps) {
   const [pageState, setPageState] = useState({ value: 1, search });
   const page = pageState.search === search ? pageState.value : 1;
   const setPage = (value: number) => setPageState({ value, search });
@@ -67,7 +60,7 @@ function AccountTable({
         </h2>
         {!compact &&
           (role === "client" ||
-            profileQuery.data?.profile.role === "master_admin") && (
+            profileQuery.data?.profile?.role === "master_admin") && (
             <AddAccountDialog role={role} />
           )}
       </div>
@@ -113,9 +106,9 @@ function AccountTable({
         />
       )}
       {query.error && (
-        <p role="alert" className="text-sm text-destructive">
+        <FieldError role="alert" className="text-sm text-destructive">
           {query.error.message}
-        </p>
+        </FieldError>
       )}
       {query.isPending ? (
         <TableLoadingSkeleton
@@ -123,7 +116,12 @@ function AccountTable({
           columns={role === "admin" ? 5 : compact ? 4 : 6}
         />
       ) : (
-        <Table>
+        <Table
+          className={compact ? "min-w-[32rem]" : "min-w-[48rem]"}
+          aria-label={
+            role === "admin" ? "Administrator accounts" : "Client accounts"
+          }
+        >
           <TableHeader>
             <TableRow>
               <TableHead>Name</TableHead>
@@ -161,7 +159,7 @@ function AccountTable({
                           {account.id.slice(0, 8)}
                         </TableText>
                       </div>
-                      {profileQuery.data?.profile.id === account.id && (
+                      {profileQuery.data?.profile?.id === account.id && (
                         <Badge
                           variant="secondary"
                           className="shrink-0 rounded-full bg-brand-blue-soft text-brand-blue"
@@ -210,14 +208,14 @@ function AccountTable({
                 <TableCell className="overflow-visible">
                   <div className="flex justify-end gap-1">
                     {canEditAccount(
-                      profileQuery.data?.profile.id,
-                      profileQuery.data?.profile.role,
+                      profileQuery.data?.profile?.id,
+                      profileQuery.data?.profile?.role,
                       account.id,
                       account.role,
                     ) && <EditAccountDialog account={account} />}
                     {canManageAccount(
-                      profileQuery.data?.profile.id,
-                      profileQuery.data?.profile.role,
+                      profileQuery.data?.profile?.id,
+                      profileQuery.data?.profile?.role,
                       account.id,
                       account.role,
                     ) &&
@@ -279,8 +277,8 @@ function AccountTable({
                       )}
 
                     {canManageAccount(
-                      profileQuery.data?.profile.id,
-                      profileQuery.data?.profile.role,
+                      profileQuery.data?.profile?.id,
+                      profileQuery.data?.profile?.role,
                       account.id,
                       account.role,
                     ) &&
@@ -332,7 +330,7 @@ function AccountTable({
   );
 }
 
-export function AdminUsers({ compact = false }: { compact?: boolean }) {
+export function AdminUsers({ compact = false }: AdminUsersProps) {
   const [search, setSearch] = useState("");
   const [draftSearch, setDraftSearch] = useState("");
   return (

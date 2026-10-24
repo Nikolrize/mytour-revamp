@@ -1,11 +1,15 @@
 "use client";
 
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import type { z } from "zod";
 import { apiRequest } from "@/lib/api";
-import { createAuthFormSchema } from "@/lib/schemas";
-
-type AuthValues = z.infer<ReturnType<typeof createAuthFormSchema>>;
+import { queryKeys } from "@/lib/query-keys";
+import type {
+  AuthResponse,
+  AuthValues,
+  ForgotPasswordValues,
+  MessageResponse,
+  ProfileResponse,
+} from "@/lib/type";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 export function useAuth(
   mode: "login" | "signup",
@@ -14,7 +18,7 @@ export function useAuth(
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (values: AuthValues) =>
-      apiRequest<{ redirectTo?: string }>(
+      apiRequest<AuthResponse>(
         mode === "signup" ? "/api/auth/signup" : "/api/auth/login",
         {
           method: "POST",
@@ -39,7 +43,9 @@ export function useSignOut(onSuccess: () => void) {
     onSuccess: async () => {
       await queryClient.cancelQueries();
       queryClient.clear();
-      queryClient.setQueryData(["profile"], { profile: null });
+      queryClient.setQueryData<ProfileResponse>(queryKeys.profile, {
+        profile: null,
+      });
       onSuccess();
     },
   });
@@ -48,8 +54,8 @@ export function useSignOut(onSuccess: () => void) {
 // Password reset requests are reviewed by an administrator.
 export function usePasswordResetRequest() {
   return useMutation({
-    mutationFn: (values: { email: string }) =>
-      apiRequest<{ message: string }>("/api/auth/forgot-password", {
+    mutationFn: (values: ForgotPasswordValues) =>
+      apiRequest<MessageResponse>("/api/auth/forgot-password", {
         method: "POST",
         body: JSON.stringify(values),
       }),

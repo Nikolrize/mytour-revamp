@@ -1,31 +1,31 @@
 "use client";
 
-import { CommentsLoadingSkeleton } from "@/components/loading-skeletons";
-
-import Link from "next/link";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import type { z } from "zod";
-import { communityCommentSchema } from "@/lib/schemas";
-import { useProfile } from "@/hooks/use-profile";
-import { useCommunityComments } from "@/hooks/use-community";
 import { CommunityAuthor } from "@/components/community-author";
 import { CommunityDelete } from "@/components/community-delete";
+import { CommentsLoadingSkeleton } from "@/components/loading-skeletons";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
+import { FieldError } from "@/components/ui/field";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { useCommunityComments } from "@/hooks/use-community";
+import { useProfile } from "@/hooks/use-profile";
+import { communityCommentSchema } from "@/lib/schemas";
+import type {
+  CommunityCommentsProps,
+  CommunityCommentValues,
+} from "@/lib/type";
+import { zodResolver } from "@hookform/resolvers/zod";
+import Link from "next/link";
+import { useForm } from "react-hook-form";
 
 export function CommunityComments({
   postId,
   signedIn,
-}: {
-  postId: string;
-  signedIn: boolean;
-}) {
+}: CommunityCommentsProps) {
   const { query, create, remove } = useCommunityComments(postId);
   const { profileQuery } = useProfile();
-  const canComment = profileQuery.data?.profile.role === "client";
-  const form = useForm<z.infer<typeof communityCommentSchema>>({
+  const canComment = profileQuery.data?.profile?.role === "client";
+  const form = useForm<CommunityCommentValues>({
     resolver: zodResolver(communityCommentSchema),
     defaultValues: { content: "" },
   });
@@ -52,6 +52,12 @@ export function CommunityComments({
             Add a comment
           </Label>
           <Textarea
+            aria-invalid={Boolean(form.formState.errors.content)}
+            aria-describedby={
+              form.formState.errors.content
+                ? `comment-${postId}` + "-error"
+                : undefined
+            }
             id={`comment-${postId}`}
             {...form.register("content")}
             maxLength={1000}
@@ -61,9 +67,13 @@ export function CommunityComments({
             className="rounded-xl"
           />
           {form.formState.errors.content && (
-            <p role="alert" className="text-xs text-destructive">
+            <FieldError
+              id={`comment-${postId}` + "-error"}
+              role="alert"
+              className="text-xs text-destructive"
+            >
               {form.formState.errors.content.message}
-            </p>
+            </FieldError>
           )}
           <Button
             type="submit"
@@ -74,9 +84,9 @@ export function CommunityComments({
             {create.isPending ? "Posting…" : "Post comment"}
           </Button>
           {create.error && (
-            <p role="alert" className="text-sm text-destructive">
+            <FieldError role="alert" className="text-sm text-destructive">
               {create.error.message}
-            </p>
+            </FieldError>
           )}
         </form>
       ) : signedIn ? null : (
@@ -89,9 +99,9 @@ export function CommunityComments({
       )}
       {query.isPending && <CommentsLoadingSkeleton />}
       {query.error && (
-        <p role="alert" className="text-sm text-destructive">
+        <FieldError role="alert" className="text-sm text-destructive">
           {query.error.message}
-        </p>
+        </FieldError>
       )}
       {!query.isPending && !query.error && !comments.length && (
         <p className="text-sm text-muted-foreground">No comments yet.</p>

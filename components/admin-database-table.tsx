@@ -1,50 +1,47 @@
 "use client";
 
-import { TableLoadingSkeleton } from "@/components/loading-skeletons";
-
-import Link from "next/link";
-import { AdminTableFilters } from "@/components/admin-table-filters";
-import { AdminReportDialog } from "@/components/admin-report-dialog";
-import { Button } from "@/components/ui/button";
-import { Eye, Trash2 } from "lucide-react";
-import { ConfirmAction } from "@/components/confirm-action";
-import { useMemo, useState } from "react";
-import { ItineraryPagination } from "@/components/itinerary-pagination";
 import { AdminManagementTable } from "@/components/admin-management-table";
-import type { AdminRow } from "@/lib/admin-data";
+import { AdminReportDialog } from "@/components/admin-report-dialog";
+import { AdminTableFilters } from "@/components/admin-table-filters";
+import { ConfirmAction } from "@/components/confirm-action";
+import { ItineraryPagination } from "@/components/itinerary-pagination";
+import { TableLoadingSkeleton } from "@/components/loading-skeletons";
+import { Button } from "@/components/ui/button";
+import { FieldError } from "@/components/ui/field";
 import { useAdminRecords } from "@/hooks/use-admin";
+import type {
+  AdminDatabaseTableProps,
+  AdminRecord,
+  AdminReportSelection,
+  AdminRow,
+} from "@/lib/type";
+import { Eye, Trash2 } from "lucide-react";
+import Link from "next/link";
+import { useMemo, useState } from "react";
 
-type Kind = "trips" | "reports";
-type Props = {
-  kind: Kind;
-  searchPlaceholder: string;
-  initialSearch?: string;
-  compact?: boolean;
-};
-const emptyRecords: Record<string, unknown>[] = [];
+const emptyRecords: AdminRecord[] = [];
 
-function toRows(kind: Kind, data: Record<string, unknown>[]): AdminRow[] {
+function recordId(item: AdminRecord) {
+  return "slug" in item ? item.slug : item.id;
+}
+
+function toRows(data: AdminRecord[]): AdminRow[] {
   return data.map((item) => {
-    if (kind === "trips") {
-      const published = Boolean(item.isPublic);
-      const stops = Array.isArray(item.stops) ? item.stops.length : 0;
+    if ("slug" in item) {
+      const published = item.isPublic;
+      const stops = item.stops.length;
       return {
-        id: String(item.slug),
-        primary: String(item.title),
-        secondary: String(item.author) + " · " + String(item.location),
+        id: item.slug,
+        primary: item.title,
+        secondary: item.author + " · " + item.location,
         status: published ? "Published" : "Private",
-        meta:
-          String(item.days) +
-          " · " +
-          stops +
-          " stops · rating " +
-          String(item.rating),
+        meta: item.days + " · " + stops + " stops · rating " + item.rating,
         action: published ? "Hide trip" : "Publish trip",
       };
     }
     const open = item.status === "open";
     return {
-      id: String(item.id),
+      id: item.id,
       primary: String(item.title || item.tripTitle || "Reported content"),
       category: item.targetType === "post" ? "Post" : "Trip",
       secondary: String(item.reporter || "Traveller"),
@@ -61,7 +58,7 @@ export function AdminDatabaseTable({
   searchPlaceholder,
   initialSearch = "",
   compact = false,
-}: Props) {
+}: AdminDatabaseTableProps) {
   const [page, setPage] = useState(1);
   const [filters, setFilters] = useState<Record<string, string>>({
     status: "all",
@@ -70,10 +67,8 @@ export function AdminDatabaseTable({
     phase: "all",
     sort: "latest",
   });
-  const [selectedReport, setSelectedReport] = useState<{
-    id: string;
-    targetType: "trip" | "post";
-  } | null>(null);
+  const [selectedReport, setSelectedReport] =
+    useState<AdminReportSelection | null>(null);
   const [search, setSearch] = useState(initialSearch);
   const { query, action, remove } = useAdminRecords(
     kind,
@@ -83,7 +78,7 @@ export function AdminDatabaseTable({
     filters,
   );
   const source = query.data?.[kind] ?? emptyRecords;
-  const rows = useMemo(() => toRows(kind, source), [kind, source]);
+  const rows = useMemo(() => toRows(source), [source]);
   const lookup = useMemo(
     () => new Map(rows.map((row, index) => [row.id, source[index]])),
     [rows, source],
@@ -93,9 +88,9 @@ export function AdminDatabaseTable({
   return (
     <div className="flex min-w-0 w-full max-w-full flex-col gap-3">
       {error && (
-        <p role="alert" className="text-sm text-destructive">
+        <FieldError role="alert" className="text-sm text-destructive">
           {error}
-        </p>
+        </FieldError>
       )}
       {query.isPending ? (
         <TableLoadingSkeleton
@@ -185,26 +180,25 @@ export function AdminDatabaseTable({
             )
           }
           pendingActionId={
-            action.isPending
-              ? String(
-                  kind === "trips"
-                    ? action.variables?.item?.slug
-                    : action.variables?.item?.id,
-                )
+            action.isPending && action.variables
+              ? recordId(action.variables.item)
               : undefined
           }
           searchPlaceholder={searchPlaceholder}
-          onAction={(row) => action.mutate({ item: lookup.get(row.id) })}
+          onAction={(row) => {
+            const item = lookup.get(row.id);
+            if (item) action.mutate({ item });
+          }}
           onRowClick={
             kind === "reports"
-              ? (row) =>
-                  setSelectedReport({
-                    id: row.id,
-                    targetType:
-                      lookup.get(row.id)?.targetType === "post"
-                        ? "post"
-                        : "trip",
-                  })
+              ? (row) => {
+                  const item = lookup.get(row.id);
+                  if (item && !("slug" in item))
+                    setSelectedReport({
+                      id: item.id,
+                      targetType: item.targetType,
+                    });
+                }
               : undefined
           }
           renderExtraActions={
@@ -243,8 +237,9 @@ export function AdminDatabaseTable({
                 )
               : (row) => {
                   const item = lookup.get(row.id);
-                  const isPost = item?.targetType === "post";
-                  const tripId = isPost ? item?.post_id : item?.trip_id;
+                  if (!item || "slug" in item) return null;
+                  const isPost = item.targetType === "post";
+                  const tripId = isPost ? item.post_id : item.trip_id;
                   return typeof tripId === "string" ? (
                     <Button
                       nativeButton={false}
