@@ -325,13 +325,11 @@ export const stateImages: Record<string, string> = {
   Terengganu: "/images/states/terengganu.jpg",
 };
 
-// Illustrative homepage preview; distances are example values, not live routing.
+// Illustrative homepage itinerary preview.
 export const homeItineraryPreview = {
   title: "Penang, at your pace",
   days: "3 days",
   day: 1,
-  distanceLabel: "about 12 km",
-  totalDistanceLabel: "about 42 km",
   stops: [
     {
       time: "9:00 AM",

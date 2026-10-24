@@ -1,6 +1,6 @@
 "use client";
 
-import { useQuery, useQueries } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/api";
 import type { ItineraryStop } from "@/lib/type";
 
@@ -28,7 +28,10 @@ export function useMapStops(stops: ItineraryStop[]) {
       }
       return { coordinates };
     },
-    staleTime: 86400000,
+    staleTime: (query) =>
+      query.state.data?.coordinates.some((point) => point === null)
+        ? 60000
+        : 86400000,
     retry: false,
   });
   let missingIndex = 0;
@@ -40,7 +43,7 @@ export function useMapStops(stops: ItineraryStop[]) {
   });
   return {
     stops: mappedStops,
-    isLocating: places.length > 0 && lookup.isPending,
+    isLocating: places.length > 0 && (lookup.isPending || lookup.isFetching),
   };
 }
 
@@ -57,8 +60,6 @@ export function useMapRoute(stops: ItineraryStop[]) {
     queryFn: () =>
       apiRequest<{
         coordinates: [number, number][];
-        distanceMeters: number;
-        durationSeconds: number;
       }>("/api/maps/route", {
         method: "POST",
         body: JSON.stringify({ coordinates }),
@@ -66,55 +67,4 @@ export function useMapRoute(stops: ItineraryStop[]) {
     staleTime: 3600000,
     retry: false,
   });
-}
-
-// Route each day independently; overlap batches so trips over ten stops remain complete.
-export function useTripDistance(stops: ItineraryStop[]) {
-  const located = useMapStops(stops);
-  const days = [...new Set(located.stops.map((stop) => stop.day))];
-  const batches = days.flatMap((day) => {
-    const daily = located.stops.filter((stop) => stop.day === day);
-    const result: ItineraryStop[][] = [];
-    for (let i = 0; i < daily.length - 1; i += 9)
-      result.push(daily.slice(i, i + 10));
-    return result;
-  });
-  const queries = useQueries({
-    queries: batches.map((batch) => {
-      const coordinates = batch.map((stop) => ({
-        latitude: stop.latitude,
-        longitude: stop.longitude,
-      }));
-      const complete = coordinates.every(
-        (point) =>
-          Number.isFinite(point.latitude) && Number.isFinite(point.longitude),
-      );
-      return {
-        queryKey: ["map-route", coordinates],
-        enabled: complete,
-        queryFn: () =>
-          apiRequest<{
-            distanceMeters: number;
-            coordinates: [number, number][];
-          }>("/api/maps/route", {
-            method: "POST",
-            body: JSON.stringify({ coordinates }),
-          }),
-        staleTime: 3600000,
-        retry: false,
-      };
-    }),
-  });
-  const ready = queries.every((query) =>
-    Number.isFinite(query.data?.distanceMeters),
-  );
-  return {
-    loading: located.isLocating || queries.some((query) => query.isFetching),
-    kilometers: ready
-      ? queries.reduce(
-          (total, query) => total + (query.data?.distanceMeters ?? 0),
-          0,
-        ) / 1000
-      : null,
-  };
 }

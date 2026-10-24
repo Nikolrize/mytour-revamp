@@ -25,7 +25,7 @@ export function HomeItineraryPreview() {
             Day {day}
           </h3>
           <span className="text-xs text-muted-foreground">
-            {stops.length} stops · {trip.distanceLabel}
+            {stops.length} stops
           </span>
         </div>
         {stops.slice(0, 3).map((stop, index) => (
@@ -44,10 +44,6 @@ export function HomeItineraryPreview() {
             </div>
           </div>
         ))}
-        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-brand-surface-muted p-3 text-xs">
-          <span className="font-semibold">Trip overview</span>
-          {trip.totalDistanceLabel}
-        </div>
       </CardContent>
     </Card>
   );

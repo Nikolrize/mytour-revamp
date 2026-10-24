@@ -73,8 +73,6 @@ export async function POST(request: Request) {
       coordinates: route.geometry.coordinates.map(
         ([longitude, latitude]: [number, number]) => [latitude, longitude],
       ),
-      distanceMeters: route.distance,
-      durationSeconds: route.duration,
     });
   } catch {
     return NextResponse.json(

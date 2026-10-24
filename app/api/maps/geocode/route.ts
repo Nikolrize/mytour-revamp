@@ -62,7 +62,10 @@ function locate(name: string, area: string): Promise<Coordinates | null> {
         ? { latitude: coords[1], longitude: coords[0] }
         : null;
       if (cache.size >= 1000) cache.delete(cache.keys().next().value!);
-      cache.set(key, { result, expires: Date.now() + 86400000 });
+      cache.set(key, {
+        result,
+        expires: Date.now() + (result ? 86400000 : 60000),
+      });
       return result;
     } catch {
       return null;
