@@ -2,6 +2,7 @@
 
 import { TripDetailLoadingSkeleton } from "@/components/loading-skeletons";
 
+import { AuthorProfileLink } from "@/components/author-profile-link";
 import { ConfirmAction } from "@/components/confirm-action";
 import { TripStatusBadge } from "@/components/trip-status-badge";
 import { TripStateCover } from "@/components/trip-state-cover";
@@ -338,7 +339,7 @@ function TripDetailContent() {
                   <span className="font-medium">{trip.rating}</span>
                 </div>
               </div>
-              <div className="flex items-center gap-3 border-t border-brand-line pt-4">
+              <AuthorProfileLink authorId={trip.authorId} className="flex items-center gap-3 border-t border-brand-line pt-4 hover:text-brand-blue">
                 <Avatar className="size-9 shrink-0">
                   {trip.authorAvatar && (
                     <AvatarImage src={trip.authorAvatar} alt={trip.author} />
@@ -351,7 +352,7 @@ function TripDetailContent() {
                   <p className="text-sm font-semibold">{trip.author}</p>
                   <p className="text-xs text-muted-foreground">Trip creator</p>
                 </div>
-              </div>
+              </AuthorProfileLink>
             </CardContent>
           </Card>
           <Card className="overflow-hidden rounded-[22px] border-brand-line bg-white shadow-none">

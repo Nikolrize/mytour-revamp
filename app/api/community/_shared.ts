@@ -34,7 +34,7 @@ export async function authors(context: CommunityContext, ids: string[]) {
   return new Map<string, CommunityAuthor>(
     (result.data ?? []).map((row) => [
       row.id,
-      { name: row.display_name || "Traveller", avatarUrl: row.avatar_url },
+      { id: row.id, name: row.display_name || "Traveller", avatarUrl: row.avatar_url },
     ]),
   );
 }

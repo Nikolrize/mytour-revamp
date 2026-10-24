@@ -3,6 +3,7 @@
 import { CommentsLoadingSkeleton } from "@/components/loading-skeletons";
 
 import Link from "next/link";
+import { AuthorProfileLink } from "@/components/author-profile-link";
 import { useProfile } from "@/hooks/use-profile";
 import { useEffect, useState } from "react";
 import { ItineraryPagination } from "@/components/itinerary-pagination";
@@ -198,9 +199,9 @@ export function TripComments({
                 <div className="flex min-w-0 flex-1 flex-col gap-2">
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <div className="flex items-center gap-2">
-                      <span className="text-sm font-semibold">
+                      <AuthorProfileLink authorId={comment.authorId} className="text-sm font-semibold hover:text-brand-blue">
                         {comment.author}
-                      </span>
+                      </AuthorProfileLink>
                       <span className="text-xs text-muted-foreground">
                         ·{" "}
                         {Number.isNaN(Date.parse(comment.date))

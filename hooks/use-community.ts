@@ -68,6 +68,7 @@ export function useCreateCommunityPost() {
     },
     onSuccess: () =>
       Promise.all([
+        client.invalidateQueries({ queryKey: ["public-profile"] }),
         client.invalidateQueries({ queryKey: ["community-posts"] }),
         client.invalidateQueries({ queryKey: ["admin", "overview"] }),
       ]),
@@ -77,7 +78,8 @@ export function useCommunityPostActions(postId: string) {
   const client = useQueryClient();
   const refresh = () =>
     Promise.all([
-      client.invalidateQueries({ queryKey: ["community-posts"] }),
+      client.invalidateQueries({ queryKey: ["public-profile"] }),
+        client.invalidateQueries({ queryKey: ["community-posts"] }),
       client.invalidateQueries({ queryKey: ["admin", "overview"] }),
     ]);
   const like = useMutation({
@@ -113,7 +115,8 @@ export function useCommunityComments(postId: string) {
   const refresh = () =>
     Promise.all([
       client.invalidateQueries({ queryKey }),
-      client.invalidateQueries({ queryKey: ["community-posts"] }),
+      client.invalidateQueries({ queryKey: ["public-profile"] }),
+        client.invalidateQueries({ queryKey: ["community-posts"] }),
     ]);
   const create = useMutation({
     mutationFn: (content: string) =>

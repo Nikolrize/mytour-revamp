@@ -79,6 +79,7 @@ export async function GET(
     comments: (rows ?? []).map((row) => ({
       id: row.id,
       author: names.get(row.user_id) || "Traveller",
+      authorId: row.user_id,
       authorAvatar:
         profiles.data?.find((profile) => profile.id === row.user_id)
           ?.avatar_url ?? null,
@@ -172,6 +173,7 @@ export async function POST(
       comment: {
         id: row.id,
         author: profile?.display_name || "Traveller",
+        authorId: user.id,
         authorAvatar: profile?.avatar_url ?? null,
         date: row.created_at,
         rating,

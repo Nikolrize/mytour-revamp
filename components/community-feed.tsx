@@ -128,7 +128,7 @@ function AttachedItinerary({
   );
 }
 
-function CommunityPostCard({
+export function CommunityPostCard({
   post,
   signedIn,
 }: {

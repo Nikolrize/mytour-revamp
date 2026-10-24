@@ -97,7 +97,7 @@ export async function updateSession(request: NextRequest) {
       NextResponse.json({ message: "Admin access required." }, { status: 403 }),
     );
   if (!isApi) {
-    const isPublicClientPage =
+    const isPublicClientPage = /^\/users\/[^/]+$/.test(pathname) ||
       ["/", "/explore", "/community"].includes(pathname) ||
       /^\/trips\/[^/]+$/.test(pathname);
     const isRecoveryPage = pathname === "/forgot-password";

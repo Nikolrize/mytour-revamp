@@ -1,3 +1,4 @@
+import { AuthorProfileLink } from "@/components/author-profile-link";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { getInitials } from "@/lib/utils";
 import type { CommunityAuthor as Author } from "@/lib/type";
@@ -10,7 +11,7 @@ export function CommunityAuthor({
   createdAt?: string;
 }) {
   return (
-    <div className="flex min-w-0 items-center gap-3">
+    <AuthorProfileLink authorId={author.id} className="flex min-w-0 items-center gap-3 rounded-lg hover:text-brand-blue focus-visible:outline-2 focus-visible:outline-brand-blue">
       <Avatar size="lg">
         {author.avatarUrl && <AvatarImage src={author.avatarUrl} alt="" />}
         <AvatarFallback className="bg-brand-blue-soft text-brand-blue">
@@ -32,6 +33,6 @@ export function CommunityAuthor({
           </time>
         )}
       </div>
-    </div>
+    </AuthorProfileLink>
   );
 }

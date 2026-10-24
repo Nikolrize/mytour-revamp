@@ -265,6 +265,7 @@ export async function mapTripsToItineraries(
       slug: trip.id,
       title: trip.title,
       author: authors.get(trip.user_id) || "Traveller",
+      authorId: trip.user_id,
       authorAvatar:
         profileResult.data?.find((profile) => profile.id === trip.user_id)
           ?.avatar_url ?? null,

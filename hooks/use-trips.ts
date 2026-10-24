@@ -85,6 +85,7 @@ export function useSaveTrip(tripId: string, enabled = true) {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ["trips"] }),
         queryClient.invalidateQueries({ queryKey: ["trip", tripId] }),
+        queryClient.invalidateQueries({ queryKey: ["public-profile"] }),
         queryClient.invalidateQueries({ queryKey: ["community-posts"] }),
       ]);
     },
@@ -104,6 +105,7 @@ export function useUpdateTripVisibility(tripId: string) {
       Promise.all([
         queryClient.invalidateQueries({ queryKey: ["trip", tripId] }),
         queryClient.invalidateQueries({ queryKey: ["trips"] }),
+        queryClient.invalidateQueries({ queryKey: ["public-profile"] }),
         queryClient.invalidateQueries({ queryKey: ["community-posts"] }),
       ]),
   });
@@ -115,7 +117,8 @@ export function useTripActions(tripId: string) {
     await Promise.all([
       queryClient.invalidateQueries({ queryKey: ["trip", tripId] }),
       queryClient.invalidateQueries({ queryKey: ["trips"] }),
-      queryClient.invalidateQueries({ queryKey: ["community-posts"] }),
+      queryClient.invalidateQueries({ queryKey: ["public-profile"] }),
+        queryClient.invalidateQueries({ queryKey: ["community-posts"] }),
       queryClient.invalidateQueries({ queryKey: ["admin"] }),
     ]);
   };
@@ -144,6 +147,7 @@ export function useTripActions(tripId: string) {
       queryClient.removeQueries({ queryKey: ["trip", tripId] });
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ["trips"] }),
+        queryClient.invalidateQueries({ queryKey: ["public-profile"] }),
         queryClient.invalidateQueries({ queryKey: ["community-posts"] }),
       ]);
     },
