@@ -2,6 +2,7 @@
 
 import { TableLoadingSkeleton } from "@/components/loading-skeletons";
 
+import { AdminTableFilters } from "@/components/admin-table-filters";
 import { AdminPasswordRequests } from "@/components/admin-password-requests";
 import { canEditAccount, canManageAccount } from "@/lib/account-permissions";
 import { useState } from "react";
@@ -38,9 +39,16 @@ function AccountTable({
   search: string;
   compact: boolean;
 }) {
-  const [page, setPage] = useState(1);
+  const [pageState, setPageState] = useState({ value: 1, search });
+  const page = pageState.search === search ? pageState.value : 1;
+  const setPage = (value: number) => setPageState({ value, search });
+  const [filters, setFilters] = useState<Record<string, string>>({
+    status: "all",
+    accountRole: "all",
+    sort: "latest",
+  });
   const { query, remove, setStatus } = useManagedAccounts(
-    { role, page, pageSize: compact ? 5 : 12, search },
+    { role, page, pageSize: compact ? 5 : 12, search, ...filters },
     true,
   );
   const { profileQuery } = useProfile();
@@ -63,6 +71,47 @@ function AccountTable({
             <AddAccountDialog role={role} />
           )}
       </div>
+      {!compact && (
+        <AdminTableFilters
+          defaults={{ status: "all", accountRole: "all", sort: "latest" }}
+          onApply={(values) => {
+            setFilters(values);
+            setPage(1);
+          }}
+          definitions={[
+            {
+              key: "status",
+              label: "Status",
+              options: [
+                { value: "all", label: "All statuses" },
+                { value: "active", label: "Active" },
+                { value: "inactive", label: "Inactive" },
+              ],
+            },
+            ...(role === "admin"
+              ? [
+                  {
+                    key: "accountRole",
+                    label: "Role",
+                    options: [
+                      { value: "all", label: "All admins" },
+                      { value: "admin", label: "Admin" },
+                      { value: "master_admin", label: "Master admin" },
+                    ],
+                  },
+                ]
+              : []),
+            {
+              key: "sort",
+              label: "Sort by",
+              options: [
+                { value: "latest", label: "Newest first" },
+                { value: "oldest", label: "Oldest first" },
+              ],
+            },
+          ]}
+        />
+      )}
       {query.error && (
         <p role="alert" className="text-sm text-destructive">
           {query.error.message}
@@ -302,19 +351,9 @@ export function AdminUsers({ compact = false }: { compact?: boolean }) {
       )}
       {!compact && <AdminPasswordRequests />}
       {!compact && (
-        <AccountTable
-          key={"admin-" + search}
-          role="admin"
-          search={search}
-          compact={false}
-        />
+        <AccountTable role="admin" search={search} compact={false} />
       )}
-      <AccountTable
-        key={"client-" + search}
-        role="client"
-        search={search}
-        compact={compact}
-      />
+      <AccountTable role="client" search={search} compact={compact} />
     </div>
   );
 }

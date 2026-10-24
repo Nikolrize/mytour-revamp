@@ -9,15 +9,20 @@ import {
 import { apiRequest } from "@/lib/api";
 import type { PasswordResetRequest, PaginationMeta } from "@/lib/type";
 
-export function usePasswordRequests(page = 1, enabled = false) {
+export function usePasswordRequests(
+  page = 1,
+  enabled = false,
+  filters: Record<string, string> = {},
+) {
   const client = useQueryClient();
   const query = useQuery({
-    queryKey: ["admin", "password-requests", page],
+    queryKey: ["admin", "password-requests", page, filters],
     enabled,
     placeholderData: keepPreviousData,
     queryFn: ({ signal }) =>
       apiRequest<PaginationMeta & { requests: PasswordResetRequest[] }>(
-        "/api/admin/password-requests?page=" + page,
+        "/api/admin/password-requests?" +
+          new URLSearchParams({ page: String(page), ...filters }),
         { signal },
       ),
     refetchInterval: 60_000,

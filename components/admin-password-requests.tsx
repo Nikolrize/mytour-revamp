@@ -2,6 +2,7 @@
 
 import { TableLoadingSkeleton } from "@/components/loading-skeletons";
 
+import { AdminTableFilters } from "@/components/admin-table-filters";
 import { useState } from "react";
 import { ItineraryPagination } from "@/components/itinerary-pagination";
 import { useForm } from "react-hook-form";
@@ -135,7 +136,11 @@ function ResetRequestDialog({ request }: { request: PasswordResetRequest }) {
 
 export function AdminPasswordRequests() {
   const [page, setPage] = useState(1);
-  const { query } = usePasswordRequests(page, true);
+  const [filters, setFilters] = useState<Record<string, string>>({
+    accountRole: "all",
+    sort: "oldest",
+  });
+  const { query } = usePasswordRequests(page, true, filters);
   const requests = query.data?.requests ?? [];
   return (
     <section
@@ -152,6 +157,33 @@ export function AdminPasswordRequests() {
           {query.data?.total ?? 0} pending
         </Badge>
       </div>
+      <AdminTableFilters
+        defaults={{ accountRole: "all", sort: "oldest" }}
+        onApply={(values) => {
+          setFilters(values);
+          setPage(1);
+        }}
+        definitions={[
+          {
+            key: "accountRole",
+            label: "Account type",
+            options: [
+              { value: "all", label: "All accounts" },
+              { value: "client", label: "Client" },
+              { value: "admin", label: "Admin" },
+              { value: "master_admin", label: "Master admin" },
+            ],
+          },
+          {
+            key: "sort",
+            label: "Sort by",
+            options: [
+              { value: "oldest", label: "Oldest first" },
+              { value: "latest", label: "Newest first" },
+            ],
+          },
+        ]}
+      />
       {query.isPending ? (
         <TableLoadingSkeleton rows={3} columns={3} />
       ) : query.error ? (

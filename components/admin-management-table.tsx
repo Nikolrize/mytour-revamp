@@ -24,13 +24,15 @@ type AdminTableProps = {
   search?: string;
   onSearchChange?: (value: string) => void;
   total?: number;
+  filters?: ReactNode;
   onAction?: (row: AdminRow) => void;
+  onRowClick?: (row: AdminRow) => void;
   pendingActionId?: string;
   renderExtraActions?: (row: AdminRow) => ReactNode;
 };
 
 function statusClass(status: string) {
-  if (status === "Active" || status === "Published")
+  if (status === "Active" || status === "Published" || status === "Reviewed")
     return "border-transparent bg-emerald-50 text-emerald-700";
   if (status === "Flagged")
     return "border-transparent bg-rose-50 text-rose-700";
@@ -47,7 +49,9 @@ export function AdminManagementTable({
   search,
   onSearchChange,
   total,
+  filters,
   onAction,
+  onRowClick,
   renderExtraActions,
   pendingActionId,
 }: AdminTableProps) {
@@ -67,8 +71,8 @@ export function AdminManagementTable({
   }, [query, rows, onSearchChange]);
 
   return (
-    <Card className="overflow-hidden rounded-2xl border-brand-line bg-white shadow-none">
-      <CardContent className="flex flex-col gap-4 p-4 sm:p-5">
+    <Card className="min-w-0 w-full max-w-full overflow-hidden rounded-2xl border-brand-line bg-white shadow-none">
+      <CardContent className="flex min-w-0 flex-col gap-4 p-4 sm:p-5">
         <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
           <div>
             <h2 className="font-semibold">All {entityLabel}</h2>
@@ -90,7 +94,10 @@ export function AdminManagementTable({
             />
           </div>
         </div>
-        <Table>
+        {filters}
+        <Table
+          className={entityLabel === "reports" ? "min-w-[44rem]" : undefined}
+        >
           <TableHeader>
             <TableRow className="hover:bg-transparent">
               <TableHead className="w-28">ID</TableHead>
@@ -110,13 +117,43 @@ export function AdminManagementTable({
           </TableHeader>
           <TableBody>
             {filteredRows.map((row) => (
-              <TableRow key={row.id}>
+              <TableRow
+                key={row.id}
+                className={onRowClick ? "cursor-pointer" : undefined}
+                onClick={
+                  onRowClick
+                    ? (event) => {
+                        if (
+                          !(event.target as Element).closest(
+                            "button,a,input,select,textarea,[role=button]",
+                          )
+                        )
+                          onRowClick(row);
+                      }
+                    : undefined
+                }
+              >
                 <TableCell className="font-mono text-xs text-muted-foreground">
                   {row.id.slice(0, 8)}
                 </TableCell>
                 <TableCell>
                   <div className="flex flex-col gap-0.5">
-                    <TableText className="font-medium">{row.primary}</TableText>
+                    {onRowClick ? (
+                      <button
+                        type="button"
+                        onClick={() => onRowClick(row)}
+                        className="w-fit max-w-full rounded text-left hover:text-brand-blue focus-visible:outline-2 focus-visible:outline-brand-blue"
+                        aria-label={"View report details: " + row.primary}
+                      >
+                        <TableText className="font-medium">
+                          {row.primary}
+                        </TableText>
+                      </button>
+                    ) : (
+                      <TableText className="font-medium">
+                        {row.primary}
+                      </TableText>
+                    )}
                     <TableText className="text-xs text-muted-foreground">
                       {row.secondary}
                     </TableText>
@@ -149,7 +186,7 @@ export function AdminManagementTable({
                   <TableText>{row.meta}</TableText>
                 </TableCell>
                 <TableCell className="overflow-visible text-right">
-                  <div className="flex items-center justify-end gap-2">
+                  <div className="flex flex-col items-end justify-end gap-2 xl:flex-row xl:items-center">
                     <Button
                       variant="outline"
                       size="sm"

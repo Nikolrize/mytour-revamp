@@ -19,6 +19,9 @@ export function useManagedAccounts(
     pageSize?: number;
     search?: string;
     role?: string;
+    status?: string;
+    accountRole?: string;
+    sort?: string;
   } = {},
   enabled = false,
 ) {

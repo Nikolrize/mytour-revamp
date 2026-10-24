@@ -7,6 +7,16 @@ const schema = z.object({
   pageSize: z.coerce.number().int().min(1).max(12).default(12),
   search: z.string().trim().max(200).default(""),
   role: z.enum(["all", "admin", "client"]).default("all"),
+  status: z
+    .enum(["all", "active", "inactive", "flagged", "reviewed"])
+    .default("all"),
+  visibility: z.enum(["all", "published", "private"]).default("all"),
+  phase: z.enum(["all", "planning", "ongoing", "completed"]).default("all"),
+  type: z.enum(["all", "trip", "post"]).default("all"),
+  accountRole: z
+    .enum(["all", "client", "admin", "master_admin"])
+    .default("all"),
+  sort: z.enum(["latest", "oldest"]).default("latest"),
 });
 // The database filters, counts and pages records with the caller's RLS permissions.
 export async function getAdminPage(request: Request, kind: string) {
@@ -25,9 +35,10 @@ export async function getAdminPage(request: Request, kind: string) {
         { status: 403 },
       ),
     };
-  const parsed = schema.safeParse(
-    Object.fromEntries(new URL(request.url).searchParams),
-  );
+  const parsed = schema.safeParse({
+    sort: kind === "password-requests" ? "oldest" : "latest",
+    ...Object.fromEntries(new URL(request.url).searchParams),
+  });
   if (!parsed.success)
     return {
       denied: NextResponse.json(
@@ -35,13 +46,14 @@ export async function getAdminPage(request: Request, kind: string) {
         { status: 400 },
       ),
     };
-  const { page, pageSize, search, role } = parsed.data;
-  const result = await supabase.rpc("get_admin_record_page", {
+  const { page, pageSize, search, role, ...filters } = parsed.data;
+  const result = await supabase.rpc("get_filtered_admin_record_page", {
     _kind: kind,
     _page: page,
     _page_size: pageSize,
     _search: search,
     _role: role,
+    _filters: filters,
   });
   if (result.error)
     return {

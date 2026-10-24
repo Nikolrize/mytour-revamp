@@ -3,6 +3,8 @@
 import { TableLoadingSkeleton } from "@/components/loading-skeletons";
 
 import Link from "next/link";
+import { AdminTableFilters } from "@/components/admin-table-filters";
+import { AdminReportDialog } from "@/components/admin-report-dialog";
 import { Button } from "@/components/ui/button";
 import { Eye, Trash2 } from "lucide-react";
 import { ConfirmAction } from "@/components/confirm-action";
@@ -44,7 +46,7 @@ function toRows(kind: Kind, data: Record<string, unknown>[]): AdminRow[] {
     return {
       id: String(item.id),
       primary: String(item.title || item.tripTitle || "Reported content"),
-      category: item.targetType === "post" ? "Community post" : "Trip",
+      category: item.targetType === "post" ? "Post" : "Trip",
       secondary: String(item.reporter || "Traveller"),
       reason: String(item.reason || "No reason provided"),
       status: open ? "Flagged" : "Reviewed",
@@ -61,12 +63,24 @@ export function AdminDatabaseTable({
   compact = false,
 }: Props) {
   const [page, setPage] = useState(1);
+  const [filters, setFilters] = useState<Record<string, string>>({
+    status: "all",
+    type: "all",
+    visibility: "all",
+    phase: "all",
+    sort: "latest",
+  });
+  const [selectedReport, setSelectedReport] = useState<{
+    id: string;
+    targetType: "trip" | "post";
+  } | null>(null);
   const [search, setSearch] = useState(initialSearch);
   const { query, action, remove } = useAdminRecords(
     kind,
     page,
     search,
     compact ? 5 : 12,
+    filters,
   );
   const source = query.data?.[kind] ?? emptyRecords;
   const rows = useMemo(() => toRows(kind, source), [kind, source]);
@@ -77,7 +91,7 @@ export function AdminDatabaseTable({
 
   const error = query.error?.message ?? action.error?.message ?? "";
   return (
-    <div className="flex flex-col gap-3">
+    <div className="flex min-w-0 w-full max-w-full flex-col gap-3">
       {error && (
         <p role="alert" className="text-sm text-destructive">
           {error}
@@ -101,6 +115,75 @@ export function AdminDatabaseTable({
           total={query.data?.total ?? 0}
           rows={rows}
           entityLabel={kind}
+          filters={
+            !compact && (
+              <AdminTableFilters
+                defaults={{
+                  status: "all",
+                  type: "all",
+                  visibility: "all",
+                  phase: "all",
+                  sort: "latest",
+                }}
+                onApply={(values) => {
+                  setFilters(values);
+                  setPage(1);
+                }}
+                definitions={[
+                  ...(kind === "reports"
+                    ? [
+                        {
+                          key: "type",
+                          label: "Type",
+                          options: [
+                            { value: "all", label: "All types" },
+                            { value: "trip", label: "Trip" },
+                            { value: "post", label: "Post" },
+                          ],
+                        },
+                        {
+                          key: "status",
+                          label: "Status",
+                          options: [
+                            { value: "all", label: "All statuses" },
+                            { value: "flagged", label: "Flagged" },
+                            { value: "reviewed", label: "Reviewed" },
+                          ],
+                        },
+                      ]
+                    : [
+                        {
+                          key: "visibility",
+                          label: "Visibility",
+                          options: [
+                            { value: "all", label: "All trips" },
+                            { value: "published", label: "Published" },
+                            { value: "private", label: "Private" },
+                          ],
+                        },
+                        {
+                          key: "phase",
+                          label: "Trip status",
+                          options: [
+                            { value: "all", label: "All statuses" },
+                            { value: "planning", label: "Planning" },
+                            { value: "ongoing", label: "Ongoing" },
+                            { value: "completed", label: "Completed" },
+                          ],
+                        },
+                      ]),
+                  {
+                    key: "sort",
+                    label: "Sort by",
+                    options: [
+                      { value: "latest", label: "Newest first" },
+                      { value: "oldest", label: "Oldest first" },
+                    ],
+                  },
+                ]}
+              />
+            )
+          }
           pendingActionId={
             action.isPending
               ? String(
@@ -112,6 +195,18 @@ export function AdminDatabaseTable({
           }
           searchPlaceholder={searchPlaceholder}
           onAction={(row) => action.mutate({ item: lookup.get(row.id) })}
+          onRowClick={
+            kind === "reports"
+              ? (row) =>
+                  setSelectedReport({
+                    id: row.id,
+                    targetType:
+                      lookup.get(row.id)?.targetType === "post"
+                        ? "post"
+                        : "trip",
+                  })
+              : undefined
+          }
           renderExtraActions={
             kind === "trips"
               ? (row) => (
@@ -171,6 +266,12 @@ export function AdminDatabaseTable({
                   ) : null;
                 }
           }
+        />
+      )}
+      {kind === "reports" && (
+        <AdminReportDialog
+          selection={selectedReport}
+          onClose={() => setSelectedReport(null)}
         />
       )}
       {!compact && (

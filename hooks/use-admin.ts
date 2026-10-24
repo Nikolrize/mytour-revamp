@@ -6,7 +6,7 @@ import {
   useQuery,
   useQueryClient,
 } from "@tanstack/react-query";
-import type { PaginationMeta } from "@/lib/type";
+import type { PaginationMeta, AdminReportDetail } from "@/lib/type";
 import { apiRequest } from "@/lib/api";
 
 export type AdminKind = "users" | "trips" | "reports";
@@ -23,10 +23,11 @@ export function useAdminRecords(
   page = 1,
   search = "",
   pageSize = 12,
+  filters: Record<string, string> = {},
 ) {
   const queryClient = useQueryClient();
   const query = useQuery({
-    queryKey: ["admin", kind, { page, search, pageSize }],
+    queryKey: ["admin", kind, { page, search, pageSize, filters }],
     queryFn: ({ signal }) =>
       apiRequest<
         PaginationMeta & {
@@ -42,6 +43,7 @@ export function useAdminRecords(
             page: String(page),
             pageSize: String(pageSize),
             search,
+            ...filters,
           }),
         { signal },
       ),
@@ -68,6 +70,7 @@ export function useAdminRecords(
     onSuccess: async () =>
       Promise.all([
         queryClient.invalidateQueries({ queryKey: ["admin", kind] }),
+        queryClient.invalidateQueries({ queryKey: ["admin", "report-detail"] }),
         queryClient.invalidateQueries({ queryKey: ["admin", "overview"] }),
         queryClient.invalidateQueries({ queryKey: ["trips"] }),
         queryClient.invalidateQueries({ queryKey: ["community-posts"] }),
@@ -88,4 +91,24 @@ export function useAdminRecords(
     },
   });
   return { query, action, remove };
+}
+
+export function useAdminReportDetail(
+  id: string,
+  targetType: "trip" | "post",
+  enabled: boolean,
+) {
+  return useQuery({
+    queryKey: ["admin", "report-detail", targetType, id],
+    enabled: enabled && Boolean(id),
+    queryFn: ({ signal }) =>
+      apiRequest<{ report: AdminReportDetail }>(
+        "/api/admin/reports/" +
+          encodeURIComponent(id) +
+          "?targetType=" +
+          targetType,
+        { signal },
+      ),
+    retry: false,
+  });
 }

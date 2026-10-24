@@ -68,7 +68,11 @@ export type TripComment = {
   message: string;
 };
 
-export type CommunityAuthor = { id?: string; name: string; avatarUrl: string | null };
+export type CommunityAuthor = {
+  id?: string;
+  name: string;
+  avatarUrl: string | null;
+};
 export type CommunityPost = {
   id: string;
   content: string;
@@ -157,10 +161,15 @@ export type PaginationMeta = {
   totalPages: number;
 };
 
-
 // Only publicly visible fields and activity belong on traveller profiles.
 export type PublicProfileResponse = PaginationMeta & {
-  profile: { id: string; display_name: string; avatar_url: string | null; bio: string | null; created_at: string };
+  profile: {
+    id: string;
+    display_name: string;
+    avatar_url: string | null;
+    bio: string | null;
+    created_at: string;
+  };
   counts: { trips: number; posts: number };
   trips: Itinerary[];
   posts: CommunityPost[];
@@ -169,3 +178,25 @@ export type PublicProfileResponse = PaginationMeta & {
 };
 
 export type ProfileActivityKind = "recent" | "trips" | "posts";
+
+export type AdminReportDetail = {
+  id: string;
+  targetType: "trip" | "post";
+  contentId: string;
+  title: string;
+  reason: string;
+  details: string | null;
+  status: "open" | "resolved" | "dismissed";
+  reporterId: string;
+  reporter: string;
+  createdAt: string;
+  reviewedById: string | null;
+  reviewedBy: string | null;
+  reviewedAt: string | null;
+};
+
+export type AdminFilterDefinition = {
+  key: string;
+  label: string;
+  options: { value: string; label: string }[];
+};
