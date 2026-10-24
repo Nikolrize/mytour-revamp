@@ -737,29 +737,3 @@ export type TripStopRecord = {
   created_at: string;
 };
 export type ApiErrorResponse = { message: string; code: string };
-
-
-export type Destination = {
-  id?: string;
-  name: string;
-  state: string;
-  category: string;
-  image: string;
-  note: string;
-  latitude?: number | null;
-  longitude?: number | null;
-};
-
-export type TravelerProfile = {
-  name: string;
-  username: string;
-  location: string;
-  bio: string;
-  avatar: string;
-  coverImage: string;
-  joined: string;
-  interests: string[];
-  tripsPlanned: number;
-  tripsShared: number;
-  placesExplored: number;
-};

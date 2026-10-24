@@ -96,5 +96,3 @@ export function usePlan(onCreated: (id: string) => void) {
   });
   return { statesQuery, generateItinerary, createTrip, resolveStop };
 }
-
-export type { GeneratedStop } from "@/lib/type";

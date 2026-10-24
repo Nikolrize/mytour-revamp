@@ -53,5 +53,3 @@ export function useTripStops(tripId: string, fetchStops = true) {
   });
   return { query, create, remove, update };
 }
-
-export type { StopValues } from "@/lib/type";
