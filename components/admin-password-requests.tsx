@@ -1,5 +1,7 @@
 "use client";
 
+import { TableLoadingSkeleton } from "@/components/loading-skeletons";
+
 import { useState } from "react";
 import { ItineraryPagination } from "@/components/itinerary-pagination";
 import { useForm } from "react-hook-form";
@@ -151,7 +153,7 @@ export function AdminPasswordRequests() {
         </Badge>
       </div>
       {query.isPending ? (
-        <p className="text-sm text-muted-foreground">Loading requests…</p>
+        <TableLoadingSkeleton rows={3} columns={3} />
       ) : query.error ? (
         <p role="alert" className="text-sm text-destructive">
           {query.error.message}

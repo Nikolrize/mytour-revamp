@@ -1,5 +1,7 @@
 "use client";
 
+import { MetricsLoadingSkeleton } from "@/components/loading-skeletons";
+
 import { Flag, Map, MessageSquareText, Users } from "lucide-react";
 import { MetricCard } from "@/components/metric-card";
 import { useAdminOverview } from "@/hooks/use-admin";
@@ -34,6 +36,7 @@ const definitions = [
 export function AdminOverviewMetrics() {
   const query = useAdminOverview();
   const counts = query.data ?? {};
+  if (query.isPending) return <MetricsLoadingSkeleton />;
   return (
     <section className="flex flex-col gap-2" aria-label="Platform metrics">
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">

@@ -1,4 +1,8 @@
 "use client";
+
+import { Skeleton } from "@/components/ui/skeleton";
+import { LoadingBlock } from "@/components/loading-skeletons";
+
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -187,13 +191,19 @@ export function EditAccountDialog({ account }: { account: ManagedAccount }) {
           </div>
           <div className="flex flex-col gap-2">
             <Label htmlFor={"edit-email-" + account.id}>Email</Label>
-            <Input
-              id={"edit-email-" + account.id}
-              type="email"
-              autoComplete="off"
-              disabled={edit.isPending || details.isPending}
-              {...form.register("email")}
-            />
+            {details.isPending ? (
+              <LoadingBlock label="Loading login details">
+                <Skeleton className="h-10 w-full rounded-md" />
+              </LoadingBlock>
+            ) : (
+              <Input
+                id={"edit-email-" + account.id}
+                type="email"
+                autoComplete="off"
+                disabled={edit.isPending || details.isPending}
+                {...form.register("email")}
+              />
+            )}
           </div>
           <div className="flex flex-col gap-2">
             <Label htmlFor={"edit-password-" + account.id}>New password</Label>
@@ -221,11 +231,6 @@ export function EditAccountDialog({ account }: { account: ManagedAccount }) {
               {...form.register("confirmPassword")}
             />
           </div>
-          {details.isPending && (
-            <p className="text-sm text-muted-foreground">
-              Loading login details…
-            </p>
-          )}
           {details.error && (
             <p role="alert" className="text-sm text-destructive">
               {details.error.message}

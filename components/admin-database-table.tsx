@@ -1,5 +1,7 @@
 "use client";
 
+import { TableLoadingSkeleton } from "@/components/loading-skeletons";
+
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Eye, Trash2 } from "lucide-react";
@@ -82,7 +84,11 @@ export function AdminDatabaseTable({
         </p>
       )}
       {query.isPending ? (
-        <p className="text-sm text-muted-foreground">Loading {kind}…</p>
+        <TableLoadingSkeleton
+          rows={compact ? 5 : 6}
+          columns={kind === "reports" ? 7 : 5}
+          toolbar
+        />
       ) : (
         <AdminManagementTable
           key={initialSearch}

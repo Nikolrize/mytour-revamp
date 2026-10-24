@@ -1,3 +1,4 @@
+import { CommunityFeedSkeleton } from "@/components/loading-skeletons";
 import { Suspense } from "react";
 import { CommunityFeed } from "@/components/community-feed";
 import { Badge } from "@/components/ui/badge";
@@ -34,11 +35,7 @@ export default function ManagePostsPage({
           that need moderation.
         </p>
       </header>
-      <Suspense
-        fallback={
-          <p className="text-sm text-muted-foreground">Loading posts…</p>
-        }
-      >
+      <Suspense fallback={<CommunityFeedSkeleton />}>
         <FilteredPosts searchParams={searchParams} />
       </Suspense>
     </div>

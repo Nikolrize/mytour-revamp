@@ -1,4 +1,7 @@
 "use client";
+
+import { TableLoadingSkeleton } from "@/components/loading-skeletons";
+
 import { AdminPasswordRequests } from "@/components/admin-password-requests";
 import { canEditAccount, canManageAccount } from "@/lib/account-permissions";
 import { useState } from "react";
@@ -66,7 +69,10 @@ function AccountTable({
         </p>
       )}
       {query.isPending ? (
-        <p className="text-sm text-muted-foreground">Loading accounts…</p>
+        <TableLoadingSkeleton
+          rows={5}
+          columns={role === "admin" ? 5 : compact ? 4 : 6}
+        />
       ) : (
         <Table>
           <TableHeader>

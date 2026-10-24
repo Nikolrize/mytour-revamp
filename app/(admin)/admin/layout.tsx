@@ -1,3 +1,4 @@
+import { PageLoadingSkeleton } from "@/components/loading-skeletons";
 import { Suspense } from "react";
 import { redirect } from "next/navigation";
 import { AdminShell } from "@/components/admin-shell";
@@ -17,11 +18,7 @@ export default function AdminLayout({
 }) {
   return (
     <Suspense
-      fallback={
-        <p className="p-6 text-sm text-muted-foreground">
-          Loading admin workspace…
-        </p>
-      }
+      fallback={<PageLoadingSkeleton label="Loading admin workspace" />}
     >
       <AdminAccess>{children}</AdminAccess>
     </Suspense>

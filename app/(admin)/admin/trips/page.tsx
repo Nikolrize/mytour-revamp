@@ -1,3 +1,4 @@
+import { TableLoadingSkeleton } from "@/components/loading-skeletons";
 import { Suspense } from "react";
 
 import { Badge } from "@/components/ui/badge";
@@ -44,11 +45,7 @@ export default function ManageTripsPage({
           </p>
         </div>
       </header>
-      <Suspense
-        fallback={
-          <p className="text-sm text-muted-foreground">Loading trips…</p>
-        }
-      >
+      <Suspense fallback={<TableLoadingSkeleton toolbar />}>
         <FilteredTripsTable searchParams={searchParams} />
       </Suspense>
     </div>
