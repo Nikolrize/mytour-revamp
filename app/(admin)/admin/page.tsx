@@ -8,7 +8,7 @@ import { AdminOverviewMetrics } from "@/components/admin-overview-metrics";
 
 export default function AdminDashboardPage() {
   return (
-    <div className="flex flex-col gap-7">
+    <div className="flex min-w-0 flex-col gap-7">
       {/* Dashboard introduction */}
       <header className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
         <div className="flex flex-col gap-2">
@@ -31,7 +31,7 @@ export default function AdminDashboardPage() {
       <AdminOverviewMetrics />
 
       {/* Moderation queue */}
-      <section className="flex flex-col gap-4">
+      <section className="flex min-w-0 flex-col gap-4">
         <div className="flex items-end justify-between gap-4">
           <div>
             <h2 className="text-xl font-semibold tracking-tight">
@@ -50,12 +50,16 @@ export default function AdminDashboardPage() {
             Open moderation <ArrowRight className="size-4" />
           </Button>
         </div>
-        <AdminDatabaseTable compact kind="reports" searchPlaceholder="Search moderation queue" />
+        <AdminDatabaseTable
+          compact
+          kind="reports"
+          searchPlaceholder="Search moderation queue"
+        />
       </section>
 
       {/* Recent platform activity */}
       <section className="grid gap-5 xl:grid-cols-2">
-        <div className="flex flex-col gap-4">
+        <div className="flex min-w-0 flex-col gap-4">
           <div className="flex items-end justify-between">
             <div>
               <h2 className="text-lg font-semibold">New travellers</h2>
@@ -74,7 +78,7 @@ export default function AdminDashboardPage() {
           </div>
           <AdminUsers compact />
         </div>
-        <div className="flex flex-col gap-4">
+        <div className="flex min-w-0 flex-col gap-4">
           <div className="flex items-end justify-between">
             <div>
               <h2 className="text-lg font-semibold">Recent itineraries</h2>
@@ -91,7 +95,11 @@ export default function AdminDashboardPage() {
               Manage <ArrowRight className="size-4" />
             </Button>
           </div>
-          <AdminDatabaseTable compact kind="trips" searchPlaceholder="Search itineraries" />
+          <AdminDatabaseTable
+            compact
+            kind="trips"
+            searchPlaceholder="Search itineraries"
+          />
         </div>
       </section>
     </div>

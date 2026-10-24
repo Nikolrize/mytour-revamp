@@ -146,7 +146,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
       </Sidebar>
 
       {/* Admin workspace */}
-      <SidebarInset className="min-h-screen bg-brand-surface-muted">
+      <SidebarInset className="min-w-0 min-h-screen bg-brand-surface-muted">
         <header className="sticky top-0 z-10 flex items-center justify-between gap-4 border-b border-brand-line bg-white px-4 py-3 sm:px-8">
           <div className="flex items-center gap-3">
             <SidebarTrigger className="rounded-lg" />
@@ -164,7 +164,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
             Visit client homepage ↗
           </Link>
         </header>
-        <main className="mx-auto flex w-full max-w-[1480px] flex-col gap-6 px-[4vw] py-[3vh] sm:gap-8 sm:px-[3vw] sm:py-[4vh]">
+        <main className="mx-auto flex min-w-0 w-full max-w-[1480px] flex-col gap-6 px-[4vw] py-[3vh] sm:gap-8 sm:px-[3vw] sm:py-[4vh]">
           {children}
         </main>
       </SidebarInset>
