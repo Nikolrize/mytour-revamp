@@ -1,7 +1,8 @@
-import { CalendarDays, MapPin } from "lucide-react";
-import { homeItineraryPreview } from "@/lib/data";
-import { Card, CardContent } from "@/components/ui/card";
+import { ItineraryDayHeader } from "@/components/itinerary-day-header";
 import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
+import { homeItineraryPreview } from "@/lib/data";
+import { MapPin } from "lucide-react";
 
 // A fixed example demonstrates the itinerary layout without API requests.
 export function HomeItineraryPreview() {
@@ -19,15 +20,7 @@ export function HomeItineraryPreview() {
             {trip.days}
           </Badge>
         </div>
-        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-brand-line pb-4">
-          <h3 className="flex items-center gap-2 font-semibold">
-            <CalendarDays className="size-4 text-brand-blue" />
-            Day {day}
-          </h3>
-          <span className="text-xs text-muted-foreground">
-            {stops.length} stops
-          </span>
-        </div>
+        <ItineraryDayHeader day={day} stopCount={stops.length} />
         {stops.slice(0, 3).map((stop, index) => (
           <div key={index} className="flex items-start gap-3">
             <span className="grid size-9 shrink-0 place-items-center rounded-full bg-brand-blue-soft text-brand-blue">

@@ -1,14 +1,5 @@
-import type { LucideIcon } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
-
-type MetricCardProps = {
-  label: string;
-  value: string | number;
-  icon: LucideIcon;
-  iconTone: string;
-  detail?: string;
-  variant?: "compact" | "dashboard";
-};
+import type { MetricCardProps } from "@/lib/type";
 
 export function MetricCard({
   label,

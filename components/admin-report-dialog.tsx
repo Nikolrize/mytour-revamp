@@ -1,19 +1,21 @@
 "use client";
 
-import Link from "next/link";
-import { useAdminReportDetail } from "@/hooks/use-admin";
+import { LoadingBlock } from "@/components/loading-skeletons";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
-  DialogHeader,
-  DialogTitle,
   DialogDescription,
   DialogFooter,
+  DialogHeader,
+  DialogTitle,
 } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+import { FieldError } from "@/components/ui/field";
 import { Skeleton } from "@/components/ui/skeleton";
-import { LoadingBlock } from "@/components/loading-skeletons";
+import { useAdminReportDetail } from "@/hooks/use-admin";
+import type { AdminReportDialogProps } from "@/lib/type";
+import Link from "next/link";
 
 function date(value: string | null) {
   return value
@@ -27,10 +29,7 @@ function date(value: string | null) {
 export function AdminReportDialog({
   selection,
   onClose,
-}: {
-  selection: { id: string; targetType: "trip" | "post" } | null;
-  onClose: () => void;
-}) {
+}: AdminReportDialogProps) {
   const query = useAdminReportDetail(
     selection?.id ?? "",
     selection?.targetType ?? "trip",
@@ -60,9 +59,9 @@ export function AdminReportDialog({
             </div>
           </LoadingBlock>
         ) : query.error ? (
-          <p role="alert" className="text-sm text-destructive">
+          <FieldError role="alert" className="text-sm text-destructive">
             {query.error.message}
-          </p>
+          </FieldError>
         ) : (
           report && (
             <>

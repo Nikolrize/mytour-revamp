@@ -1,9 +1,16 @@
 "use client";
 
-import { Skeleton } from "@/components/ui/skeleton";
 import { LoadingBlock } from "@/components/loading-skeletons";
-import { useEffect } from "react";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useMapRoute, useMapStops } from "@/hooks/use-map";
+import type {
+  FitStopsProps,
+  LatLng,
+  LeafletRouteMapProps,
+  LocatedStop,
+} from "@/lib/type";
 import { divIcon, latLngBounds, type LatLngExpression } from "leaflet";
+import { useEffect } from "react";
 import {
   MapContainer,
   Marker,
@@ -12,14 +19,8 @@ import {
   TileLayer,
   useMap,
 } from "react-leaflet";
-import { useMapStops, useMapRoute } from "@/hooks/use-map";
-import type { ItineraryStop } from "@/lib/type";
 
-type LocatedStop = ItineraryStop & { latitude: number; longitude: number };
-
-type LatLng = [number, number];
-
-function FitStops({ stops, route }: { stops: LocatedStop[]; route: LatLng[] }) {
+function FitStops({ stops, route }: FitStopsProps) {
   const map = useMap();
   useEffect(() => {
     if (!stops.length) return;
@@ -42,11 +43,7 @@ function stopIcon(index: number) {
   });
 }
 
-export function LeafletRouteMap({
-  stops: inputStops,
-}: {
-  stops: ItineraryStop[];
-}) {
+export function LeafletRouteMap({ stops: inputStops }: LeafletRouteMapProps) {
   const { stops, isLocating } = useMapStops(inputStops);
   const routeQuery = useMapRoute(stops);
   const located = stops.filter(

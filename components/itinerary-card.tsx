@@ -2,21 +2,13 @@ import { AuthorProfileLink } from "@/components/author-profile-link";
 import { TripStateCover } from "@/components/trip-state-cover";
 import { TripStatusBadge } from "@/components/trip-status-badge";
 import { TripTags } from "@/components/trip-tags";
-import Link from "next/link";
-import { ArrowRight, BookmarkCheck, Heart, MapPin, Star } from "lucide-react";
-import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import type { Itinerary } from "@/lib/type";
+import type { ItineraryCardProps } from "@/lib/type";
 import { getInitials } from "@/lib/utils";
-
-type ItineraryCardProps = {
-  itinerary: Itinerary;
-  showAuthor?: boolean;
-  isSaved?: boolean;
-  isOwner?: boolean;
-  showStatus?: boolean;
-};
+import { ArrowRight, BookmarkCheck, Heart, MapPin, Star } from "lucide-react";
+import Link from "next/link";
 
 export function ItineraryCard({
   itinerary,
@@ -35,7 +27,11 @@ export function ItineraryCard({
           aria-hidden="true"
         />
         {/* Status and saved indicators occupy opposite corners of the cover. */}
-        {showStatus && <div className="absolute top-3 left-3"><TripStatusBadge status={itinerary.status} /></div>}
+        {showStatus && (
+          <div className="absolute top-3 left-3">
+            <TripStatusBadge status={itinerary.status} />
+          </div>
+        )}
         {isSaved && (
           <Badge className="absolute top-3 right-3 gap-1.5 rounded-full bg-brand-blue px-3 py-1 text-white">
             <BookmarkCheck className="size-3.5" /> Saved
@@ -59,7 +55,10 @@ export function ItineraryCard({
         <div className="flex flex-col gap-3">
           <div className="flex items-center justify-between gap-3">
             {showAuthor ? (
-              <AuthorProfileLink authorId={itinerary.authorId} className="flex min-w-0 items-center gap-3 rounded-lg hover:text-brand-blue focus-visible:outline-2 focus-visible:outline-brand-blue">
+              <AuthorProfileLink
+                authorId={itinerary.authorId}
+                className="flex min-w-0 items-center gap-3 rounded-lg hover:text-brand-blue focus-visible:outline-2 focus-visible:outline-brand-blue"
+              >
                 <Avatar className="size-10 shrink-0">
                   {itinerary.authorAvatar && (
                     <AvatarImage

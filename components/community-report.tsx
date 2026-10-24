@@ -1,39 +1,34 @@
 "use client";
 
-import { useState } from "react";
 import { ReportConfirmation } from "@/components/report-confirmation";
-import Link from "next/link";
-import { Flag } from "lucide-react";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import type { z } from "zod";
-import { contentReportSchema } from "@/lib/schemas";
-import { useReportCommunityPost } from "@/hooks/use-community";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
 import {
   Dialog,
-  DialogTrigger,
   DialogContent,
-  DialogHeader,
-  DialogTitle,
   DialogDescription,
   DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
 } from "@/components/ui/dialog";
+import { FieldError } from "@/components/ui/field";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { useReportCommunityPost } from "@/hooks/use-community";
+import { contentReportSchema } from "@/lib/schemas";
+import type { CommunityReportProps, ContentReportValues } from "@/lib/type";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { Flag } from "lucide-react";
+import Link from "next/link";
+import { useState } from "react";
+import { useForm } from "react-hook-form";
 
-export function CommunityReport({
-  postId,
-  signedIn,
-}: {
-  postId: string;
-  signedIn: boolean;
-}) {
+export function CommunityReport({ postId, signedIn }: CommunityReportProps) {
   const [open, setOpen] = useState(false);
   const [confirmed, setConfirmed] = useState(false);
   const report = useReportCommunityPost(postId);
-  const form = useForm<z.infer<typeof contentReportSchema>>({
+  const form = useForm<ContentReportValues>({
     resolver: zodResolver(contentReportSchema),
     defaultValues: { reason: "", details: "" },
   });
@@ -101,15 +96,24 @@ export function CommunityReport({
             <div className="flex flex-col gap-2">
               <Label htmlFor={"report-reason-" + postId}>Reason</Label>
               <Input
+                aria-invalid={Boolean(form.formState.errors.reason)}
+                aria-describedby={
+                  form.formState.errors.reason
+                    ? "report-reason-" + postId + "-error"
+                    : undefined
+                }
                 id={"report-reason-" + postId}
                 maxLength={120}
                 disabled={report.isPending}
                 {...form.register("reason")}
               />
               {form.formState.errors.reason && (
-                <p className="text-xs text-destructive">
+                <FieldError
+                  id={"report-reason-" + postId + "-error"}
+                  className="text-xs text-destructive"
+                >
                   {form.formState.errors.reason.message}
-                </p>
+                </FieldError>
               )}
             </div>
             <div className="flex flex-col gap-2">
@@ -117,21 +121,30 @@ export function CommunityReport({
                 Details (optional)
               </Label>
               <Textarea
+                aria-invalid={Boolean(form.formState.errors.details)}
+                aria-describedby={
+                  form.formState.errors.details
+                    ? "report-details-" + postId + "-error"
+                    : undefined
+                }
                 id={"report-details-" + postId}
                 maxLength={1000}
                 disabled={report.isPending}
                 {...form.register("details")}
               />
               {form.formState.errors.details && (
-                <p className="text-xs text-destructive">
+                <FieldError
+                  id={"report-details-" + postId + "-error"}
+                  className="text-xs text-destructive"
+                >
                   {form.formState.errors.details.message}
-                </p>
+                </FieldError>
               )}
             </div>
             {report.error && (
-              <p role="alert" className="text-sm text-destructive">
+              <FieldError role="alert" className="text-sm text-destructive">
                 {report.error.message}
-              </p>
+              </FieldError>
             )}
             <DialogFooter>
               <Button type="submit" disabled={report.isPending}>

@@ -1,16 +1,26 @@
 "use client";
 
-import { TripDetailLoadingSkeleton } from "@/components/loading-skeletons";
-
 import { AuthorProfileLink } from "@/components/author-profile-link";
 import { ConfirmAction } from "@/components/confirm-action";
-import { TripStatusBadge } from "@/components/trip-status-badge";
+import { ItineraryDayHeader } from "@/components/itinerary-day-header";
+import { TripDetailLoadingSkeleton } from "@/components/loading-skeletons";
+import { RouteMap } from "@/components/route-map";
+import { TripActions } from "@/components/trip-actions";
+import { TripComments } from "@/components/trip-comments";
 import { TripStateCover } from "@/components/trip-state-cover";
+import { TripStatusBadge } from "@/components/trip-status-badge";
+import { TripStopEditor } from "@/components/trip-stop-editor";
+import { TripStopManager } from "@/components/trip-stop-manager";
 import { TripTags } from "@/components/trip-tags";
-import Link from "next/link";
-import { Suspense, useState } from "react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 import { useProfile } from "@/hooks/use-profile";
-import { useParams, useRouter } from "next/navigation";
+import { useTripDetails } from "@/hooks/use-trip-details";
+import { useTripStops } from "@/hooks/use-trip-stops";
+import { useSaveTrip, useUpdateTripVisibility } from "@/hooks/use-trips";
+import { getInitials } from "@/lib/utils";
 import {
   ArrowLeft,
   CalendarDays,
@@ -19,19 +29,9 @@ import {
   Star,
   Trash2,
 } from "lucide-react";
-import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { TripComments } from "@/components/trip-comments";
-import { getInitials } from "@/lib/utils";
-import { useTripDetails } from "@/hooks/use-trip-details";
-import { useSaveTrip, useUpdateTripVisibility } from "@/hooks/use-trips";
-import { RouteMap } from "@/components/route-map";
-import { TripStopEditor } from "@/components/trip-stop-editor";
-import { TripActions } from "@/components/trip-actions";
-import { TripStopManager } from "@/components/trip-stop-manager";
-import { useTripStops } from "@/hooks/use-trip-stops";
+import Link from "next/link";
+import { useParams, useRouter } from "next/navigation";
+import { Suspense, useState } from "react";
 
 export default function TripDetailPage() {
   return (
@@ -236,22 +236,11 @@ function TripDetailContent() {
               className="rounded-[22px] border-brand-line bg-white shadow-none"
             >
               <CardContent className="flex flex-col gap-5 p-5 sm:p-6">
-                <div className="flex items-center justify-between border-b border-brand-line pb-4">
-                  <div className="flex items-center gap-3">
-                    <span className="grid size-9 place-items-center rounded-xl bg-brand-blue-soft text-brand-blue">
-                      <CalendarDays className="size-4" />
-                    </span>
-                    <div>
-                      <p className="text-[10px] font-semibold tracking-[0.14em] text-muted-foreground uppercase">
-                        Day {day}
-                      </p>
-                      <p className="font-semibold">{stops[0]?.area}</p>
-                    </div>
-                  </div>
-                  <span className="text-xs text-muted-foreground">
-                    {stops.length} stops
-                  </span>
-                </div>
+                <ItineraryDayHeader
+                  day={day}
+                  stopCount={stops.length}
+                  area={stops[0]?.area}
+                />
                 <div className="relative flex flex-col gap-5">
                   {stops.map((stop, index) => (
                     <div
@@ -320,26 +309,35 @@ function TripDetailContent() {
                 <TripStatusBadge status={trip.status} />
               </div>
               <div className="flex flex-col gap-4 text-sm">
-                <div className="flex items-center justify-between">
-                  <span className="flex items-center gap-2 text-muted-foreground">
+                <div className="flex items-start justify-between gap-4">
+                  <span className="flex shrink-0 items-center gap-2 text-muted-foreground">
                     <CalendarDays className="size-4" /> Duration
                   </span>
-                  <span className="font-medium">{trip.days}</span>
+                  <span className="min-w-0 break-words text-right font-medium">
+                    {trip.days}
+                  </span>
                 </div>
-                <div className="flex items-center justify-between">
-                  <span className="flex items-center gap-2 text-muted-foreground">
+                <div className="flex items-start justify-between gap-4">
+                  <span className="flex shrink-0 items-center gap-2 text-muted-foreground">
                     <MapPin className="size-4" /> Destination
                   </span>
-                  <span className="font-medium">{trip.location}</span>
+                  <span className="min-w-0 break-words text-right font-medium">
+                    {trip.location}
+                  </span>
                 </div>
-                <div className="flex items-center justify-between">
-                  <span className="flex items-center gap-2 text-muted-foreground">
+                <div className="flex items-start justify-between gap-4">
+                  <span className="flex shrink-0 items-center gap-2 text-muted-foreground">
                     <Star className="size-4" /> Community rating
                   </span>
-                  <span className="font-medium">{trip.rating}</span>
+                  <span className="min-w-0 break-words text-right font-medium">
+                    {trip.rating}
+                  </span>
                 </div>
               </div>
-              <AuthorProfileLink authorId={trip.authorId} className="flex items-center gap-3 border-t border-brand-line pt-4 hover:text-brand-blue">
+              <AuthorProfileLink
+                authorId={trip.authorId}
+                className="flex items-center gap-3 border-t border-brand-line pt-4 hover:text-brand-blue"
+              >
                 <Avatar className="size-9 shrink-0">
                   {trip.authorAvatar && (
                     <AvatarImage src={trip.authorAvatar} alt={trip.author} />

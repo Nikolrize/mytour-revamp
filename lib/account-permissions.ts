@@ -1,5 +1,4 @@
-import type { ManagedAccount } from "@/lib/type";
-export type AccountRole = ManagedAccount["role"];
+import type { AccountRole } from "@/lib/type";
 
 export function canEditAccount(
   actorId: string | undefined,

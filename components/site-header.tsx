@@ -1,25 +1,17 @@
 "use client";
 
 import { LoadingBlock } from "@/components/loading-skeletons";
-
 import { NewPlanMenu } from "@/components/new-plan-menu";
-
-import Image from "next/image";
-import { Skeleton } from "@/components/ui/skeleton";
-import Link from "next/link";
-import { Menu, UserRound, LogOut, LayoutDashboard } from "lucide-react";
-import { useRouter, usePathname } from "next/navigation";
-import { useSignOut } from "@/hooks/use-auth";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
-  DropdownMenuTrigger,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
+  DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { useProfile } from "@/hooks/use-profile";
-import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { Button } from "@/components/ui/button";
+import { FieldError } from "@/components/ui/field";
 import {
   Sheet,
   SheetClose,
@@ -29,6 +21,13 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useSignOut } from "@/hooks/use-auth";
+import { useProfile } from "@/hooks/use-profile";
+import { LayoutDashboard, LogOut, Menu, UserRound } from "lucide-react";
+import Image from "next/image";
+import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
 
 const navigation = [
   { label: "Home", href: "/" },
@@ -220,12 +219,12 @@ export function SiteHeader() {
         </div>
       </div>
       {signOut.error && (
-        <p
+        <FieldError
           role="alert"
           className="px-[4vw] pb-3 text-right text-sm text-destructive"
         >
           {signOut.error.message}
-        </p>
+        </FieldError>
       )}
     </header>
   );

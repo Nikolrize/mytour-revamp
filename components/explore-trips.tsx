@@ -1,34 +1,31 @@
 "use client";
 
-import { TripCardGridSkeleton } from "@/components/loading-skeletons";
-
-import { type SetStateAction, useState } from "react";
-import Link from "next/link";
-import { ArrowRight, Search, X } from "lucide-react";
-import { usePublicTrips } from "@/hooks/use-trips";
-import { tripInterestOptions } from "@/lib/data";
-import type { TripFilters } from "@/lib/type";
-import { SearchField } from "@/components/search-field";
-import { ItineraryPagination } from "@/components/itinerary-pagination";
 import { ItineraryCard } from "@/components/itinerary-card";
+import { ItineraryPagination } from "@/components/itinerary-pagination";
+import { TripCardGridSkeleton } from "@/components/loading-skeletons";
+import { SearchField } from "@/components/search-field";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { FieldError } from "@/components/ui/field";
 import { Label } from "@/components/ui/label";
 import {
   Select,
-  SelectTrigger,
-  SelectValue,
   SelectContent,
   SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from "@/components/ui/select";
+import { usePublicTrips } from "@/hooks/use-trips";
+import { tripInterestOptions } from "@/lib/data";
+import type { ExploreTripsProps, TripFilters } from "@/lib/type";
+import { ArrowRight, Search, X } from "lucide-react";
+import Link from "next/link";
+import { type SetStateAction, useState } from "react";
 
 export function ExploreTrips({
   embedded = false,
   maxItems,
-}: {
-  embedded?: boolean;
-  maxItems?: number;
-}) {
+}: ExploreTripsProps) {
   const [page, setPage] = useState(1);
   const [search, updateSearch] = useState("");
   const [state, updateState] = useState("all");
@@ -251,9 +248,9 @@ export function ExploreTrips({
           )}
         </div>
         {trips.error ? (
-          <p role="alert" className="text-sm text-destructive">
+          <FieldError role="alert" className="text-sm text-destructive">
             {trips.error.message}
-          </p>
+          </FieldError>
         ) : trips.isPending ? (
           <TripCardGridSkeleton count={maxItems ?? 6} />
         ) : filtered.length ? (

@@ -1,51 +1,50 @@
 "use client";
 
-import { useState } from "react";
 import { ReportConfirmation } from "@/components/report-confirmation";
-import { useRouter } from "next/navigation";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import type { z } from "zod";
-import { Pencil, Trash2, Copy, Flag, Check } from "lucide-react";
-import type { Itinerary } from "@/lib/type";
-import { tripDetailsSchema, tripReportSchema } from "@/lib/schemas";
-import { useProfile } from "@/hooks/use-profile";
-import { useTripActions } from "@/hooks/use-trips";
+import {
+  AlertDialog,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
-  DialogTrigger,
   DialogContent,
-  DialogHeader,
-  DialogTitle,
   DialogDescription,
   DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
 } from "@/components/ui/dialog";
-import {
-  AlertDialog,
-  AlertDialogTrigger,
-  AlertDialogContent,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogCancel,
-} from "@/components/ui/alert-dialog";
+import { FieldError } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { useProfile } from "@/hooks/use-profile";
+import { useTripActions } from "@/hooks/use-trips";
+import { tripDetailsSchema, tripReportSchema } from "@/lib/schemas";
+import type {
+  ContentReportValues,
+  TripActionsProps,
+  TripDetailsValues,
+} from "@/lib/type";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { Check, Copy, Flag, Pencil, Trash2 } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
+import { useForm } from "react-hook-form";
 
 export function TripActions({
   trip,
   isOwner,
   isEditing,
   onEditingChange,
-}: {
-  trip: Itinerary;
-  isOwner: boolean;
-  isEditing: boolean;
-  onEditingChange: (enabled: boolean) => void;
-}) {
+}: TripActionsProps) {
   const router = useRouter();
   const { profileQuery } = useProfile();
   const signedIn = Boolean(profileQuery.data?.profile);
@@ -54,11 +53,11 @@ export function TripActions({
   const [deleting, setDeleting] = useState(false);
   const [reporting, setReporting] = useState(false);
   const [reportConfirmed, setReportConfirmed] = useState(false);
-  const editForm = useForm<z.infer<typeof tripDetailsSchema>>({
+  const editForm = useForm<TripDetailsValues>({
     resolver: zodResolver(tripDetailsSchema),
     defaultValues: { title: trip.title, description: trip.description },
   });
-  const reportForm = useForm<z.infer<typeof tripReportSchema>>({
+  const reportForm = useForm<ContentReportValues>({
     resolver: zodResolver(tripReportSchema),
     defaultValues: { reason: "", details: "" },
   });
@@ -128,13 +127,24 @@ export function TripActions({
                       <div className="flex flex-col gap-2">
                         <Label htmlFor="edit-trip-title">Trip name</Label>
                         <Input
+                          aria-invalid={Boolean(
+                            editForm.formState.errors.title,
+                          )}
+                          aria-describedby={
+                            editForm.formState.errors.title
+                              ? "edit-trip-title-error"
+                              : undefined
+                          }
                           id="edit-trip-title"
                           {...editForm.register("title")}
                         />
                         {editForm.formState.errors.title && (
-                          <p className="text-sm text-destructive">
+                          <FieldError
+                            id={"edit-trip-title-error"}
+                            className="text-sm text-destructive"
+                          >
                             {editForm.formState.errors.title.message}
-                          </p>
+                          </FieldError>
                         )}
                       </div>
                       <div className="flex flex-col gap-2">
@@ -142,20 +152,34 @@ export function TripActions({
                           Description
                         </Label>
                         <Textarea
+                          aria-invalid={Boolean(
+                            editForm.formState.errors.description,
+                          )}
+                          aria-describedby={
+                            editForm.formState.errors.description
+                              ? "edit-trip-description-error"
+                              : undefined
+                          }
                           id="edit-trip-description"
                           maxLength={2000}
                           {...editForm.register("description")}
                         />
                         {editForm.formState.errors.description && (
-                          <p className="text-sm text-destructive">
+                          <FieldError
+                            id={"edit-trip-description-error"}
+                            className="text-sm text-destructive"
+                          >
                             {editForm.formState.errors.description.message}
-                          </p>
+                          </FieldError>
                         )}
                       </div>
                       {update.error && (
-                        <p role="alert" className="text-sm text-destructive">
+                        <FieldError
+                          role="alert"
+                          className="text-sm text-destructive"
+                        >
                           {update.error.message}
-                        </p>
+                        </FieldError>
                       )}
                       <DialogFooter>
                         <Button type="submit" disabled={update.isPending}>
@@ -184,9 +208,12 @@ export function TripActions({
                       </AlertDialogDescription>
                     </AlertDialogHeader>
                     {remove.error && (
-                      <p role="alert" className="text-sm text-destructive">
+                      <FieldError
+                        role="alert"
+                        className="text-sm text-destructive"
+                      >
                         {remove.error.message}
-                      </p>
+                      </FieldError>
                     )}
                     <AlertDialogFooter>
                       <AlertDialogCancel disabled={remove.isPending}>
@@ -269,28 +296,43 @@ export function TripActions({
                   <div className="flex flex-col gap-2">
                     <Label htmlFor="report-reason">Reason</Label>
                     <Input
+                      aria-invalid={Boolean(reportForm.formState.errors.reason)}
+                      aria-describedby={
+                        reportForm.formState.errors.reason
+                          ? "report-reason-error"
+                          : undefined
+                      }
                       id="report-reason"
                       maxLength={120}
                       {...reportForm.register("reason")}
                     />
                     {reportForm.formState.errors.reason && (
-                      <p className="text-sm text-destructive">
+                      <FieldError
+                        id={"report-reason-error"}
+                        className="text-sm text-destructive"
+                      >
                         {reportForm.formState.errors.reason.message}
-                      </p>
+                      </FieldError>
                     )}
                   </div>
                   <div className="flex flex-col gap-2">
                     <Label htmlFor="report-details">Details (optional)</Label>
                     <Textarea
+                      aria-invalid={Boolean(
+                        reportForm.formState.errors.details,
+                      )}
                       id="report-details"
                       maxLength={1000}
                       {...reportForm.register("details")}
                     />
                   </div>
                   {report.error && (
-                    <p role="alert" className="text-sm text-destructive">
+                    <FieldError
+                      role="alert"
+                      className="text-sm text-destructive"
+                    >
                       {report.error.message}
-                    </p>
+                    </FieldError>
                   )}
                   <DialogFooter>
                     <Button type="submit" disabled={report.isPending}>
@@ -304,9 +346,9 @@ export function TripActions({
         )}
       </div>
       {error && (
-        <p role="alert" className="text-sm text-destructive">
+        <FieldError role="alert" className="text-sm text-destructive">
           {error.message}
-        </p>
+        </FieldError>
       )}
       <ReportConfirmation
         open={reportConfirmed}

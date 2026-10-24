@@ -3,12 +3,13 @@
 import {
   Pagination,
   PaginationContent,
+  PaginationEllipsis,
   PaginationItem,
   PaginationLink,
-  PaginationPrevious,
   PaginationNext,
-  PaginationEllipsis,
+  PaginationPrevious,
 } from "@/components/ui/pagination";
+import type { ItineraryPaginationProps } from "@/lib/type";
 
 export function ItineraryPagination({
   page,
@@ -16,13 +17,7 @@ export function ItineraryPagination({
   busy = false,
   label = "Itinerary pages",
   onPageChange,
-}: {
-  page: number;
-  totalPages: number;
-  busy?: boolean;
-  label?: string;
-  onPageChange: (page: number) => void;
-}) {
+}: ItineraryPaginationProps) {
   if (totalPages <= 1) return null;
   const pages = [...new Set([1, page - 1, page, page + 1, totalPages])]
     .filter((value) => value >= 1 && value <= totalPages)
@@ -34,7 +29,7 @@ export function ItineraryPagination({
         onPageChange(next);
     };
   return (
-    <Pagination aria-label={label} className="mx-0 pt-3">
+    <Pagination aria-label={label} aria-busy={busy} className="mx-0 pt-3">
       <PaginationContent className="flex-wrap justify-center gap-1">
         <PaginationItem>
           <PaginationPrevious
@@ -57,6 +52,7 @@ export function ItineraryPagination({
               isActive={value === page}
               aria-label={"Page " + value}
               aria-disabled={busy}
+              tabIndex={busy ? -1 : 0}
               onClick={change(value)}
               className={
                 value === page

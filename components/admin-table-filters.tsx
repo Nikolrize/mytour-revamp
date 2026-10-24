@@ -1,27 +1,23 @@
 "use client";
 
-import { useId, useState } from "react";
-import type { AdminFilterDefinition } from "@/lib/type";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import {
   Select,
-  SelectTrigger,
-  SelectValue,
   SelectContent,
   SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from "@/components/ui/select";
+import type { AdminTableFiltersProps } from "@/lib/type";
+import { useId, useState } from "react";
 
 // Draft selections make one backend request only after Apply filters.
 export function AdminTableFilters({
   definitions,
   defaults,
   onApply,
-}: {
-  definitions: AdminFilterDefinition[];
-  defaults: Record<string, string>;
-  onApply: (values: Record<string, string>) => void;
-}) {
+}: AdminTableFiltersProps) {
   const id = useId();
   const [draft, setDraft] = useState(defaults);
   return (

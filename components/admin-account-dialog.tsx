@@ -1,39 +1,43 @@
 "use client";
 
-import { Skeleton } from "@/components/ui/skeleton";
 import { LoadingBlock } from "@/components/loading-skeletons";
-
-import { useEffect, useState } from "react";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import type { z } from "zod";
-import { Pencil, UserPlus } from "lucide-react";
+import { PasswordFields } from "@/components/password-fields";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { FieldError } from "@/components/ui/field";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Skeleton } from "@/components/ui/skeleton";
+import {
+  useManagedAccount,
+  useManagedAccounts,
+} from "@/hooks/use-managed-accounts";
 import {
   adminAccountCreateSchema,
   adminAccountEditSchema,
 } from "@/lib/schemas";
-import type { ManagedAccount } from "@/lib/type";
-import {
-  useManagedAccounts,
-  useManagedAccount,
-} from "@/hooks/use-managed-accounts";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import type {
+  AddAccountDialogProps,
+  AdminAccountCreateValues,
+  AdminAccountEditValues,
+  EditAccountDialogProps,
+} from "@/lib/type";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { Pencil, UserPlus } from "lucide-react";
+import { useEffect, useState } from "react";
+import { useForm } from "react-hook-form";
 
-import {
-  Dialog,
-  DialogTrigger,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from "@/components/ui/dialog";
-
-export function AddAccountDialog({ role }: { role: "admin" | "client" }) {
+export function AddAccountDialog({ role }: AddAccountDialogProps) {
   const [open, setOpen] = useState(false);
   const { create } = useManagedAccounts();
-  const form = useForm<z.infer<typeof adminAccountCreateSchema>>({
+  const form = useForm<AdminAccountCreateValues>({
     resolver: zodResolver(adminAccountCreateSchema),
     defaultValues: {
       displayName: "",
@@ -84,6 +88,7 @@ export function AddAccountDialog({ role }: { role: "admin" | "client" }) {
           <div className="flex flex-col gap-2">
             <Label htmlFor={"new-name-" + role}>Name</Label>
             <Input
+              aria-invalid={Boolean(form.formState.errors.displayName)}
               id={"new-name-" + role}
               maxLength={60}
               disabled={create.isPending}
@@ -93,6 +98,7 @@ export function AddAccountDialog({ role }: { role: "admin" | "client" }) {
           <div className="flex flex-col gap-2">
             <Label htmlFor={"new-email-" + role}>Email</Label>
             <Input
+              aria-invalid={Boolean(form.formState.errors.email)}
               id={"new-email-" + role}
               type="email"
               autoComplete="off"
@@ -100,39 +106,31 @@ export function AddAccountDialog({ role }: { role: "admin" | "client" }) {
               {...form.register("email")}
             />
           </div>
-          <div className="flex flex-col gap-2">
-            <Label htmlFor={"new-password-" + role}>Password</Label>
-            <Input
-              id={"new-password-" + role}
-              type="password"
-              autoComplete="new-password"
-              disabled={create.isPending}
-              {...form.register("password")}
-            />
-          </div>
-          <div className="flex flex-col gap-2">
-            <Label htmlFor={"new-confirm-password-" + role}>
-              Confirm password
-            </Label>
-            <Input
-              id={"new-confirm-password-" + role}
-              type="password"
-              autoComplete="new-password"
-              maxLength={128}
-              disabled={create.isPending}
-              aria-invalid={Boolean(form.formState.errors.confirmPassword)}
-              {...form.register("confirmPassword")}
-            />
-          </div>
-          {Object.entries(form.formState.errors).map(([key, error]) => (
-            <p key={key} role="alert" className="text-sm text-destructive">
-              {error.message}
-            </p>
-          ))}
+          <PasswordFields
+            idPrefix={"new-account-" + role}
+            password={form.register("password")}
+            confirmation={form.register("confirmPassword")}
+            passwordError={form.formState.errors.password?.message}
+            confirmError={form.formState.errors.confirmPassword?.message}
+            passwordLabel="Password"
+            confirmLabel="Confirm password"
+            disabled={create.isPending}
+          />
+          {Object.entries(form.formState.errors)
+            .filter(([key]) => key !== "password" && key !== "confirmPassword")
+            .map(([key, error]) => (
+              <FieldError
+                key={key}
+                role="alert"
+                className="text-sm text-destructive"
+              >
+                {error.message}
+              </FieldError>
+            ))}
           {create.error && (
-            <p role="alert" className="text-sm text-destructive">
+            <FieldError role="alert" className="text-sm text-destructive">
               {create.error.message}
-            </p>
+            </FieldError>
           )}
           <div className="flex justify-end">
             <Button type="submit" disabled={create.isPending}>
@@ -145,7 +143,7 @@ export function AddAccountDialog({ role }: { role: "admin" | "client" }) {
   );
 }
 
-export function EditAccountDialog({ account }: { account: ManagedAccount }) {
+export function EditAccountDialog({ account }: EditAccountDialogProps) {
   const [open, setOpen] = useState(false);
   const { edit } = useManagedAccounts();
   const details = useManagedAccount(account.id, open);
@@ -155,7 +153,7 @@ export function EditAccountDialog({ account }: { account: ManagedAccount }) {
     password: "",
     confirmPassword: "",
   };
-  const form = useForm<z.infer<typeof adminAccountEditSchema>>({
+  const form = useForm<AdminAccountEditValues>({
     resolver: zodResolver(adminAccountEditSchema),
     defaultValues: defaults,
   });
@@ -209,6 +207,7 @@ export function EditAccountDialog({ account }: { account: ManagedAccount }) {
           <div className="flex flex-col gap-2">
             <Label htmlFor={"edit-name-" + account.id}>User name</Label>
             <Input
+              aria-invalid={Boolean(form.formState.errors.displayName)}
               id={"edit-name-" + account.id}
               maxLength={60}
               disabled={edit.isPending}
@@ -223,6 +222,7 @@ export function EditAccountDialog({ account }: { account: ManagedAccount }) {
               </LoadingBlock>
             ) : (
               <Input
+                aria-invalid={Boolean(form.formState.errors.email)}
                 id={"edit-email-" + account.id}
                 type="email"
                 autoComplete="off"
@@ -231,46 +231,35 @@ export function EditAccountDialog({ account }: { account: ManagedAccount }) {
               />
             )}
           </div>
-          <div className="flex flex-col gap-2">
-            <Label htmlFor={"edit-password-" + account.id}>New password</Label>
-            <Input
-              id={"edit-password-" + account.id}
-              type="password"
-              autoComplete="new-password"
-              disabled={edit.isPending}
-              {...form.register("password")}
-            />
-            <p className="text-xs text-muted-foreground">
-              Leave blank to keep the current password. New passwords need at
-              least 8 characters.
-            </p>
-          </div>
-          <div className="flex flex-col gap-2">
-            <Label htmlFor={"edit-confirm-password-" + account.id}>
-              Confirm new password
-            </Label>
-            <Input
-              id={"edit-confirm-password-" + account.id}
-              type="password"
-              autoComplete="new-password"
-              disabled={edit.isPending}
-              {...form.register("confirmPassword")}
-            />
-          </div>
+          <PasswordFields
+            idPrefix={"edit-account-" + account.id}
+            password={form.register("password")}
+            confirmation={form.register("confirmPassword")}
+            passwordError={form.formState.errors.password?.message}
+            confirmError={form.formState.errors.confirmPassword?.message}
+            description="Leave blank to keep the current password. New passwords need at least 8 characters."
+            disabled={edit.isPending}
+          />
           {details.error && (
-            <p role="alert" className="text-sm text-destructive">
+            <FieldError role="alert" className="text-sm text-destructive">
               {details.error.message}
-            </p>
+            </FieldError>
           )}
-          {Object.entries(form.formState.errors).map(([key, error]) => (
-            <p key={key} role="alert" className="text-sm text-destructive">
-              {error.message}
-            </p>
-          ))}
+          {Object.entries(form.formState.errors)
+            .filter(([key]) => key !== "password" && key !== "confirmPassword")
+            .map(([key, error]) => (
+              <FieldError
+                key={key}
+                role="alert"
+                className="text-sm text-destructive"
+              >
+                {error.message}
+              </FieldError>
+            ))}
           {edit.error && (
-            <p role="alert" className="text-sm text-destructive">
+            <FieldError role="alert" className="text-sm text-destructive">
               {edit.error.message}
-            </p>
+            </FieldError>
           )}
           <div className="flex justify-end">
             <Button

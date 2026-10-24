@@ -1,6 +1,5 @@
 "use client";
 
-import { type ReactNode, useMemo, useState } from "react";
 import { SearchField } from "@/components/search-field";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -9,27 +8,13 @@ import {
   Table,
   TableBody,
   TableCell,
-  TableText,
   TableHead,
   TableHeader,
   TableRow,
+  TableText,
 } from "@/components/ui/table";
-import type { AdminRow } from "@/lib/admin-data";
-
-type AdminTableProps = {
-  rows: AdminRow[];
-  entityLabel: string;
-  searchPlaceholder: string;
-  initialSearch?: string;
-  search?: string;
-  onSearchChange?: (value: string) => void;
-  total?: number;
-  filters?: ReactNode;
-  onAction?: (row: AdminRow) => void;
-  onRowClick?: (row: AdminRow) => void;
-  pendingActionId?: string;
-  renderExtraActions?: (row: AdminRow) => ReactNode;
-};
+import type { AdminTableProps } from "@/lib/type";
+import { useMemo, useState } from "react";
 
 function statusClass(status: string) {
   if (status === "Active" || status === "Published" || status === "Reviewed")

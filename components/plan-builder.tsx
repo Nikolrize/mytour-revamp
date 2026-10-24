@@ -1,37 +1,16 @@
 "use client";
 
+import { DateTimePicker } from "@/components/date-time-picker";
+import { ItineraryDayHeader } from "@/components/itinerary-day-header";
 import {
-  LoadingBlock,
   CommentsLoadingSkeleton,
+  LoadingBlock,
 } from "@/components/loading-skeletons";
-
-import { Skeleton } from "@/components/ui/skeleton";
-import { useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
-import { Controller, useForm, useWatch } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import type { z } from "zod";
-import {
-  differenceInCalendarDays,
-  format,
-  isSameDay,
-  isBefore,
-  startOfDay,
-} from "date-fns";
-import {
-  ArrowRight,
-  CalendarDays,
-  Check,
-  Compass,
-  MapPin,
-  Sparkles,
-  Users,
-  Trash2,
-} from "lucide-react";
+import { TripStopManager } from "@/components/trip-stop-manager";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Textarea } from "@/components/ui/textarea";
+import { FieldError } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -41,13 +20,37 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { TripStopManager } from "@/components/trip-stop-manager";
-import { DateTimePicker } from "@/components/date-time-picker";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Textarea } from "@/components/ui/textarea";
+import { usePlan } from "@/hooks/use-plan";
 import { stateImages, tripInterestOptions } from "@/lib/data";
 import { tripPlanSchema } from "@/lib/schemas";
-import { usePlan, type GeneratedStop } from "@/hooks/use-plan";
-
-type TripPlanValues = z.infer<typeof tripPlanSchema>;
+import type {
+  GeneratedStop,
+  PlanBuilderProps,
+  TripPlanValues,
+} from "@/lib/type";
+import { zodResolver } from "@hookform/resolvers/zod";
+import {
+  differenceInCalendarDays,
+  format,
+  isBefore,
+  isSameDay,
+  startOfDay,
+} from "date-fns";
+import {
+  ArrowRight,
+  CalendarDays,
+  Check,
+  Compass,
+  MapPin,
+  Sparkles,
+  Trash2,
+  Users,
+} from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useEffect, useMemo, useState } from "react";
+import { Controller, useForm, useWatch } from "react-hook-form";
 
 const interests = tripInterestOptions;
 
@@ -57,7 +60,7 @@ function formatTime(time: string) {
   return `${rawHour % 12 || 12}:${String(minute).padStart(2, "0")} ${rawHour < 12 ? "AM" : "PM"}`;
 }
 
-export function PlanBuilder({ mode = "ai" }: { mode?: "ai" | "manual" }) {
+export function PlanBuilder({ mode = "ai" }: PlanBuilderProps) {
   const router = useRouter();
   const form = useForm<TripPlanValues>({
     resolver: zodResolver(tripPlanSchema),
@@ -525,19 +528,19 @@ export function PlanBuilder({ mode = "ai" }: { mode?: "ai" | "manual" }) {
             )}
           </div>
           {(errors.states || errors.endTime) && (
-            <p role="alert" className="text-sm text-destructive">
+            <FieldError role="alert" className="text-sm text-destructive">
               {errors.states?.message || errors.endTime?.message}
-            </p>
+            </FieldError>
           )}
           {createTrip.error && (
-            <p role="alert" className="text-sm text-destructive">
+            <FieldError role="alert" className="text-sm text-destructive">
               {createTrip.error.message}
-            </p>
+            </FieldError>
           )}
           {generateItinerary.error && (
-            <p role="alert" className="text-sm text-destructive">
+            <FieldError role="alert" className="text-sm text-destructive">
               {generateItinerary.error.message}
-            </p>
+            </FieldError>
           )}
         </form>
         {mode === "manual" && (
@@ -563,21 +566,12 @@ export function PlanBuilder({ mode = "ai" }: { mode?: "ai" | "manual" }) {
                     className="rounded-[22px] border-brand-line bg-white shadow-none"
                   >
                     <CardContent className="flex flex-col gap-5 p-5 sm:p-6">
-                      <div className="flex items-center justify-between gap-3 border-b border-brand-line pb-4">
-                        <div className="flex items-center gap-3">
-                          <span className="grid size-9 place-items-center rounded-xl bg-brand-blue-soft text-brand-blue">
-                            <CalendarDays className="size-4" />
-                          </span>
-                          <h3 className="font-semibold">Day {day}</h3>
-                        </div>
-                        <span className="text-xs text-muted-foreground">
-                          {
-                            manualStops.filter((stop) => stop.day === day)
-                              .length
-                          }{" "}
-                          stops
-                        </span>
-                      </div>
+                      <ItineraryDayHeader
+                        day={day}
+                        stopCount={
+                          manualStops.filter((stop) => stop.day === day).length
+                        }
+                      />
                       <div className="flex flex-col gap-5">
                         {manualStops.map((stop, index) =>
                           stop.day !== day ? null : (

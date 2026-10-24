@@ -1,44 +1,42 @@
 "use client";
 
-import { TableLoadingSkeleton } from "@/components/loading-skeletons";
-
 import { AdminTableFilters } from "@/components/admin-table-filters";
-import { useState } from "react";
 import { ItineraryPagination } from "@/components/itinerary-pagination";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import type { z } from "zod";
-import { KeyRound } from "lucide-react";
-import { resetPasswordSchema } from "@/lib/schemas";
-import type { PasswordResetRequest } from "@/lib/type";
-import { usePasswordRequests } from "@/hooks/use-password-requests";
-import { Button } from "@/components/ui/button";
+import { TableLoadingSkeleton } from "@/components/loading-skeletons";
+import { PasswordFields } from "@/components/password-fields";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import {
-  Table,
-  TableHeader,
-  TableHead,
-  TableBody,
-  TableRow,
-  TableCell,
-  TableText,
-} from "@/components/ui/table";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
-  DialogTrigger,
   DialogContent,
-  DialogHeader,
-  DialogTitle,
   DialogDescription,
   DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
 } from "@/components/ui/dialog";
+import { FieldError } from "@/components/ui/field";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+  TableText,
+} from "@/components/ui/table";
+import { usePasswordRequests } from "@/hooks/use-password-requests";
+import { resetPasswordSchema } from "@/lib/schemas";
+import type { ResetPasswordValues, ResetRequestDialogProps } from "@/lib/type";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { KeyRound } from "lucide-react";
+import { useState } from "react";
+import { useForm } from "react-hook-form";
 
-function ResetRequestDialog({ request }: { request: PasswordResetRequest }) {
+function ResetRequestDialog({ request }: ResetRequestDialogProps) {
   const [open, setOpen] = useState(false);
   const { reset } = usePasswordRequests();
-  const form = useForm<z.infer<typeof resetPasswordSchema>>({
+  const form = useForm<ResetPasswordValues>({
     resolver: zodResolver(resetPasswordSchema),
     defaultValues: { password: "", confirmPassword: "" },
   });
@@ -89,39 +87,29 @@ function ResetRequestDialog({ request }: { request: PasswordResetRequest }) {
           )}
         >
           <p className="text-sm text-muted-foreground">{request.email}</p>
-          <div className="flex flex-col gap-2">
-            <Label htmlFor={"request-password-" + request.id}>
-              New password
-            </Label>
-            <Input
-              id={"request-password-" + request.id}
-              type="password"
-              autoComplete="new-password"
-              disabled={reset.isPending}
-              {...form.register("password")}
-            />
-          </div>
-          <div className="flex flex-col gap-2">
-            <Label htmlFor={"request-confirm-" + request.id}>
-              Confirm new password
-            </Label>
-            <Input
-              id={"request-confirm-" + request.id}
-              type="password"
-              autoComplete="new-password"
-              disabled={reset.isPending}
-              {...form.register("confirmPassword")}
-            />
-          </div>
-          {Object.entries(form.formState.errors).map(([key, error]) => (
-            <p key={key} role="alert" className="text-sm text-destructive">
-              {error.message}
-            </p>
-          ))}
+          <PasswordFields
+            idPrefix={"request-" + request.id}
+            password={form.register("password")}
+            confirmation={form.register("confirmPassword")}
+            passwordError={form.formState.errors.password?.message}
+            confirmError={form.formState.errors.confirmPassword?.message}
+            disabled={reset.isPending}
+          />
+          {Object.entries(form.formState.errors)
+            .filter(([key]) => key !== "password" && key !== "confirmPassword")
+            .map(([key, error]) => (
+              <FieldError
+                key={key}
+                role="alert"
+                className="text-sm text-destructive"
+              >
+                {error.message}
+              </FieldError>
+            ))}
           {reset.error && (
-            <p role="alert" className="text-sm text-destructive">
+            <FieldError role="alert" className="text-sm text-destructive">
               {reset.error.message}
-            </p>
+            </FieldError>
           )}
           <DialogFooter>
             <Button type="submit" disabled={reset.isPending}>
@@ -187,9 +175,9 @@ export function AdminPasswordRequests() {
       {query.isPending ? (
         <TableLoadingSkeleton rows={3} columns={3} />
       ) : query.error ? (
-        <p role="alert" className="text-sm text-destructive">
+        <FieldError role="alert" className="text-sm text-destructive">
           {query.error.message}
-        </p>
+        </FieldError>
       ) : requests.length ? (
         <Table>
           <TableHeader>

@@ -1,12 +1,15 @@
 "use client";
 
-import { useState } from "react";
-import Image from "next/image";
-import { useRouter } from "next/navigation";
-import Link from "next/link";
-import { Controller, useForm } from "react-hook-form";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import { FieldError } from "@/components/ui/field";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { useAuth } from "@/hooks/use-auth";
+import { createAuthFormSchema } from "@/lib/schemas";
+import type { AuthPageProps, AuthValues } from "@/lib/type";
 import { zodResolver } from "@hookform/resolvers/zod";
-import type { z } from "zod";
 import {
   ArrowRight,
   Eye,
@@ -15,17 +18,11 @@ import {
   Mail,
   UserRound,
 } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { createAuthFormSchema } from "@/lib/schemas";
-import { useAuth } from "@/hooks/use-auth";
-
-type AuthValues = z.infer<ReturnType<typeof createAuthFormSchema>>;
-
-type AuthPageProps = { mode: "login" | "signup" };
+import Image from "next/image";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
+import { Controller, useForm } from "react-hook-form";
 
 export function AuthPage({ mode }: AuthPageProps) {
   const router = useRouter();
@@ -135,6 +132,12 @@ export function AuthPage({ mode }: AuthPageProps) {
                   <span className="relative">
                     <UserRound className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
                     <Input
+                      aria-invalid={Boolean(form.formState.errors.name)}
+                      aria-describedby={
+                        form.formState.errors.name
+                          ? "full-name-error"
+                          : undefined
+                      }
                       id="full-name"
                       {...form.register("name")}
                       autoComplete="name"
@@ -144,9 +147,12 @@ export function AuthPage({ mode }: AuthPageProps) {
                     />
                   </span>
                   {form.formState.errors.name && (
-                    <p className="text-xs text-destructive">
+                    <FieldError
+                      id={"full-name-error"}
+                      className="text-xs text-destructive"
+                    >
                       {form.formState.errors.name.message}
-                    </p>
+                    </FieldError>
                   )}
                 </div>
               )}
@@ -155,6 +161,10 @@ export function AuthPage({ mode }: AuthPageProps) {
                 <span className="relative">
                   <Mail className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
                   <Input
+                    aria-invalid={Boolean(form.formState.errors.email)}
+                    aria-describedby={
+                      form.formState.errors.email ? "email-error" : undefined
+                    }
                     id="email"
                     {...form.register("email")}
                     type="email"
@@ -165,9 +175,12 @@ export function AuthPage({ mode }: AuthPageProps) {
                   />
                 </span>
                 {form.formState.errors.email && (
-                  <p className="text-xs text-destructive">
+                  <FieldError
+                    id={"email-error"}
+                    className="text-xs text-destructive"
+                  >
                     {form.formState.errors.email.message}
-                  </p>
+                  </FieldError>
                 )}
               </div>
               <div className="flex flex-col gap-2">
@@ -175,6 +188,12 @@ export function AuthPage({ mode }: AuthPageProps) {
                 <span className="relative">
                   <LockKeyhole className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
                   <Input
+                    aria-invalid={Boolean(form.formState.errors.password)}
+                    aria-describedby={
+                      form.formState.errors.password
+                        ? "password-error"
+                        : undefined
+                    }
                     id="password"
                     {...form.register("password")}
                     type={showPassword ? "text" : "password"}
@@ -206,9 +225,12 @@ export function AuthPage({ mode }: AuthPageProps) {
                   </Button>
                 </span>
                 {form.formState.errors.password && (
-                  <p className="text-xs text-destructive">
+                  <FieldError
+                    id={"password-error"}
+                    className="text-xs text-destructive"
+                  >
                     {form.formState.errors.password.message}
-                  </p>
+                  </FieldError>
                 )}
               </div>
               {isSignup && (
@@ -217,6 +239,14 @@ export function AuthPage({ mode }: AuthPageProps) {
                   <span className="relative">
                     <LockKeyhole className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
                     <Input
+                      aria-invalid={Boolean(
+                        form.formState.errors.confirmPassword,
+                      )}
+                      aria-describedby={
+                        form.formState.errors.confirmPassword
+                          ? "confirm-password-error"
+                          : undefined
+                      }
                       id="confirm-password"
                       {...form.register("confirmPassword")}
                       type={showPassword ? "text" : "password"}
@@ -228,9 +258,12 @@ export function AuthPage({ mode }: AuthPageProps) {
                     />
                   </span>
                   {form.formState.errors.confirmPassword && (
-                    <p className="text-xs text-destructive">
+                    <FieldError
+                      id={"confirm-password-error"}
+                      className="text-xs text-destructive"
+                    >
                       {form.formState.errors.confirmPassword.message}
-                    </p>
+                    </FieldError>
                   )}
                 </div>
               )}
@@ -257,9 +290,9 @@ export function AuthPage({ mode }: AuthPageProps) {
                     </span>
                   </label>
                   {form.formState.errors.agreed && (
-                    <p className="text-xs text-destructive">
+                    <FieldError className="text-xs text-destructive">
                       {form.formState.errors.agreed.message}
-                    </p>
+                    </FieldError>
                   )}
                 </div>
               ) : (

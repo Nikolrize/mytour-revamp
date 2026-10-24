@@ -1,33 +1,19 @@
 "use client";
 
-import { useState, type ReactNode, type ComponentProps } from "react";
-import { Button } from "@/components/ui/button";
 import {
   AlertDialog,
-  AlertDialogTrigger,
+  AlertDialogCancel,
   AlertDialogContent,
-  AlertDialogHeader,
-  AlertDialogTitle,
   AlertDialogDescription,
   AlertDialogFooter,
-  AlertDialogCancel,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-
-type ConfirmActionProps = {
-  children: ReactNode;
-  title: string;
-  description: string;
-  actionLabel: string;
-  onConfirm: () => Promise<unknown>;
-  pending?: boolean;
-  error?: string;
-  variant?: ComponentProps<typeof Button>["variant"];
-  size?: ComponentProps<typeof Button>["size"];
-  className?: string;
-  confirmClassName?: string;
-  destructive?: boolean;
-  ariaLabel?: string;
-};
+import { Button } from "@/components/ui/button";
+import { FieldError } from "@/components/ui/field";
+import type { ConfirmActionProps } from "@/lib/type";
+import { useState } from "react";
 
 export function ConfirmAction({
   children,
@@ -73,9 +59,9 @@ export function ConfirmAction({
           <AlertDialogDescription>{description}</AlertDialogDescription>
         </AlertDialogHeader>
         {error && (
-          <p role="alert" className="text-sm text-destructive">
+          <FieldError role="alert" className="text-sm text-destructive">
             {error}
-          </p>
+          </FieldError>
         )}
         <AlertDialogFooter>
           <AlertDialogCancel disabled={pending}>Cancel</AlertDialogCancel>

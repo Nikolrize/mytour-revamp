@@ -1,7 +1,7 @@
 import { Badge } from "@/components/ui/badge";
-import type { Itinerary } from "@/lib/type";
+import type { TripStatusBadgeProps } from "@/lib/type";
 
-export function TripStatusBadge({ status }: { status: Itinerary["status"] }) {
+export function TripStatusBadge({ status }: TripStatusBadgeProps) {
   const tone =
     status === "Ongoing"
       ? "bg-brand-yellow-soft text-amber-800"

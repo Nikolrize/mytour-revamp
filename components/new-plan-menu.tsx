@@ -1,22 +1,20 @@
 "use client";
 
-import Link from "next/link";
-import { ChevronDown, Pencil, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
-  DropdownMenuTrigger,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import type { NewPlanMenuProps } from "@/lib/type";
+import { ChevronDown, Pencil, Sparkles } from "lucide-react";
+import Link from "next/link";
 
 export function NewPlanMenu({
   label = "Start planning",
   className,
-}: {
-  label?: string;
-  className?: string;
-}) {
+}: NewPlanMenuProps) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger render={<Button className={className} />}>

@@ -1,8 +1,5 @@
 "use client";
 
-import { useState } from "react";
-import { format, isBefore, startOfDay } from "date-fns";
-import { CalendarDays } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Label } from "@/components/ui/label";
@@ -18,17 +15,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-
-type DateTimePickerProps = {
-  id: string;
-  label: string;
-  date: Date | undefined;
-  time: string;
-  minDate?: Date;
-  minTime?: string;
-  onDateChange: (date: Date | undefined) => void;
-  onTimeChange: (time: string) => void;
-};
+import type { DateTimePickerProps } from "@/lib/type";
+import { format, isBefore, startOfDay } from "date-fns";
+import { CalendarDays } from "lucide-react";
+import { useState } from "react";
 
 const timeOptions = Array.from({ length: 48 }, (_, index) => {
   const hour = Math.floor(index / 2);
@@ -58,7 +48,7 @@ export function DateTimePicker({
       <Label htmlFor={`${id}-date`} className="text-sm font-medium">
         {label}
       </Label>
-      <div className="grid grid-cols-[minmax(0,1fr)_132px] gap-2">
+      <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,10rem),1fr))] gap-2">
         <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
           <PopoverTrigger
             render={

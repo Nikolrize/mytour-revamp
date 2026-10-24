@@ -1,8 +1,9 @@
 "use client";
 
-import { Search } from "lucide-react";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import type { SearchFieldProps } from "@/lib/type";
+import { Search } from "lucide-react";
 
 // Explicit submission keeps typing separate from backend search requests.
 // A button also works inside another form, such as the post composer.
@@ -13,14 +14,7 @@ export function SearchField({
   placeholder,
   id,
   disabled = false,
-}: {
-  value: string;
-  onChange: (value: string) => void;
-  onSearch: () => void;
-  placeholder: string;
-  id?: string;
-  disabled?: boolean;
-}) {
+}: SearchFieldProps) {
   return (
     <div className="flex w-full min-w-0 items-center gap-2">
       <div className="relative min-w-0 flex-1">

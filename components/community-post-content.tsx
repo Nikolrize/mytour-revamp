@@ -1,17 +1,21 @@
 "use client";
 
-import { useState } from "react";
-import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogDescription,
 } from "@/components/ui/dialog";
+import type {
+  CommunityPostPhotosProps,
+  CommunityPostTextProps,
+} from "@/lib/type";
+import Image from "next/image";
+import { useState } from "react";
 
-export function CommunityPostText({ content }: { content: string }) {
+export function CommunityPostText({ content }: CommunityPostTextProps) {
   const [expanded, setExpanded] = useState(false);
   const preview = content.split("\n").slice(0, 4).join("\n").slice(0, 300);
   const truncated = preview.length < content.length;
@@ -39,10 +43,7 @@ export function CommunityPostText({ content }: { content: string }) {
 export function CommunityPostPhotos({
   images,
   author,
-}: {
-  images: string[];
-  author: string;
-}) {
+}: CommunityPostPhotosProps) {
   const [active, setActive] = useState<number | null>(null);
   const visible = images.slice(0, 4);
   return (

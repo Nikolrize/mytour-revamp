@@ -1,24 +1,22 @@
 "use client";
 
-import { CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
-  DialogHeader,
-  DialogTitle,
   DialogDescription,
   DialogFooter,
+  DialogHeader,
+  DialogTitle,
 } from "@/components/ui/dialog";
+import type { ReportConfirmationProps } from "@/lib/type";
+import { CheckCircle2 } from "lucide-react";
 
 // Shared confirmation for successfully submitted trip and post reports.
 export function ReportConfirmation({
   open,
   onOpenChange,
-}: {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-}) {
+}: ReportConfirmationProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>

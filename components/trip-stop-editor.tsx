@@ -1,34 +1,28 @@
 "use client";
 
-import { Pencil } from "lucide-react";
-import { useState } from "react";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import type { z } from "zod";
-import type { ItineraryStop } from "@/lib/type";
-import { editStopSchema } from "@/lib/schemas";
-import { useTripStops } from "@/hooks/use-trip-stops";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
-  DialogTrigger,
   DialogContent,
-  DialogHeader,
-  DialogTitle,
   DialogDescription,
   DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
 } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
+import { FieldError } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { useTripStops } from "@/hooks/use-trip-stops";
+import { editStopSchema } from "@/lib/schemas";
+import type { EditStopValues, TripStopEditorProps } from "@/lib/type";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { Pencil } from "lucide-react";
+import { useState } from "react";
+import { useForm } from "react-hook-form";
 
-export function TripStopEditor({
-  tripId,
-  stop,
-}: {
-  tripId: string;
-  stop: ItineraryStop;
-}) {
+export function TripStopEditor({ tripId, stop }: TripStopEditorProps) {
   const [open, setOpen] = useState(false);
   const { update } = useTripStops(tripId, false);
   const defaults = {
@@ -38,7 +32,7 @@ export function TripStopEditor({
     startTime: stop.startTime?.slice(0, 5) || "",
     endTime: stop.endTime?.slice(0, 5) || "",
   };
-  const form = useForm<z.infer<typeof editStopSchema>>({
+  const form = useForm<EditStopValues>({
     resolver: zodResolver(editStopSchema),
     defaultValues: defaults,
   });
@@ -80,11 +74,16 @@ export function TripStopEditor({
         >
           <div className="flex flex-col gap-2">
             <Label htmlFor={`stop-title-${stop.id}`}>Stop name</Label>
-            <Input id={`stop-title-${stop.id}`} {...form.register("title")} />
+            <Input
+              aria-invalid={Boolean(form.formState.errors.title)}
+              id={`stop-title-${stop.id}`}
+              {...form.register("title")}
+            />
           </div>
           <div className="flex flex-col gap-2">
             <Label htmlFor={`stop-note-${stop.id}`}>Note</Label>
             <Textarea
+              aria-invalid={Boolean(form.formState.errors.description)}
               id={`stop-note-${stop.id}`}
               maxLength={1000}
               {...form.register("description")}
@@ -94,6 +93,7 @@ export function TripStopEditor({
             <div className="flex flex-col gap-2">
               <Label htmlFor={`stop-day-${stop.id}`}>Day</Label>
               <Input
+                aria-invalid={Boolean(form.formState.errors.day)}
                 id={`stop-day-${stop.id}`}
                 type="number"
                 min={1}
@@ -104,6 +104,7 @@ export function TripStopEditor({
             <div className="flex flex-col gap-2">
               <Label htmlFor={`stop-start-${stop.id}`}>Start</Label>
               <Input
+                aria-invalid={Boolean(form.formState.errors.startTime)}
                 id={`stop-start-${stop.id}`}
                 type="time"
                 {...form.register("startTime")}
@@ -112,6 +113,7 @@ export function TripStopEditor({
             <div className="flex flex-col gap-2">
               <Label htmlFor={`stop-end-${stop.id}`}>End</Label>
               <Input
+                aria-invalid={Boolean(form.formState.errors.endTime)}
                 id={`stop-end-${stop.id}`}
                 type="time"
                 {...form.register("endTime")}
@@ -119,14 +121,18 @@ export function TripStopEditor({
             </div>
           </div>
           {Object.entries(form.formState.errors).map(([field, error]) => (
-            <p key={field} role="alert" className="text-sm text-destructive">
+            <FieldError
+              key={field}
+              role="alert"
+              className="text-sm text-destructive"
+            >
               {error.message}
-            </p>
+            </FieldError>
           ))}
           {update.error && (
-            <p role="alert" className="text-sm text-destructive">
+            <FieldError role="alert" className="text-sm text-destructive">
               {update.error.message}
-            </p>
+            </FieldError>
           )}
           <DialogFooter>
             <Button type="submit" disabled={update.isPending}>

@@ -1,30 +1,27 @@
 "use client";
 
-import { useState } from "react";
-import { Trash2 } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import {
   AlertDialog,
-  AlertDialogTrigger,
+  AlertDialogCancel,
   AlertDialogContent,
-  AlertDialogHeader,
-  AlertDialogTitle,
   AlertDialogDescription,
   AlertDialogFooter,
-  AlertDialogCancel,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { Button } from "@/components/ui/button";
+import { FieldError } from "@/components/ui/field";
+import type { CommunityDeleteProps } from "@/lib/type";
+import { Trash2 } from "lucide-react";
+import { useState } from "react";
 
 export function CommunityDelete({
   kind,
   pending,
   error,
   onConfirm,
-}: {
-  kind: "post" | "comment";
-  pending: boolean;
-  error?: string;
-  onConfirm: () => Promise<unknown>;
-}) {
+}: CommunityDeleteProps) {
   const [open, setOpen] = useState(false);
   return (
     <AlertDialog open={open} onOpenChange={setOpen}>
@@ -51,9 +48,9 @@ export function CommunityDelete({
           </AlertDialogDescription>
         </AlertDialogHeader>
         {error && (
-          <p role="alert" className="text-sm text-destructive">
+          <FieldError role="alert" className="text-sm text-destructive">
             {error}
-          </p>
+          </FieldError>
         )}
         <AlertDialogFooter>
           <AlertDialogCancel disabled={pending}>Cancel</AlertDialogCancel>

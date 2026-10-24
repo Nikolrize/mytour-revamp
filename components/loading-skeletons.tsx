@@ -1,4 +1,3 @@
-import type { ReactNode } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Table,
@@ -8,17 +7,22 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import type {
+  CommentsLoadingSkeletonProps,
+  CommunityFeedSkeletonProps,
+  LoadingBlockProps,
+  MetricsLoadingSkeletonProps,
+  PageLoadingSkeletonProps,
+  TableLoadingSkeletonProps,
+  TripCardGridSkeletonProps,
+} from "@/lib/type";
 
 // One accessible status per placeholder; decorative shapes stay hidden.
 export function LoadingBlock({
   children,
   label = "Loading content",
   className = "",
-}: {
-  children: ReactNode;
-  label?: string;
-  className?: string;
-}) {
+}: LoadingBlockProps) {
   return (
     <div role="status" aria-busy="true" className={className}>
       <span className="sr-only">{label}</span>
@@ -27,7 +31,7 @@ export function LoadingBlock({
   );
 }
 
-export function TripCardGridSkeleton({ count = 6 }: { count?: number }) {
+export function TripCardGridSkeleton({ count = 6 }: TripCardGridSkeletonProps) {
   return (
     <LoadingBlock label="Loading itineraries">
       <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
@@ -69,11 +73,7 @@ export function TableLoadingSkeleton({
   rows = 5,
   columns = 5,
   toolbar = false,
-}: {
-  rows?: number;
-  columns?: number;
-  toolbar?: boolean;
-}) {
+}: TableLoadingSkeletonProps) {
   return (
     <LoadingBlock label="Loading table records">
       <div
@@ -118,7 +118,9 @@ export function TableLoadingSkeleton({
   );
 }
 
-export function CommunityFeedSkeleton({ count = 3 }: { count?: number }) {
+export function CommunityFeedSkeleton({
+  count = 3,
+}: CommunityFeedSkeletonProps) {
   return (
     <LoadingBlock label="Loading community posts">
       <div className="flex flex-col gap-6">
@@ -153,9 +155,7 @@ export function CommunityFeedSkeleton({ count = 3 }: { count?: number }) {
 
 export function CommentsLoadingSkeleton({
   label = "Loading comments",
-}: {
-  label?: string;
-}) {
+}: CommentsLoadingSkeletonProps) {
   return (
     <LoadingBlock label={label}>
       <div className="flex flex-col gap-3">
@@ -177,7 +177,9 @@ export function CommentsLoadingSkeleton({
   );
 }
 
-export function MetricsLoadingSkeleton({ count = 4 }: { count?: number }) {
+export function MetricsLoadingSkeleton({
+  count = 4,
+}: MetricsLoadingSkeletonProps) {
   return (
     <LoadingBlock label="Loading statistics">
       <div
@@ -207,9 +209,7 @@ export function MetricsLoadingSkeleton({ count = 4 }: { count?: number }) {
 
 export function PageLoadingSkeleton({
   label = "Loading page",
-}: {
-  label?: string;
-}) {
+}: PageLoadingSkeletonProps) {
   return (
     <LoadingBlock label={label} className="w-full py-8">
       <div className="flex flex-col gap-6">
@@ -226,23 +226,34 @@ export function PageLoadingSkeleton({
 }
 
 export function ProfileLoadingSkeleton() {
-  return <div className="flex w-full flex-col gap-8 py-10 sm:py-14">
-    <LoadingBlock label="Loading profile">
-      <div className="flex flex-col gap-6 rounded-3xl border border-brand-line bg-white p-6 sm:p-8">
-        <div className="flex flex-col gap-5 sm:flex-row sm:items-center">
-          <Skeleton className="size-36 shrink-0 rounded-full sm:size-48" />
-          <div className="flex flex-1 flex-col gap-4">
-            <Skeleton className="h-9 w-2/3" /><Skeleton className="h-4 w-1/3" />
-            <Skeleton className="h-4 w-full" /><Skeleton className="h-4 w-4/5" />
-            <div className="flex gap-5"><Skeleton className="h-10 w-20" /><Skeleton className="h-10 w-20" /><Skeleton className="h-10 w-20" /></div>
+  return (
+    <div className="flex w-full flex-col gap-8 py-10 sm:py-14">
+      <LoadingBlock label="Loading profile">
+        <div className="flex flex-col gap-6 rounded-3xl border border-brand-line bg-white p-6 sm:p-8">
+          <div className="flex flex-col gap-5 sm:flex-row sm:items-center">
+            <Skeleton className="size-36 shrink-0 rounded-full sm:size-48" />
+            <div className="flex flex-1 flex-col gap-4">
+              <Skeleton className="h-9 w-2/3" />
+              <Skeleton className="h-4 w-1/3" />
+              <Skeleton className="h-4 w-full" />
+              <Skeleton className="h-4 w-4/5" />
+              <div className="flex gap-5">
+                <Skeleton className="h-10 w-20" />
+                <Skeleton className="h-10 w-20" />
+                <Skeleton className="h-10 w-20" />
+              </div>
+            </div>
+            <Skeleton className="h-10 w-28 rounded-full" />
           </div>
-          <Skeleton className="h-10 w-28 rounded-full" />
         </div>
-      </div>
-      <div className="flex gap-2 pt-8"><Skeleton className="h-9 w-36 rounded-full" /><Skeleton className="h-9 w-36 rounded-full" /></div>
-    </LoadingBlock>
-    <TripCardGridSkeleton count={3} />
-  </div>;
+        <div className="flex gap-2 pt-8">
+          <Skeleton className="h-9 w-36 rounded-full" />
+          <Skeleton className="h-9 w-36 rounded-full" />
+        </div>
+      </LoadingBlock>
+      <TripCardGridSkeleton count={3} />
+    </div>
+  );
 }
 
 export function TripDetailLoadingSkeleton() {

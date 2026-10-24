@@ -1,65 +1,63 @@
 "use client";
 
-import { CommunityFeedSkeleton } from "@/components/loading-skeletons";
-
-import { useState } from "react";
-import { ItineraryPagination } from "@/components/itinerary-pagination";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
-import {
-  Heart,
-  MessageCircle,
-  ArrowRight,
-  MapPin,
-  Route,
-  Users,
-  Search,
-  Plus,
-} from "lucide-react";
-import type { CommunityPost } from "@/lib/type";
-import {
-  useCommunityPosts,
-  useCommunityPostActions,
-} from "@/hooks/use-community";
-import { useProfile } from "@/hooks/use-profile";
-import { useTripActions } from "@/hooks/use-trips";
-import {
-  CommunityPostText,
-  CommunityPostPhotos,
-} from "@/components/community-post-content";
 import { CommunityAuthor } from "@/components/community-author";
-import { CommunityComposer } from "@/components/community-composer";
 import { CommunityComments } from "@/components/community-comments";
-import { CommunityReport } from "@/components/community-report";
+import { CommunityComposer } from "@/components/community-composer";
 import { CommunityDelete } from "@/components/community-delete";
+import {
+  CommunityPostPhotos,
+  CommunityPostText,
+} from "@/components/community-post-content";
+import { CommunityReport } from "@/components/community-report";
+import { ItineraryPagination } from "@/components/itinerary-pagination";
+import { CommunityFeedSkeleton } from "@/components/loading-skeletons";
 import { TripTags } from "@/components/trip-tags";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { FieldError } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
   Select,
-  SelectTrigger,
-  SelectValue,
   SelectContent,
   SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from "@/components/ui/select";
-import { Card, CardContent } from "@/components/ui/card";
 import {
-  Dialog,
-  DialogTrigger,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from "@/components/ui/dialog";
+  useCommunityPostActions,
+  useCommunityPosts,
+} from "@/hooks/use-community";
+import { useProfile } from "@/hooks/use-profile";
+import { useTripActions } from "@/hooks/use-trips";
+import type {
+  AttachedItineraryProps,
+  CommunityFeedProps,
+  CommunityPostCardProps,
+} from "@/lib/type";
+import {
+  ArrowRight,
+  Heart,
+  MapPin,
+  MessageCircle,
+  Plus,
+  Route,
+  Search,
+  Users,
+} from "lucide-react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
 
-function AttachedItinerary({
-  post,
-  signedIn,
-}: {
-  post: CommunityPost;
-  signedIn: boolean;
-}) {
+function AttachedItinerary({ post, signedIn }: AttachedItineraryProps) {
   const router = useRouter();
   const { copy } = useTripActions(post.trip?.slug || "");
   if (!post.trip)
@@ -120,21 +118,15 @@ function AttachedItinerary({
         )}
       </div>
       {copy.error && (
-        <p role="alert" className="text-sm text-destructive">
+        <FieldError role="alert" className="text-sm text-destructive">
           {copy.error.message}
-        </p>
+        </FieldError>
       )}
     </div>
   );
 }
 
-export function CommunityPostCard({
-  post,
-  signedIn,
-}: {
-  post: CommunityPost;
-  signedIn: boolean;
-}) {
+export function CommunityPostCard({ post, signedIn }: CommunityPostCardProps) {
   const [commentsOpen, setCommentsOpen] = useState(false);
   const { like, remove } = useCommunityPostActions(post.id);
   return (
@@ -201,9 +193,9 @@ export function CommunityPostCard({
           </Button>
         </div>
         {like.error && (
-          <p role="alert" className="text-sm text-destructive">
+          <FieldError role="alert" className="text-sm text-destructive">
             {like.error.message}
-          </p>
+          </FieldError>
         )}
         {commentsOpen && (
           <CommunityComments postId={post.id} signedIn={signedIn} />
@@ -216,10 +208,7 @@ export function CommunityPostCard({
 export function CommunityFeed({
   moderation = false,
   postId = "",
-}: {
-  moderation?: boolean;
-  postId?: string;
-}) {
+}: CommunityFeedProps) {
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
   const [draftSearch, setDraftSearch] = useState("");

@@ -1,29 +1,26 @@
 "use client";
 
-import { CommentsLoadingSkeleton } from "@/components/loading-skeletons";
-
-import Link from "next/link";
 import { AuthorProfileLink } from "@/components/author-profile-link";
-import { useProfile } from "@/hooks/use-profile";
-import { useEffect, useState } from "react";
 import { ItineraryPagination } from "@/components/itinerary-pagination";
-import { useForm, useWatch } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import type { z } from "zod";
-import { formatDistanceToNow } from "date-fns";
-import { MessageCircle, Send, Star } from "lucide-react";
-import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { CommentsLoadingSkeleton } from "@/components/loading-skeletons";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { FieldError } from "@/components/ui/field";
 import { Label } from "@/components/ui/label";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Textarea } from "@/components/ui/textarea";
-import { getInitials } from "@/lib/utils";
-import { commentSchema } from "@/lib/schemas";
 import { useTripComments } from "@/hooks/use-comments";
-
-type CommentValues = z.infer<typeof commentSchema>;
-
-type TripCommentsProps = { tripSlug: string; canReview?: boolean };
+import { useProfile } from "@/hooks/use-profile";
+import { commentSchema } from "@/lib/schemas";
+import type { CommentValues, TripCommentsProps } from "@/lib/type";
+import { getInitials } from "@/lib/utils";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { formatDistanceToNow } from "date-fns";
+import { MessageCircle, Send, Star } from "lucide-react";
+import Link from "next/link";
+import { useEffect, useState } from "react";
+import { useForm, useWatch } from "react-hook-form";
 
 export function TripComments({
   tripSlug,
@@ -91,50 +88,73 @@ export function TripComments({
               className="flex flex-col gap-4"
             >
               <div className="flex flex-col gap-2">
-                <Label>Your rating</Label>
-                <div
-                  className="flex items-center gap-1"
-                  role="radiogroup"
-                  aria-label="Your rating"
+                <p id="trip-rating-label" className="text-sm font-medium">
+                  Your rating
+                </p>
+                <RadioGroup
+                  value={String(rating)}
+                  onValueChange={(value) =>
+                    form.setValue("rating", Number(value), {
+                      shouldValidate: true,
+                      shouldDirty: true,
+                    })
+                  }
+                  aria-labelledby="trip-rating-label"
+                  aria-invalid={Boolean(form.formState.errors.rating)}
+                  aria-describedby={
+                    form.formState.errors.rating
+                      ? "trip-rating-error"
+                      : undefined
+                  }
+                  className="flex flex-wrap items-center gap-1"
                 >
                   {Array.from({ length: 5 }, (_, index) => {
                     const value = index + 1;
+                    const id = `trip-rating-${tripSlug}-${value}`;
                     return (
-                      <Button
-                        key={value}
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        role="radio"
-                        aria-checked={rating === value}
-                        aria-label={`${value} ${value === 1 ? "star" : "stars"}`}
-                        onClick={() =>
-                          form.setValue("rating", value, {
-                            shouldValidate: true,
-                            shouldDirty: true,
-                          })
-                        }
-                        className="size-9 rounded-full text-brand-yellow hover:bg-brand-yellow-soft hover:text-brand-yellow"
-                      >
-                        <Star
-                          className={`size-5 ${value <= rating ? "fill-current" : ""}`}
+                      <div key={value} className="relative">
+                        <RadioGroupItem
+                          id={id}
+                          value={String(value)}
+                          className="peer sr-only"
                         />
-                      </Button>
+                        <Label
+                          htmlFor={id}
+                          className="grid size-9 cursor-pointer place-items-center rounded-full text-brand-yellow hover:bg-brand-yellow-soft peer-focus-visible:outline-2 peer-focus-visible:outline-brand-blue"
+                        >
+                          <Star
+                            aria-hidden="true"
+                            className={`size-5 ${value <= rating ? "fill-current" : ""}`}
+                          />
+                          <span className="sr-only">
+                            {value} {value === 1 ? "star" : "stars"}
+                          </span>
+                        </Label>
+                      </div>
                     );
                   })}
-                  <span className="ml-2 text-xs text-muted-foreground">
+                  <span className="text-xs text-muted-foreground">
                     {rating} out of 5
                   </span>
-                </div>
+                </RadioGroup>
                 {form.formState.errors.rating && (
-                  <p className="text-xs text-destructive">
+                  <FieldError
+                    id="trip-rating-error"
+                    className="text-xs text-destructive"
+                  >
                     {form.formState.errors.rating.message}
-                  </p>
+                  </FieldError>
                 )}
               </div>
               <div className="flex flex-col gap-2">
                 <Label htmlFor="trip-comment">Your comment</Label>
                 <Textarea
+                  aria-invalid={Boolean(form.formState.errors.message)}
+                  aria-describedby={
+                    form.formState.errors.message
+                      ? "trip-comment-error"
+                      : undefined
+                  }
                   id="trip-comment"
                   {...form.register("message")}
                   placeholder="What should other travellers know about this route?"
@@ -147,9 +167,12 @@ export function TripComments({
                   {message.length}/500
                 </span>
                 {form.formState.errors.message && (
-                  <p className="text-xs text-destructive">
+                  <FieldError
+                    id={"trip-comment-error"}
+                    className="text-xs text-destructive"
+                  >
                     {form.formState.errors.message.message}
-                  </p>
+                  </FieldError>
                 )}
               </div>
               <div className="flex flex-wrap items-center justify-between gap-3">
@@ -174,9 +197,9 @@ export function TripComments({
       <div className="flex flex-col gap-3">
         {commentsQuery.isPending && <CommentsLoadingSkeleton />}
         {commentsQuery.error && (
-          <p role="alert" className="text-sm text-destructive">
+          <FieldError role="alert" className="text-sm text-destructive">
             {commentsQuery.error.message}
-          </p>
+          </FieldError>
         )}
         {!commentsQuery.isPending &&
           comments.map((comment) => (
@@ -199,7 +222,10 @@ export function TripComments({
                 <div className="flex min-w-0 flex-1 flex-col gap-2">
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <div className="flex items-center gap-2">
-                      <AuthorProfileLink authorId={comment.authorId} className="text-sm font-semibold hover:text-brand-blue">
+                      <AuthorProfileLink
+                        authorId={comment.authorId}
+                        className="text-sm font-semibold hover:text-brand-blue"
+                      >
                         {comment.author}
                       </AuthorProfileLink>
                       <span className="text-xs text-muted-foreground">

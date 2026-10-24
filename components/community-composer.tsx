@@ -1,44 +1,40 @@
 "use client";
 
-import { LoadingBlock } from "@/components/loading-skeletons";
-
-import { useState, useEffect } from "react";
-import Image from "next/image";
-import Link from "next/link";
-import { useForm, Controller } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import type { z } from "zod";
-import { ImagePlus, Send, X } from "lucide-react";
-import { communityPostSchema } from "@/lib/schemas";
-import type { CommunityAuthor as Author } from "@/lib/type";
-import { useTripPage } from "@/hooks/use-trips";
-import { SearchField } from "@/components/search-field";
-import { ItineraryPagination } from "@/components/itinerary-pagination";
-import { useCreateCommunityPost } from "@/hooks/use-community";
 import { CommunityAuthor } from "@/components/community-author";
-import { Card, CardContent } from "@/components/ui/card";
+import { ItineraryPagination } from "@/components/itinerary-pagination";
+import { LoadingBlock } from "@/components/loading-skeletons";
+import { SearchField } from "@/components/search-field";
 import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
+import { Card, CardContent } from "@/components/ui/card";
+import { FieldError } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
-  SelectTrigger,
-  SelectValue,
   SelectContent,
   SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from "@/components/ui/select";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Textarea } from "@/components/ui/textarea";
+import { useCreateCommunityPost } from "@/hooks/use-community";
+import { useTripPage } from "@/hooks/use-trips";
+import { communityPostSchema } from "@/lib/schemas";
+import type {
+  CommunityComposerProps,
+  CommunityPostInput,
+  CommunityPostValues,
+  PhotoPreviewProps,
+} from "@/lib/type";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { ImagePlus, Send, X } from "lucide-react";
+import Image from "next/image";
+import Link from "next/link";
+import { useEffect, useState } from "react";
+import { Controller, useForm } from "react-hook-form";
 
-function PhotoPreview({
-  file,
-  onRemove,
-  disabled,
-}: {
-  file: File;
-  onRemove: () => void;
-  disabled: boolean;
-}) {
+function PhotoPreview({ file, onRemove, disabled }: PhotoPreviewProps) {
   const [url, setUrl] = useState<string | null>(null);
   useEffect(() => {
     const reader = new FileReader();
@@ -85,15 +81,8 @@ function PhotoPreview({
 export function CommunityComposer({
   author,
   onPublished,
-}: {
-  author: Author;
-  onPublished?: () => void;
-}) {
-  const form = useForm<
-    z.input<typeof communityPostSchema>,
-    unknown,
-    z.output<typeof communityPostSchema>
-  >({
+}: CommunityComposerProps) {
+  const form = useForm<CommunityPostInput, unknown, CommunityPostValues>({
     resolver: zodResolver(communityPostSchema),
     defaultValues: { content: "", tripId: "" },
   });
@@ -139,6 +128,12 @@ export function CommunityComposer({
             Your travel story
           </Label>
           <Textarea
+            aria-invalid={Boolean(form.formState.errors.content)}
+            aria-describedby={
+              form.formState.errors.content
+                ? "community-content-error"
+                : undefined
+            }
             id="community-content"
             placeholder="Where did your trip take you? Share a story, a photo, or a local find…"
             maxLength={5000}
@@ -148,9 +143,13 @@ export function CommunityComposer({
             className="resize-y rounded-2xl border-brand-line"
           />
           {form.formState.errors.content && (
-            <p role="alert" className="text-sm text-destructive">
+            <FieldError
+              id={"community-content-error"}
+              role="alert"
+              className="text-sm text-destructive"
+            >
               {form.formState.errors.content.message}
-            </p>
+            </FieldError>
           )}
           {!!photos.length && (
             <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
@@ -240,10 +239,10 @@ export function CommunityComposer({
               />
             )}
             {tripOptions.error && (
-              <p role="alert" className="text-xs text-destructive">
+              <FieldError role="alert" className="text-xs text-destructive">
                 Could not load itinerary options. You can still publish without
                 attaching one.
-              </p>
+              </FieldError>
             )}
           </div>
           <div className="flex flex-wrap items-center justify-between gap-3 border-t border-brand-line pt-4">
@@ -302,14 +301,14 @@ export function CommunityComposer({
             Posts and photos are public.
           </p>
           {photoError && (
-            <p role="alert" className="text-sm text-destructive">
+            <FieldError role="alert" className="text-sm text-destructive">
               {photoError}
-            </p>
+            </FieldError>
           )}
           {create.error && (
-            <p role="alert" className="text-sm text-destructive">
+            <FieldError role="alert" className="text-sm text-destructive">
               {create.error.message}
-            </p>
+            </FieldError>
           )}
           {create.isSuccess && (
             <p role="status" className="text-sm text-brand-blue">

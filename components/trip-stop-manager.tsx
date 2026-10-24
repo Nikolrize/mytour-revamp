@@ -1,19 +1,21 @@
 "use client";
 
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import type { z } from "zod";
-import { tripStopSchema } from "@/lib/schemas";
-import type { StopValues } from "@/hooks/use-trip-stops";
-import { useTripStops } from "@/hooks/use-trip-stops";
 import { Button } from "@/components/ui/button";
+import { FieldError } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { useTripStops } from "@/hooks/use-trip-stops";
+import { tripStopSchema } from "@/lib/schemas";
+import type {
+  StopValues,
+  TripStopInput,
+  TripStopManagerProps,
+} from "@/lib/type";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
 
-type Values = z.input<typeof tripStopSchema>;
-type ParsedValues = z.output<typeof tripStopSchema>;
-const empty: Values = {
+const empty: TripStopInput = {
   title: "",
   description: "",
   day: 1,
@@ -27,14 +29,9 @@ export function TripStopManager({
   onAdd,
   pending = false,
   error,
-}: {
-  tripId?: string;
-  onAdd?: (values: StopValues) => Promise<void>;
-  pending?: boolean;
-  error?: string;
-}) {
+}: TripStopManagerProps) {
   const { create } = useTripStops(tripId, false);
-  const form = useForm<Values, unknown, ParsedValues>({
+  const form = useForm<TripStopInput, unknown, StopValues>({
     resolver: zodResolver(tripStopSchema),
     defaultValues: empty,
   });
@@ -63,23 +60,38 @@ export function TripStopManager({
         <div className="flex flex-col gap-1.5 sm:col-span-2">
           <Label htmlFor="stop-title">Stop name</Label>
           <Input
+            aria-invalid={Boolean(form.formState.errors.title)}
+            aria-describedby={
+              form.formState.errors.title ? "stop-title-error" : undefined
+            }
             id="stop-title"
             {...form.register("title")}
             className="rounded-xl"
           />
           {form.formState.errors.title && (
-            <p className="text-xs text-destructive">
+            <FieldError
+              id={"stop-title-error"}
+              className="text-xs text-destructive"
+            >
               {form.formState.errors.title.message}
-            </p>
+            </FieldError>
           )}
         </div>
         <div className="flex flex-col gap-1.5 sm:col-span-2">
           <Label htmlFor="stop-description">Note</Label>
-          <Textarea id="stop-description" {...form.register("description")} />
+          <Textarea
+            aria-invalid={Boolean(form.formState.errors.description)}
+            id="stop-description"
+            {...form.register("description")}
+          />
         </div>
         <div className="flex flex-col gap-1.5">
           <Label htmlFor="stop-day">Day</Label>
           <Input
+            aria-invalid={Boolean(form.formState.errors.day)}
+            aria-describedby={
+              form.formState.errors.day ? "stop-day-error" : undefined
+            }
             id="stop-day"
             type="number"
             min={1}
@@ -88,15 +100,19 @@ export function TripStopManager({
             className="rounded-xl"
           />
           {form.formState.errors.day && (
-            <span className="text-xs text-destructive">
+            <FieldError
+              id={"stop-day-error"}
+              className="text-xs text-destructive"
+            >
               {form.formState.errors.day.message}
-            </span>
+            </FieldError>
           )}
         </div>
         <div className="grid grid-cols-2 gap-2">
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="stop-start">Start</Label>
             <Input
+              aria-invalid={Boolean(form.formState.errors.startTime)}
               id="stop-start"
               type="time"
               {...form.register("startTime")}
@@ -106,21 +122,32 @@ export function TripStopManager({
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="stop-end">End</Label>
             <Input
+              aria-invalid={Boolean(form.formState.errors.endTime)}
+              aria-describedby={
+                form.formState.errors.endTime ? "stop-end-error" : undefined
+              }
               id="stop-end"
               type="time"
               {...form.register("endTime")}
               className="rounded-xl"
             />
             {form.formState.errors.endTime && (
-              <span className="text-xs text-destructive">
+              <FieldError
+                id={"stop-end-error"}
+                className="text-xs text-destructive"
+              >
                 {form.formState.errors.endTime.message}
-              </span>
+              </FieldError>
             )}
           </div>
         </div>
         <div className="flex flex-col gap-1.5 sm:col-span-2">
           <Label htmlFor="stop-maps-link">Google Maps link</Label>
           <Input
+            aria-invalid={Boolean(form.formState.errors.mapsUrl)}
+            aria-describedby={
+              form.formState.errors.mapsUrl ? "stop-maps-link-error" : undefined
+            }
             id="stop-maps-link"
             type="url"
             placeholder="Paste the place’s Google Maps share link"
@@ -131,15 +158,21 @@ export function TripStopManager({
             We’ll read the coordinates from the link for your route map.
           </p>
           {form.formState.errors.mapsUrl && (
-            <span className="text-xs text-destructive">
+            <FieldError
+              id={"stop-maps-link-error"}
+              className="text-xs text-destructive"
+            >
               {form.formState.errors.mapsUrl.message}
-            </span>
+            </FieldError>
           )}
         </div>
         {(error || create.error) && (
-          <p role="alert" className="text-sm text-destructive sm:col-span-2">
+          <FieldError
+            role="alert"
+            className="text-sm text-destructive sm:col-span-2"
+          >
             {error || create.error?.message}
-          </p>
+          </FieldError>
         )}
         <div className="sm:col-span-2">
           <Button

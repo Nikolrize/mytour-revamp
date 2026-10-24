@@ -1,11 +1,10 @@
 "use client";
 
 import { LoadingBlock } from "@/components/loading-skeletons";
-
-import dynamic from "next/dynamic";
-import { Skeleton } from "@/components/ui/skeleton";
-import type { ItineraryStop } from "@/lib/type";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
+import type { RouteMapProps } from "@/lib/type";
+import dynamic from "next/dynamic";
 
 const LeafletRouteMap = dynamic(
   () =>
@@ -22,7 +21,7 @@ const LeafletRouteMap = dynamic(
   },
 );
 
-export function RouteMap({ stops }: { stops: ItineraryStop[] }) {
+export function RouteMap({ stops }: RouteMapProps) {
   if (!stops.length) {
     return (
       <p className="rounded-2xl bg-brand-blue-soft p-5 text-sm text-muted-foreground">

@@ -1,21 +1,7 @@
 "use client";
 
-import Image from "next/image";
-import Link from "next/link";
-import { useProfile } from "@/hooks/use-profile";
-import { getInitials } from "@/lib/utils";
-import { useSignOut } from "@/hooks/use-auth";
-import { useRouter } from "next/navigation";
-import { usePathname } from "next/navigation";
-import {
-  LogOut,
-  LayoutDashboard,
-  Map,
-  MessageSquareText,
-  Users,
-  Flag,
-} from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { FieldError } from "@/components/ui/field";
 import {
   Sidebar,
   SidebarContent,
@@ -31,6 +17,21 @@ import {
   SidebarProvider,
   SidebarTrigger,
 } from "@/components/ui/sidebar";
+import { useSignOut } from "@/hooks/use-auth";
+import { useProfile } from "@/hooks/use-profile";
+import type { AdminShellProps } from "@/lib/type";
+import { getInitials } from "@/lib/utils";
+import {
+  Flag,
+  LayoutDashboard,
+  LogOut,
+  Map,
+  MessageSquareText,
+  Users,
+} from "lucide-react";
+import Image from "next/image";
+import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
 
 const links = [
   { label: "Dashboard", href: "/admin", icon: LayoutDashboard },
@@ -40,7 +41,7 @@ const links = [
   { label: "Reports", href: "/admin/reports", icon: Flag },
 ];
 
-export function AdminShell({ children }: { children: React.ReactNode }) {
+export function AdminShell({ children }: AdminShellProps) {
   const pathname = usePathname();
   const { profileQuery } = useProfile();
   const profile = profileQuery.data?.profile;
@@ -138,9 +139,9 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
             </SidebarMenuItem>
           </SidebarMenu>
           {signOut.error && (
-            <p role="alert" className="text-xs text-destructive">
+            <FieldError role="alert" className="text-xs text-destructive">
               {signOut.error.message}
-            </p>
+            </FieldError>
           )}
         </SidebarFooter>
       </Sidebar>

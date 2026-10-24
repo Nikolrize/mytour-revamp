@@ -1,9 +1,9 @@
 import { stateImages } from "@/lib/data";
 import { getTripStates } from "@/lib/trip-filters";
-import type { Itinerary } from "@/lib/type";
+import type { TripStateCoverProps } from "@/lib/type";
 
 // Keep every selected state's image visible within the fixed card cover.
-export function TripStateCover({ trip }: { trip: Itinerary }) {
+export function TripStateCover({ trip }: TripStateCoverProps) {
   const states = [...new Set(getTripStates(trip))];
   const images = states.flatMap((state) => {
     const key = Object.keys(stateImages).find(
