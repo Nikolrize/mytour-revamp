@@ -144,7 +144,8 @@ export function TripLibrary() {
                 key={trip.slug}
                 itinerary={trip}
                 isSaved={Boolean(trip.isSaved)}
-                showAuthor={false}
+                isOwner={Boolean(trip.isOwner)}
+                showStatus
               />
             ))}
           </div>

@@ -91,6 +91,7 @@ export async function GET(request: Request) {
     const savedIds = new Set(
       page.trips.filter((trip) => trip.viewer_saved).map((trip) => trip.id),
     );
+    const ownedIds = new Set(page.trips.filter((trip) => trip.user_id === user?.id).map((trip) => trip.id));
     return NextResponse.json(
       {
         ...page,
@@ -98,6 +99,7 @@ export async function GET(request: Request) {
         trips: mapped.map((trip) => ({
           ...trip,
           isSaved: savedIds.has(trip.slug),
+          isOwner: ownedIds.has(trip.slug),
         })),
       },
       { headers: { "Cache-Control": "private, no-store" } },

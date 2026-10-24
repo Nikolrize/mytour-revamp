@@ -26,6 +26,7 @@ export type Itinerary = {
   slug: string;
   title: string;
   author: string;
+  authorId?: string;
   authorAvatar?: string | null;
   location: string;
   days: string;
@@ -38,6 +39,7 @@ export type Itinerary = {
   interests?: string[];
   isPublic: boolean;
   isSaved?: boolean;
+  isOwner?: boolean;
   status: "Planning" | "Ongoing" | "Completed";
   stops: ItineraryStop[];
 };
@@ -59,13 +61,14 @@ export type TravelerProfile = {
 export type TripComment = {
   id: string;
   author: string;
+  authorId?: string;
   authorAvatar?: string | null;
   date: string;
   rating: number;
   message: string;
 };
 
-export type CommunityAuthor = { name: string; avatarUrl: string | null };
+export type CommunityAuthor = { id?: string; name: string; avatarUrl: string | null };
 export type CommunityPost = {
   id: string;
   content: string;
@@ -153,3 +156,16 @@ export type PaginationMeta = {
   total: number;
   totalPages: number;
 };
+
+
+// Only publicly visible fields and activity belong on traveller profiles.
+export type PublicProfileResponse = PaginationMeta & {
+  profile: { id: string; display_name: string; avatar_url: string | null; bio: string | null; created_at: string };
+  counts: { trips: number; posts: number };
+  trips: Itinerary[];
+  posts: CommunityPost[];
+  isOwnProfile: boolean;
+  signedIn: boolean;
+};
+
+export type ProfileActivityKind = "recent" | "trips" | "posts";

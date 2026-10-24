@@ -1,3 +1,4 @@
+import { AuthorProfileLink } from "@/components/author-profile-link";
 import { TripStateCover } from "@/components/trip-state-cover";
 import { TripStatusBadge } from "@/components/trip-status-badge";
 import { TripTags } from "@/components/trip-tags";
@@ -13,13 +14,18 @@ type ItineraryCardProps = {
   itinerary: Itinerary;
   showAuthor?: boolean;
   isSaved?: boolean;
+  isOwner?: boolean;
+  showStatus?: boolean;
 };
 
 export function ItineraryCard({
   itinerary,
   showAuthor = true,
   isSaved = false,
+  isOwner = itinerary.isOwner ?? false,
+  showStatus = !showAuthor,
 }: ItineraryCardProps) {
+  const authorLabel = isOwner ? `${itinerary.author} (you)` : itinerary.author;
   return (
     <Card className="grid h-full min-h-[26rem] grid-rows-[11rem_1fr] gap-0 overflow-hidden rounded-[24px] border-brand-line bg-white p-0 shadow-sm">
       <div className="relative min-h-[9rem] bg-brand-blue-soft">
@@ -28,6 +34,8 @@ export function ItineraryCard({
           className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/40 to-transparent"
           aria-hidden="true"
         />
+        {/* Status and saved indicators occupy opposite corners of the cover. */}
+        {showStatus && <div className="absolute top-3 left-3"><TripStatusBadge status={itinerary.status} /></div>}
         {isSaved && (
           <Badge className="absolute top-3 right-3 gap-1.5 rounded-full bg-brand-blue px-3 py-1 text-white">
             <BookmarkCheck className="size-3.5" /> Saved
@@ -51,7 +59,7 @@ export function ItineraryCard({
         <div className="flex flex-col gap-3">
           <div className="flex items-center justify-between gap-3">
             {showAuthor ? (
-              <div className="flex min-w-0 items-center gap-3">
+              <AuthorProfileLink authorId={itinerary.authorId} className="flex min-w-0 items-center gap-3 rounded-lg hover:text-brand-blue focus-visible:outline-2 focus-visible:outline-brand-blue">
                 <Avatar className="size-10 shrink-0">
                   {itinerary.authorAvatar && (
                     <AvatarImage
@@ -66,19 +74,14 @@ export function ItineraryCard({
                 <div className="flex min-w-0 flex-col gap-0.5">
                   <p
                     className="truncate text-sm font-semibold"
-                    title={itinerary.author}
+                    title={authorLabel}
                   >
-                    {itinerary.author}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    {itinerary.location} · local traveller
+                    {authorLabel}
                   </p>
                 </div>
-              </div>
-            ) : (
-              <TripStatusBadge status={itinerary.status} />
-            )}
-            <span className="flex shrink-0 items-center gap-1 text-xs font-medium text-brand-red">
+              </AuthorProfileLink>
+            ) : null}
+            <span className="ml-auto flex shrink-0 items-center gap-1 text-xs font-medium text-brand-red">
               <Star className="size-3.5 fill-current" /> {itinerary.rating}
             </span>
           </div>
