@@ -35,7 +35,13 @@ export function AddAccountDialog({ role }: { role: "admin" | "client" }) {
   const { create } = useManagedAccounts();
   const form = useForm<z.infer<typeof adminAccountCreateSchema>>({
     resolver: zodResolver(adminAccountCreateSchema),
-    defaultValues: { displayName: "", email: "", password: "", role },
+    defaultValues: {
+      displayName: "",
+      email: "",
+      password: "",
+      confirmPassword: "",
+      role,
+    },
   });
   return (
     <Dialog
@@ -44,7 +50,13 @@ export function AddAccountDialog({ role }: { role: "admin" | "client" }) {
         if (!create.isPending) {
           setOpen(value);
           if (value) {
-            form.reset({ displayName: "", email: "", password: "", role });
+            form.reset({
+              displayName: "",
+              email: "",
+              password: "",
+              confirmPassword: "",
+              role,
+            });
             create.reset();
           }
         }
@@ -96,6 +108,20 @@ export function AddAccountDialog({ role }: { role: "admin" | "client" }) {
               autoComplete="new-password"
               disabled={create.isPending}
               {...form.register("password")}
+            />
+          </div>
+          <div className="flex flex-col gap-2">
+            <Label htmlFor={"new-confirm-password-" + role}>
+              Confirm password
+            </Label>
+            <Input
+              id={"new-confirm-password-" + role}
+              type="password"
+              autoComplete="new-password"
+              maxLength={128}
+              disabled={create.isPending}
+              aria-invalid={Boolean(form.formState.errors.confirmPassword)}
+              {...form.register("confirmPassword")}
             />
           </div>
           {Object.entries(form.formState.errors).map(([key, error]) => (

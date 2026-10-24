@@ -198,12 +198,18 @@ export const communityCommentSchema = z.object({
 });
 
 // Account roles are assigned only when an administrator creates an account.
-export const adminAccountCreateSchema = z.object({
-  displayName: z.string().trim().min(1, "Enter a name.").max(60),
-  email: z.string().trim().email("Enter a valid email."),
-  password: z.string().min(8, "Use at least 8 characters.").max(128),
-  role: z.enum(["admin", "client"]),
-});
+export const adminAccountCreateSchema = z
+  .object({
+    displayName: z.string().trim().min(1, "Enter a name.").max(60),
+    email: z.string().trim().email("Enter a valid email."),
+    password: z.string().min(8, "Use at least 8 characters.").max(128),
+    confirmPassword: z.string().min(1, "Confirm the password.").max(128),
+    role: z.enum(["admin", "client"]),
+  })
+  .refine((values) => values.password === values.confirmPassword, {
+    path: ["confirmPassword"],
+    message: "Passwords do not match.",
+  });
 export const adminAccountEditSchema = z
   .object({
     email: z.string().trim().email("Enter a valid email."),
