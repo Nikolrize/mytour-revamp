@@ -77,6 +77,7 @@ export function AdminDatabaseTable({
     compact ? 5 : 12,
     filters,
   );
+
   const source = query.data?.[kind] ?? emptyRecords;
   const rows = useMemo(() => toRows(source), [source]);
   const lookup = useMemo(
@@ -85,6 +86,7 @@ export function AdminDatabaseTable({
   );
 
   const error = query.error?.message ?? action.error?.message ?? "";
+
   return (
     <div className="flex min-w-0 w-full max-w-full flex-col gap-3">
       {error && (

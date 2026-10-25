@@ -4,6 +4,7 @@ import { CommunityFeed } from "@/components/community-feed";
 import { Badge } from "@/components/ui/badge";
 
 type PostSearchParams = Promise<{ post?: string | string[] }>;
+
 async function FilteredPosts({
   searchParams,
 }: {
@@ -13,6 +14,7 @@ async function FilteredPosts({
   const postId = typeof post === "string" ? post : "";
   return <CommunityFeed key={postId} moderation postId={postId} />;
 }
+
 export default function ManagePostsPage({
   searchParams,
 }: {

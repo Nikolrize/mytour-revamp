@@ -20,6 +20,7 @@ export function AdminTableFilters({
 }: AdminTableFiltersProps) {
   const id = useId();
   const [draft, setDraft] = useState(defaults);
+
   return (
     <form
       className="flex flex-wrap items-end gap-3 rounded-xl bg-brand-surface-muted/60 p-3"

@@ -26,6 +26,7 @@ function date(value: string | null) {
       })
     : "Not reviewed yet";
 }
+
 export function AdminReportDialog({
   selection,
   onClose,
@@ -36,6 +37,7 @@ export function AdminReportDialog({
     Boolean(selection),
   );
   const report = query.data?.report;
+
   return (
     <Dialog
       open={Boolean(selection)}

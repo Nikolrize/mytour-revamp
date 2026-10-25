@@ -37,6 +37,7 @@ import { useForm } from "react-hook-form";
 export function AddAccountDialog({ role }: AddAccountDialogProps) {
   const [open, setOpen] = useState(false);
   const { create } = useManagedAccounts();
+
   const form = useForm<AdminAccountCreateValues>({
     resolver: zodResolver(adminAccountCreateSchema),
     defaultValues: {
@@ -47,6 +48,7 @@ export function AddAccountDialog({ role }: AddAccountDialogProps) {
       role,
     },
   });
+
   return (
     <Dialog
       open={open}
@@ -147,6 +149,7 @@ export function EditAccountDialog({ account }: EditAccountDialogProps) {
   const [open, setOpen] = useState(false);
   const { edit } = useManagedAccounts();
   const details = useManagedAccount(account.id, open);
+
   const defaults = {
     displayName: account.display_name,
     email: "",
@@ -157,11 +160,13 @@ export function EditAccountDialog({ account }: EditAccountDialogProps) {
     resolver: zodResolver(adminAccountEditSchema),
     defaultValues: defaults,
   });
+
   useEffect(() => {
     if (open && details.data && !form.getFieldState("email").isDirty) {
       form.setValue("email", details.data.email);
     }
   }, [open, details.data, form]);
+
   return (
     <Dialog
       open={open}

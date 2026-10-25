@@ -40,12 +40,14 @@ function AccountTable({ role, search, compact }: AccountTableProps) {
     accountRole: "all",
     sort: "latest",
   });
+
   const { query, remove, setStatus } = useManagedAccounts(
     { role, page, pageSize: compact ? 5 : 12, search, ...filters },
     true,
   );
   const { profileQuery } = useProfile();
   const visible = query.data?.users ?? [];
+
   return (
     <section
       className="flex min-w-0 flex-col gap-4 rounded-2xl border border-brand-line bg-white p-4 sm:p-5"
@@ -64,6 +66,7 @@ function AccountTable({ role, search, compact }: AccountTableProps) {
             <AddAccountDialog role={role} />
           )}
       </div>
+
       {!compact && (
         <AdminTableFilters
           defaults={{ status: "all", accountRole: "all", sort: "latest" }}
@@ -105,11 +108,13 @@ function AccountTable({ role, search, compact }: AccountTableProps) {
           ]}
         />
       )}
+
       {query.error && (
         <FieldError role="alert" className="text-sm text-destructive">
           {query.error.message}
         </FieldError>
       )}
+
       {query.isPending ? (
         <TableLoadingSkeleton
           rows={5}
@@ -317,6 +322,7 @@ function AccountTable({ role, search, compact }: AccountTableProps) {
           </TableBody>
         </Table>
       )}
+
       {!compact && (
         <ItineraryPagination
           label={role + " account pages"}
@@ -333,6 +339,7 @@ function AccountTable({ role, search, compact }: AccountTableProps) {
 export function AdminUsers({ compact = false }: AdminUsersProps) {
   const [search, setSearch] = useState("");
   const [draftSearch, setDraftSearch] = useState("");
+
   return (
     <div className="flex flex-col gap-6">
       {!compact && (

@@ -36,10 +36,12 @@ import { useForm } from "react-hook-form";
 function ResetRequestDialog({ request }: ResetRequestDialogProps) {
   const [open, setOpen] = useState(false);
   const { reset } = usePasswordRequests();
+
   const form = useForm<ResetPasswordValues>({
     resolver: zodResolver(resetPasswordSchema),
     defaultValues: { password: "", confirmPassword: "" },
   });
+
   return (
     <Dialog
       open={open}
@@ -67,7 +69,7 @@ function ResetRequestDialog({ request }: ResetRequestDialogProps) {
         <DialogHeader>
           <DialogTitle>Reset password for {request.displayName}</DialogTitle>
           <DialogDescription>
-            Verify the requester’s identity before proceeding. Arrange delivery
+            Verify the requester&apos;s identity before proceeding. Arrange delivery
             of their new password directly with them. Saving will mark this
             request as handled.
           </DialogDescription>
@@ -130,6 +132,7 @@ export function AdminPasswordRequests() {
   });
   const { query } = usePasswordRequests(page, true, filters);
   const requests = query.data?.requests ?? [];
+
   return (
     <section
       className="flex min-w-0 flex-col gap-4 rounded-2xl border border-brand-line bg-white p-4 sm:p-5"
