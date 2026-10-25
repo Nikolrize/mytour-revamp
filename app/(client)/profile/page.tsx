@@ -25,13 +25,16 @@ export default function ProfilePage() {
   const [editing, setEditing] = useState(false);
   const [kind, setKind] = useState<ProfileActivityKind>("recent");
   const [page, setPage] = useState(1);
+
   const { profileQuery, updateProfile, uploadAvatar } = useProfile(() =>
     setEditing(false),
   );
+
   const tripsQuery = useMyTrips(true, {
     pageSize: kind === "recent" ? 12 : 1,
     page: kind === "recent" ? page : 1,
   });
+
   const record = profileQuery.data?.profile;
   const activity = usePublicProfile(
     record?.id ?? "",
@@ -39,10 +42,12 @@ export default function ProfilePage() {
     page,
     Boolean(record?.id) && kind !== "recent",
   );
+
   const form = useForm<ProfileValues>({
     resolver: zodResolver(profileSchema),
     defaultValues: { displayName: "", avatarUrl: "", bio: "" },
   });
+
   const avatarUrl = useWatch({ control: form.control, name: "avatarUrl" });
   const bio = useWatch({ control: form.control, name: "bio" });
   const profile = {
@@ -50,6 +55,7 @@ export default function ProfilePage() {
     avatar: record?.avatar_url ?? "",
     bio: record?.bio ?? "",
   };
+
   function cancelEdit() {
     form.reset({
       displayName: profile.name,
@@ -58,19 +64,23 @@ export default function ProfilePage() {
     });
     setEditing(false);
   }
+
   const error =
     profileQuery.error?.message ||
     tripsQuery.error?.message ||
     updateProfile.error?.message ||
     uploadAvatar.error?.message;
+
   if (profileQuery.isPending || tripsQuery.isPending)
     return <ProfileLoadingSkeleton />;
+
   if (!record)
     return (
       <FieldError role="alert" className="py-10 text-sm text-destructive">
         {error || "Could not load your profile."}
       </FieldError>
     );
+
   return (
     <div className="flex w-full flex-col gap-8 py-10 sm:py-14">
       {/* Personal identity uses the same layout as public traveller profiles. */}
@@ -122,6 +132,7 @@ export default function ProfilePage() {
           ]}
         />
       </TravellerProfileCard>
+
       {updateProfile.isSuccess && (
         <p
           role="status"
@@ -131,6 +142,7 @@ export default function ProfilePage() {
           Profile changes saved.
         </p>
       )}
+
       {error && (
         <FieldError
           role="alert"
@@ -139,6 +151,7 @@ export default function ProfilePage() {
           {error}
         </FieldError>
       )}
+
       {/* The editor retains photo upload, validation, save and cancel actions. */}
       {editing ? (
         <Card className="rounded-[24px] border-brand-line bg-white shadow-sm">

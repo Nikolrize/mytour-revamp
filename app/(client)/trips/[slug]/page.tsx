@@ -201,6 +201,7 @@ function TripDetailContent() {
           />
         </div>
       </div>
+
       {isEditing && (
         <p
           role="status"
@@ -230,6 +231,7 @@ function TripDetailContent() {
               {trip.stops.length} stops
             </Badge>
           </div>
+
           {Object.entries(groupedStops).map(([day, stops]) => (
             <Card
               key={day}
@@ -386,6 +388,7 @@ function TripDetailContent() {
           )}
         </aside>
       </div>
+
       {visibility.error && (
         <p role="alert" className="text-right text-xs text-destructive">
           {visibility.error.message}

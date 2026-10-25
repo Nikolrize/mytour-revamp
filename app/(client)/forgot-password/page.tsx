@@ -24,6 +24,7 @@ export default function ForgotPasswordPage() {
     resolver: zodResolver(forgotPasswordSchema),
     defaultValues: { email: "" },
   });
+
   return (
     <div className="flex w-full justify-center py-10 sm:py-16">
       <Card className="w-full max-w-md rounded-3xl border-brand-line bg-white">

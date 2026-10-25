@@ -19,9 +19,11 @@ function PublicProfileContent({ userId }: PublicProfileContentProps) {
   const query = usePublicProfile(userId, kind, page);
   // Keep the profile header mounted while fetching another activity page.
   const [identity, setIdentity] = useState(query.data);
+
   if (query.data && identity !== query.data) setIdentity(query.data);
   if (query.isPending && !identity) return <ProfileLoadingSkeleton />;
   const data = query.data ?? identity;
+
   if (!data)
     return (
       <div className="flex flex-col items-start gap-4 py-12">
@@ -36,6 +38,7 @@ function PublicProfileContent({ userId }: PublicProfileContentProps) {
         </Button>
       </div>
     );
+
   const profile = data.profile;
   return (
     <div className="flex w-full flex-col gap-8 py-10 sm:py-14">
