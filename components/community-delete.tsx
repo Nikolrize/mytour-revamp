@@ -23,6 +23,7 @@ export function CommunityDelete({
   onConfirm,
 }: CommunityDeleteProps) {
   const [open, setOpen] = useState(false);
+
   return (
     <AlertDialog open={open} onOpenChange={setOpen}>
       <AlertDialogTrigger

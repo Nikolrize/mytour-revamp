@@ -31,6 +31,7 @@ export function ConfirmAction({
   ariaLabel,
 }: ConfirmActionProps) {
   const [open, setOpen] = useState(false);
+
   return (
     <AlertDialog
       open={open}

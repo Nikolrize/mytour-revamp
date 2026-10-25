@@ -36,6 +36,7 @@ import { Controller, useForm } from "react-hook-form";
 
 function PhotoPreview({ file, onRemove, disabled }: PhotoPreviewProps) {
   const [url, setUrl] = useState<string | null>(null);
+
   useEffect(() => {
     const reader = new FileReader();
     reader.onload = () => {
@@ -47,6 +48,7 @@ function PhotoPreview({ file, onRemove, disabled }: PhotoPreviewProps) {
       if (reader.readyState === FileReader.LOADING) reader.abort();
     };
   }, [file]);
+
   return (
     <div className="relative overflow-hidden rounded-xl">
       {url ? (
@@ -86,6 +88,7 @@ export function CommunityComposer({
     resolver: zodResolver(communityPostSchema),
     defaultValues: { content: "", tripId: "" },
   });
+
   const create = useCreateCommunityPost();
   const [tripSearch, setTripSearch] = useState("");
   const [tripPage, setTripPage] = useState(1);
@@ -100,6 +103,7 @@ export function CommunityComposer({
   const options = tripOptions.data?.trips ?? [];
   const [photos, setPhotos] = useState<File[]>([]);
   const [photoError, setPhotoError] = useState("");
+
   const submit = form.handleSubmit((values) => {
     if (!values.content && !photos.length) {
       form.setError("content", { message: "Write something or add a photo." });
@@ -118,6 +122,7 @@ export function CommunityComposer({
       },
     );
   });
+
   return (
     <Card className="rounded-3xl border-brand-line bg-white shadow-none">
       <CardContent className="flex flex-col gap-5 p-5 sm:p-6">

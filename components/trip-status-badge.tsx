@@ -8,6 +8,7 @@ export function TripStatusBadge({ status }: TripStatusBadgeProps) {
       : status === "Completed"
         ? "bg-emerald-50 text-emerald-700"
         : "bg-brand-blue-soft text-brand-blue";
+
   return (
     <Badge
       variant="secondary"

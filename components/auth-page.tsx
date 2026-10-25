@@ -29,6 +29,7 @@ export function AuthPage({ mode }: AuthPageProps) {
   const isSignup = mode === "signup";
   const [showPassword, setShowPassword] = useState(false);
   const [remember, setRemember] = useState(true);
+
   const form = useForm<AuthValues>({
     resolver: zodResolver(createAuthFormSchema(isSignup)),
     defaultValues: {
@@ -39,10 +40,12 @@ export function AuthPage({ mode }: AuthPageProps) {
       agreed: false,
     },
   });
+
   const authMutation = useAuth(mode, (redirectTo) => {
     router.replace(redirectTo);
     router.refresh();
   });
+
   const handleSubmit = form.handleSubmit((values) =>
     authMutation.mutate(values),
   );

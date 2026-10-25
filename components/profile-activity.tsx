@@ -35,6 +35,7 @@ export function ProfileActivity({
       : kind === "trips"
         ? "shared itineraries"
         : "Community posts";
+
   return (
     <section className="flex flex-col gap-5" aria-label="Shared activity">
       <div

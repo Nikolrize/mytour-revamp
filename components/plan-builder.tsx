@@ -84,6 +84,7 @@ export function PlanBuilder({ mode = "ai" }: PlanBuilderProps) {
   const { statesQuery, generateItinerary, createTrip, resolveStop } = usePlan(
     (id) => router.push(`/trips/${id}`),
   );
+
   const tripName = useWatch({ control: form.control, name: "title" });
   const selectedStates =
     useWatch({ control: form.control, name: "states" }) ?? [];
@@ -113,6 +114,7 @@ export function PlanBuilder({ mode = "ai" }: PlanBuilderProps) {
       form.setValue("states", available, { shouldDirty: false });
     }
   }, [form, states]);
+
   const selectedStateImage = stateImages[selectedStates[0]];
   const tripDays =
     startDate && endDate

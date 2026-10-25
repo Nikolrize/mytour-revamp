@@ -53,6 +53,7 @@ export function TripActions({
   const [deleting, setDeleting] = useState(false);
   const [reporting, setReporting] = useState(false);
   const [reportConfirmed, setReportConfirmed] = useState(false);
+
   const editForm = useForm<TripDetailsValues>({
     resolver: zodResolver(tripDetailsSchema),
     defaultValues: { title: trip.title, description: trip.description },
@@ -61,12 +62,15 @@ export function TripActions({
     resolver: zodResolver(tripReportSchema),
     defaultValues: { reason: "", details: "" },
   });
+
   const error = copy.error || update.error || remove.error || report.error;
+
   if (
     profileQuery.data?.profile?.role === "admin" ||
     profileQuery.data?.profile?.role === "master_admin"
   )
     return null;
+
   return (
     <div className="flex flex-col gap-3">
       {/* Owner editing and deletion, or community reuse and reporting */}

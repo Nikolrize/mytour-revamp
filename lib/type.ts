@@ -6,7 +6,6 @@ import type { UseFormRegisterReturn } from "react-hook-form";
 import type { z } from "zod";
 
 // Domain
-
 export type ItineraryStop = {
   id?: string;
   day: number;

@@ -32,11 +32,14 @@ export function TripStopEditor({ tripId, stop }: TripStopEditorProps) {
     startTime: stop.startTime?.slice(0, 5) || "",
     endTime: stop.endTime?.slice(0, 5) || "",
   };
+
   const form = useForm<EditStopValues>({
     resolver: zodResolver(editStopSchema),
     defaultValues: defaults,
   });
+
   if (!stop.id) return null;
+
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger

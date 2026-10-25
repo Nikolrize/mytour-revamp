@@ -19,15 +19,18 @@ export function ItineraryPagination({
   onPageChange,
 }: ItineraryPaginationProps) {
   if (totalPages <= 1) return null;
+
   const pages = [...new Set([1, page - 1, page, page + 1, totalPages])]
     .filter((value) => value >= 1 && value <= totalPages)
     .sort((a, b) => a - b);
+
   const change =
     (next: number) => (event: React.MouseEvent<HTMLAnchorElement>) => {
       event.preventDefault();
       if (!busy && next >= 1 && next <= totalPages && next !== page)
         onPageChange(next);
     };
+
   return (
     <Pagination aria-label={label} aria-busy={busy} className="mx-0 pt-3">
       <PaginationContent className="flex-wrap justify-center gap-1">

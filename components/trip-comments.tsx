@@ -30,12 +30,15 @@ export function TripComments({
   const signedIn = Boolean(profileQuery.data?.profile);
   const [page, setPage] = useState(1);
   const { commentsQuery, postComment } = useTripComments(tripSlug, page);
+
   const form = useForm<CommentValues>({
     resolver: zodResolver(commentSchema),
     defaultValues: { rating: 5, message: "" },
   });
+
   const rating = useWatch({ control: form.control, name: "rating" }) ?? 5;
   const message = useWatch({ control: form.control, name: "message" }) ?? "";
+
   // Reset the editor after a successful post.
   useEffect(() => {
     if (postComment.isSuccess) form.reset({ rating: 5, message: "" });

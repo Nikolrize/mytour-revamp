@@ -199,6 +199,7 @@ export const communityPostSchema = z.object({
     .max(5000, "Posts can contain up to 5,000 characters."),
   tripId: z.union([z.literal(""), z.string().uuid()]).default(""),
 });
+
 export const communityCommentSchema = z.object({
   content: z.string().trim().min(1, "Write a comment.").max(1000),
 });
@@ -216,6 +217,7 @@ export const adminAccountCreateSchema = z
     path: ["confirmPassword"],
     message: "Passwords do not match.",
   });
+
 export const adminAccountEditSchema = z
   .object({
     email: z.string().trim().email("Enter a valid email."),
@@ -233,6 +235,7 @@ export const adminAccountEditSchema = z
 export const forgotPasswordSchema = z.object({
   email: z.string().trim().email("Enter a valid email address.").max(254),
 });
+
 export const resetPasswordSchema = z
   .object({
     password: newPasswordSchema,

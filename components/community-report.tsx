@@ -28,10 +28,12 @@ export function CommunityReport({ postId, signedIn }: CommunityReportProps) {
   const [open, setOpen] = useState(false);
   const [confirmed, setConfirmed] = useState(false);
   const report = useReportCommunityPost(postId);
+
   const form = useForm<ContentReportValues>({
     resolver: zodResolver(contentReportSchema),
     defaultValues: { reason: "", details: "" },
   });
+
   if (!signedIn)
     return (
       <Button
@@ -46,6 +48,7 @@ export function CommunityReport({ postId, signedIn }: CommunityReportProps) {
         <Flag className="size-4" />
       </Button>
     );
+
   return (
     <>
       <Dialog

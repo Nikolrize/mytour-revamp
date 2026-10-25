@@ -25,10 +25,12 @@ export function CommunityComments({
   const { query, create, remove } = useCommunityComments(postId);
   const { profileQuery } = useProfile();
   const canComment = profileQuery.data?.profile?.role === "client";
+
   const form = useForm<CommunityCommentValues>({
     resolver: zodResolver(communityCommentSchema),
     defaultValues: { content: "" },
   });
+
   const comments = [
     ...new Map(
       (query.data?.pages.flatMap((page) => page.comments) ?? []).map(
@@ -36,6 +38,7 @@ export function CommunityComments({
       ),
     ).values(),
   ];
+
   return (
     <section
       className="flex flex-col gap-4 border-t border-brand-line pt-4"
@@ -97,6 +100,7 @@ export function CommunityComments({
           to comment.
         </p>
       )}
+
       {query.isPending && <CommentsLoadingSkeleton />}
       {query.error && (
         <FieldError role="alert" className="text-sm text-destructive">
@@ -106,6 +110,7 @@ export function CommunityComments({
       {!query.isPending && !query.error && !comments.length && (
         <p className="text-sm text-muted-foreground">No comments yet.</p>
       )}
+
       {comments.map((comment) => (
         <div
           key={comment.id}
@@ -130,6 +135,7 @@ export function CommunityComments({
           </p>
         </div>
       ))}
+
       {query.hasNextPage && (
         <Button
           variant="outline"

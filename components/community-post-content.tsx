@@ -19,6 +19,7 @@ export function CommunityPostText({ content }: CommunityPostTextProps) {
   const [expanded, setExpanded] = useState(false);
   const preview = content.split("\n").slice(0, 4).join("\n").slice(0, 300);
   const truncated = preview.length < content.length;
+
   return (
     <div className="flex min-w-0 flex-col items-start gap-1">
       <p className="whitespace-pre-wrap break-words text-sm leading-7">
@@ -46,6 +47,7 @@ export function CommunityPostPhotos({
 }: CommunityPostPhotosProps) {
   const [active, setActive] = useState<number | null>(null);
   const visible = images.slice(0, 4);
+
   return (
     <>
       <div

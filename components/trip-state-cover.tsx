@@ -11,6 +11,7 @@ export function TripStateCover({ trip }: TripStateCoverProps) {
     );
     return key ? [{ state, src: stateImages[key] }] : [];
   });
+
   const columns =
     images.length <= 1
       ? 1
@@ -18,6 +19,7 @@ export function TripStateCover({ trip }: TripStateCoverProps) {
         ? 2
         : Math.ceil(Math.sqrt(images.length));
   const rows = Math.max(1, Math.ceil(images.length / columns));
+
   return (
     <div
       className="absolute inset-0 grid gap-0.5 overflow-hidden bg-brand-blue-soft"

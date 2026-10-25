@@ -11,6 +11,7 @@ export function getTripInterests(
           ?.match(/Interests:\s*([^\n]+)/i)?.[1]
           .replace(/\.\s*$/, "")
           .split(",") ?? []);
+
   return [
     ...new Set(
       source.flatMap((value: unknown) => {

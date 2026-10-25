@@ -40,12 +40,14 @@ export function ExploreTrips({
     tags,
     sort,
   });
+
   const states = trips.data?.states ?? [];
   const visibleTrips = trips.data?.trips ?? [];
   const filtered = visibleTrips;
   const total = trips.data?.total ?? 0;
   const currentPage = trips.data?.page ?? page;
   const hasMore = visibleTrips.length < total;
+
   const setSearch = (value: string) => {
     setPage(1);
     updateSearch(value);
@@ -62,6 +64,7 @@ export function ExploreTrips({
     setPage(1);
     updateSort(value);
   };
+
   const hasFilters = Boolean(search.trim() || state !== "all" || tags.length);
   function resetFilters() {
     setSearch("");

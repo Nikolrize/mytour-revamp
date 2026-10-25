@@ -16,6 +16,7 @@ export function ChangePasswordForm() {
     resolver: zodResolver(resetPasswordSchema),
     defaultValues: { password: "", confirmPassword: "" },
   });
+
   return (
     <form
       className="flex flex-col gap-4"

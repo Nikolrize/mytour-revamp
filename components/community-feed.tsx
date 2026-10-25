@@ -60,6 +60,7 @@ import { useState } from "react";
 function AttachedItinerary({ post, signedIn }: AttachedItineraryProps) {
   const router = useRouter();
   const { copy } = useTripActions(post.trip?.slug || "");
+
   if (!post.trip)
     return post.attachmentUnavailable ? (
       <p className="rounded-xl bg-brand-surface-muted p-4 text-sm text-muted-foreground">
@@ -67,6 +68,7 @@ function AttachedItinerary({ post, signedIn }: AttachedItineraryProps) {
       </p>
     ) : null;
   const trip = post.trip;
+
   return (
     <div className="flex flex-col gap-3 rounded-2xl border border-brand-line bg-brand-blue-soft/40 p-4">
       <div className="flex items-start gap-3">
@@ -129,6 +131,7 @@ function AttachedItinerary({ post, signedIn }: AttachedItineraryProps) {
 export function CommunityPostCard({ post, signedIn }: CommunityPostCardProps) {
   const [commentsOpen, setCommentsOpen] = useState(false);
   const { like, remove } = useCommunityPostActions(post.id);
+
   return (
     <Card className="overflow-hidden rounded-3xl border-brand-line bg-white shadow-none">
       <CardContent className="flex flex-col gap-5 p-5 sm:p-6">
@@ -237,6 +240,7 @@ export function CommunityFeed({
   const { profileQuery } = useProfile();
   const profile = profileQuery.data?.profile;
   const posts = feed.data?.posts ?? [];
+
   return (
     <div className="flex w-full min-w-0 flex-col gap-5">
       {/* Browse stories before opening the optional post composer. */}

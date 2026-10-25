@@ -18,6 +18,7 @@ export function ItineraryCard({
   showStatus = !showAuthor,
 }: ItineraryCardProps) {
   const authorLabel = isOwner ? `${itinerary.author} (you)` : itinerary.author;
+
   return (
     <Card className="grid h-full min-h-[26rem] grid-rows-[11rem_1fr] gap-0 overflow-hidden rounded-[24px] border-brand-line bg-white p-0 shadow-sm">
       <div className="relative min-h-[9rem] bg-brand-blue-soft">

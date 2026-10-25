@@ -9,8 +9,10 @@ import type { TripTagsProps } from "@/lib/type";
 
 export function TripTags({ interests = [], limit }: TripTagsProps) {
   if (!interests.length) return null;
+
   const visible = limit === undefined ? interests : interests.slice(0, limit);
   const remaining = interests.slice(visible.length);
+
   return (
     <>
       {visible.map((interest) => (

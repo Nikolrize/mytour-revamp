@@ -31,10 +31,12 @@ export function TripStopManager({
   error,
 }: TripStopManagerProps) {
   const { create } = useTripStops(tripId, false);
+
   const form = useForm<TripStopInput, unknown, StopValues>({
     resolver: zodResolver(tripStopSchema),
     defaultValues: empty,
   });
+
   const onSubmit = form.handleSubmit(async (values) => {
     try {
       if (onAdd) await onAdd(values);
@@ -44,7 +46,9 @@ export function TripStopManager({
     }
     form.reset(empty);
   });
+
   const FormContainer = onAdd ? "div" : "form";
+
   return (
     <section className="flex flex-col gap-4 rounded-2xl border border-brand-line bg-white p-5">
       <div>
@@ -150,12 +154,12 @@ export function TripStopManager({
             }
             id="stop-maps-link"
             type="url"
-            placeholder="Paste the place’s Google Maps share link"
+            placeholder="Paste the place's Google Maps share link"
             {...form.register("mapsUrl")}
             className="rounded-xl"
           />
           <p className="text-xs text-muted-foreground">
-            We’ll read the coordinates from the link for your route map.
+            We&apos;ll read the coordinates from the link for your route map.
           </p>
           {form.formState.errors.mapsUrl && (
             <FieldError

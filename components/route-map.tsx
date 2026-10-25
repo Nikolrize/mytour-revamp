@@ -36,12 +36,14 @@ export function RouteMap({ stops }: RouteMapProps) {
       ? `${stop.latitude},${stop.longitude}`
       : `${stop.place}, ${stop.area}, Malaysia`,
   );
+
   const params = new URLSearchParams({
     api: "1",
     origin: places[0],
     destination: places.at(-1)!,
     travelmode: "driving",
   });
+
   if (places.length > 2) params.set("waypoints", places.slice(1, -1).join("|"));
   const directionsUrl = `https://www.google.com/maps/dir/?${params.toString()}`;
 
